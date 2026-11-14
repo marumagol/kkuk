@@ -1,0 +1,130 @@
+"use client";
+/*
+  S08 장소 추가 / 장소 수정
+  1단계는 직접 입력 (장소 검색은 4단계). 이름만 꼭 넣고 나머지는 선택
+  날짜를 바꾸면 그 날 맨 뒤로 간다. 삭제는 확인 창을 거쳐 removed_at
+*/
+import { useState, useTransition } from "react";
+import { Button, Field } from "@/components/kit";
+import { AlertDialog } from "@/components/gate";
+import { savePlace, removePlace } from "@/app/actions";
+import { decimalsOf } from "@/lib/countries";
+import { MAX_PLACE_MEMO, MAX_PLACE_TITLE } from "@/lib/rules";
+import { addDays, md, weekday } from "@/lib/mock";
+import type { PlaceContext } from "@/lib/trips";
+
+const CATS = [
+  { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
+  { code: "stay", label: "숙소" }, { code: "transport", label: "이동" },
+];
+const CUR_NAME: Record<string, string> = { KRW: "원", JPY: "엔", USD: "달러", EUR: "유로", TWD: "대만 달러", CNY: "위안", THB: "바트", VND: "동", HKD: "홍콩 달러", GBP: "파운드" };
+
+export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null }) {
+  const p = ctx.place;
+  const startCur = p?.cost_currency ?? ctx.currency;
+  const [title, setTitle] = useState(p?.title ?? "");
+  const [category, setCategory] = useState(p?.category ?? "sight");
+  const [time, setTime] = useState(p?.start_time?.slice(0, 5) ?? "");
+  const [address, setAddress] = useState(p?.address ?? "");
+  const [currency, setCurrency] = useState(startCur);
+  const [cost, setCost] = useState(p?.estimated_cost != null ? String(p.estimated_cost / 10 ** decimalsOf(startCur)) : "");
+  const [memo, setMemo] = useState(p?.memo ?? "");
+  const [dayValue, setDayValue] = useState(day == null ? "none" : String(day));
+  const [error, setError] = useState("");
+  const [confirm, setConfirm] = useState(false);
+  const [busy, startBusy] = useTransition();
+
+  const currencies = [...new Set([ctx.currency, startCur, "KRW", "USD"])];
+  const titleLen = [...title.trim()].length;
+  const dayNum = dayValue === "none" ? null : Number(dayValue);
+
+  const save = () => {
+    setError("");
+    if (!titleLen) return setError("장소 이름을 적어 주세요");
+    startBusy(async () => {
+      const r = await savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum });
+      if (r?.error) setError(r.error);
+    });
+  };
+  const remove = () => startBusy(async () => {
+    const r = await removePlace(ctx.tripId, p!.id, p!.day_index);
+    if (r?.error) setError(r.error);
+  });
+
+  return (
+    <>
+      <div className="flex flex-1 flex-col gap-6 px-5 pt-6">
+        <Field label="장소 이름" name="title" placeholder="예 : 오타루 운하" value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
+          onChange={(e) => { setTitle(e.target.value); setError(""); }} autoFocus={!p}
+          error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-sub font-bold text-ink-sub">분류</legend>
+          <div className="flex flex-wrap gap-2">
+            {CATS.map((c) => (
+              <label key={c.code} className={"press inline-flex h-11 cursor-pointer items-center rounded-full px-4 text-sub font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30 " +
+                (category === c.code ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
+                <input type="radio" name="category" value={c.code} checked={category === c.code} onChange={() => setCategory(c.code)} className="sr-only" disabled={busy} />
+                {c.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex min-w-0 flex-col gap-2">
+            <span className="text-sub font-bold text-ink-sub">날짜</span>
+            <select value={dayValue} onChange={(e) => setDayValue(e.target.value)} disabled={busy}
+              className="h-14 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15">
+              {Array.from({ length: ctx.days }, (_, i) => {
+                const d = addDays(ctx.start, i);
+                return <option key={i} value={i}>{i + 1}일차 · {md(d)} ({weekday(d)})</option>;
+              })}
+              <option value="none">날짜 미정</option>
+            </select>
+          </label>
+          <Field label="시간 (선택)" name="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} />
+        </div>
+
+        <div className="flex items-end gap-2">
+          <div className="min-w-0 flex-1">
+            <Field label="예상 비용 (선택)" name="cost" inputMode={decimalsOf(currency) ? "decimal" : "numeric"} placeholder="0" value={cost}
+              onChange={(e) => { setCost(e.target.value.replace(/[^\d.,]/g, "")); setError(""); }} disabled={busy} />
+          </div>
+          <label className="flex w-28 flex-none flex-col gap-2">
+            <span className="sr-only">통화</span>
+            <select value={currency} onChange={(e) => setCurrency(e.target.value)} disabled={busy}
+              className="h-14 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15">
+              {currencies.map((c) => <option key={c} value={c}>{CUR_NAME[c] ?? c}</option>)}
+            </select>
+          </label>
+        </div>
+
+        <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
+          onChange={(e) => setAddress(e.target.value)} disabled={busy} />
+
+        <label className="flex flex-col gap-2">
+          <span className="text-sub font-bold text-ink-sub">메모 (선택)</span>
+          <textarea value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={MAX_PLACE_MEMO} rows={4} disabled={busy}
+            placeholder="예약 번호, 가는 방법 등"
+            className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+        </label>
+
+        {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
+
+        {p && (
+          <div className="border-t border-line pt-6">
+            <Button type="button" variant="secondary" full onClick={() => setConfirm(true)} disabled={busy}>장소 삭제</Button>
+          </div>
+        )}
+      </div>
+
+      <div className="sticky bottom-0 mt-6 bg-bg px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
+        <Button full onClick={save} disabled={busy || !titleLen}>{busy ? "저장하는 중" : p ? "저장" : "장소 추가"}</Button>
+      </div>
+
+      {confirm && <AlertDialog title="장소를 삭제할까요?" desc={`"${p?.title}"이(가) 일정에서 사라져요`} confirmLabel="삭제"
+        confirm={remove} onClose={() => setConfirm(false)} />}
+    </>
+  );
+}

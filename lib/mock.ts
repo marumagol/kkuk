@@ -4,7 +4,7 @@
 */
 import type { Category } from "@/components/kit";
 
-export type Item = { time?: string; category: Category; title: string; desc?: string; editedBy?: string };
+export type Item = { id?: string; time?: string; category: Category; title: string; desc?: string; editedBy?: string };
 export type Trip = {
   id: string; title: string; start: string; end: string; // YYYY-MM-DD
   cities: string[]; members: { initial: string; tone: "point" | "accent" }[];

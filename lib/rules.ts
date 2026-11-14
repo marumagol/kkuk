@@ -2,3 +2,6 @@
 export const MAX_TRIP_DAYS = 60;   // 여행 최대 기간 (기획 02 추천안)
 export const MAX_CITIES = 10;
 export const MAX_TRIP_TITLE = 30;
+export const MAX_PLACE_TITLE = 80;
+export const MAX_PLACE_ADDRESS = 200;
+export const MAX_PLACE_MEMO = 2000;

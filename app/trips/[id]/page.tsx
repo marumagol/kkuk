@@ -10,7 +10,7 @@ import { getViewer, isIn } from "@/lib/viewer";
 import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
 import { loadTrip } from "@/lib/trips";
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; removed?: string; undated?: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const r = await loadTrip(await getViewer(), (await params).id);
@@ -55,8 +55,11 @@ export default async function TripDetail({ params, searchParams }: Props) {
   const sp = await searchParams;
   const asked = Number(sp.day);
   const canEdit = "role" in r && r.role !== "viewer";
+  // 실제 저장은 로그인(DB)일 때만. 미리보기는 버튼만 보이고 "곧 열려요"
+  const editable = canEdit && viewer.kind === "user";
   const day = Number.isInteger(asked) && asked >= 1 && asked <= len ? asked : fallback;
   const plan = trip.days[day - 1] ?? { items: [] };
+  const addHref = viewer.kind === "user" ? `/trips/${trip.id}/places/new?day=${day}` : undefined;
 
   return (
     <AppShell>
@@ -71,6 +74,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
           )}
         </span>
       </div>
+      {sp.removed && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">삭제했어요</p>}
       {sp.saved && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행 정보를 저장했어요</p>}
       {viewer.kind === "preview" && <MockNote />}
       <div className="px-5 pt-3">
@@ -101,31 +105,42 @@ export default async function TripDetail({ params, searchParams }: Props) {
         {plan.items.length ? (
           <div>
             {plan.items.map((it, i) => (
-              <PinCard key={i} index={i + 1} time={it.time ?? ""} category={it.category} title={it.title}
-                desc={it.desc ?? ""} editedBy={it.editedBy} last={i === plan.items.length - 1} />
+              <PinCard key={it.id ?? i} index={i + 1} time={it.time ?? ""} category={it.category} title={it.title}
+                desc={it.desc ?? ""} editedBy={it.editedBy} last={i === plan.items.length - 1}
+                href={editable && it.id ? `/trips/${trip.id}/places/${it.id}` : undefined} />
             ))}
           </div>
         ) : (
           <EmptyState title="이 날은 아직 장소가 없어요" desc="가고 싶은 곳을 하나씩 추가해 보세요"
-            action={<GateCta icon="plus" soon="장소 추가는 장소 넣기 단계(8단계)에서 열려요">장소 추가</GateCta>} />
+            action={canEdit ? <GateCta icon="plus" href={addHref}>장소 추가</GateCta> : undefined} />
         )}
       </section>
 
       {trip.undated.length > 0 && (
-        <section className="flex flex-col gap-3 px-5 pt-6" aria-label="날짜 미정">
+        <section id="undated" className="flex scroll-mt-4 flex-col gap-3 px-5 pt-6" aria-label="날짜 미정">
           <SectionTitle title="날짜 미정" aside={`${trip.undated.length}곳`} />
           <ul className="flex flex-col gap-2">
             {trip.undated.map((u) => (
-              <li key={u.title} className="flex min-h-14 items-center gap-3 rounded-pin bg-surface px-4">
-                <CategoryChip category={u.category} />
-                <span className="min-w-0 flex-1 truncate text-body font-semibold text-ink">{u.title}</span>
+              <li key={u.id ?? u.title}>
+                {editable && u.id ? (
+                  <Link href={`/trips/${trip.id}/places/${u.id}`} className="press flex min-h-14 items-center gap-3 rounded-pin bg-surface px-4">
+                    <CategoryChip category={u.category} />
+                    <span className="min-w-0 flex-1 truncate text-body font-semibold text-ink">{u.title}</span>
+                    <Icon name="right" size={18} className="flex-none text-ink-sub" />
+                  </Link>
+                ) : (
+                  <div className="flex min-h-14 items-center gap-3 rounded-pin bg-surface px-4">
+                    <CategoryChip category={u.category} />
+                    <span className="min-w-0 flex-1 truncate text-body font-semibold text-ink">{u.title}</span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      {plan.items.length > 0 && <BottomDock align="end"><GateFab /></BottomDock>}
+      {plan.items.length > 0 && canEdit && <BottomDock align="end"><GateFab href={addHref} /></BottomDock>}
     </AppShell>
   );
 }

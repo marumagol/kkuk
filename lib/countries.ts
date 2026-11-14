@@ -49,3 +49,22 @@ export const COUNTRIES: Country[] = [
 export const countryOf = (code: string) => COUNTRIES.find((c) => c.code === code);
 /* DB 에는 ISO 두 글자만 저장 (US-HI → US, ETC → 비움) */
 export const isoOf = (code: string) => (code === "ETC" ? null : code.slice(0, 2));
+
+/* 나라 기본 통화 (장소의 예상 비용). 없으면 원화 */
+const CURRENCY: Record<string, string> = {
+  KR: "KRW", JP: "JPY", TW: "TWD", HK: "HKD", MO: "MOP", CN: "CNY", MN: "MNT", TH: "THB", VN: "VND", PH: "PHP",
+  SG: "SGD", MY: "MYR", ID: "IDR", LA: "LAK", KH: "USD", IN: "INR", AE: "AED", TR: "TRY", GU: "USD", MP: "USD",
+  US: "USD", CA: "CAD", AU: "AUD", NZ: "NZD", GB: "GBP", FR: "EUR", IT: "EUR", ES: "EUR", PT: "EUR", DE: "EUR",
+  CH: "CHF", AT: "EUR", CZ: "CZK", NL: "EUR", GR: "EUR",
+};
+export const currencyOf = (iso?: string | null) => (iso && CURRENCY[iso]) || "KRW";
+/* 통화별 소수 자리 (엔, 원은 0, 달러는 2). DB 에는 최소 단위 정수로 저장 */
+export const decimalsOf = (cur: string) => {
+  try { return new Intl.NumberFormat("ko-KR", { style: "currency", currency: cur }).resolvedOptions().maximumFractionDigits ?? 0; }
+  catch { return 0; }
+};
+export const formatMoney = (minor: number, cur: string) => {
+  const d = decimalsOf(cur);
+  try { return new Intl.NumberFormat("ko-KR", { style: "currency", currency: cur, maximumFractionDigits: d }).format(minor / 10 ** d); }
+  catch { return `${minor} ${cur}`; }
+};

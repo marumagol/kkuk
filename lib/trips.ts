@@ -9,6 +9,7 @@ import { cache } from "react";
 import type { Category } from "@/components/kit";
 import { createClient } from "@/lib/supabase/server";
 import { TRIPS, getTrip, daysBetween, type Trip, type Item } from "@/lib/mock";
+import { currencyOf, formatMoney } from "@/lib/countries";
 import type { Viewer } from "@/lib/viewer";
 
 const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소" };
@@ -50,6 +51,10 @@ export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {
 });
 
 export type Role = "owner" | "editor" | "viewer";
+export type PlaceRow = {
+  id: string; day_index: number | null; sort_order: number; title: string; address: string | null; category: string;
+  start_time: string | null; estimated_cost: number | null; cost_currency: string | null; memo: string | null;
+};
 export type TripResult = { trip: Trip; role: Role } | { missing: "none" | "removed" };
 
 /* 여행 하나와 일자별 장소 */
@@ -64,13 +69,15 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   if (r.removed_at) return { missing: "removed" };
 
   const { data: rows } = await sb.from("itinerary_items")
-    .select("id, day_index, sort_order, title, category, start_time, memo")
+    .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo")
     .eq("trip_id", id).is("removed_at", null).order("sort_order");
   const trip = base(r);
   const len = daysBetween(trip.start, trip.end) + 1;
   trip.days = Array.from({ length: len }, () => ({ items: [] as Item[] }));
-  for (const it of (rows ?? []) as { day_index: number | null; title: string; category: string; start_time: string | null; memo: string | null }[]) {
-    const item: Item = { title: it.title, category: CATEGORY[it.category] ?? "관광", time: it.start_time?.slice(0, 5), desc: it.memo ?? undefined };
+  for (const it of (rows ?? []) as PlaceRow[]) {
+    const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
+    const desc = [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
+    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", time: it.start_time?.slice(0, 5), desc: desc || undefined };
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }
@@ -100,4 +107,27 @@ export const loadTripForEdit = cache(async (v: Viewer, id: string): Promise<Trip
     })),
     dayCounts: t.days.map((d) => d.items.length),
   };
+});
+
+/* 장소 추가/수정 화면용 : 여행 기본 정보, 기본 통화, (수정이면) 그 장소 */
+export type PlaceContext = {
+  tripId: string; tripTitle: string; start: string; days: number; role: Role; currency: string; place?: PlaceRow;
+};
+export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?: string): Promise<PlaceContext | null> => {
+  if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
+  if (placeId && !/^[0-9a-f-]{36}$/i.test(placeId)) return null;
+  const r = await loadTrip(v, tripId);
+  if (!("trip" in r)) return null;
+  const sb = (await createClient())!;
+  const { data: city } = await sb.from("trip_cities").select("country_code").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle();
+  let place: PlaceRow | undefined;
+  if (placeId) {
+    const { data } = await sb.from("itinerary_items")
+      .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo")
+      .eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).maybeSingle();
+    if (!data) return null;
+    place = data as PlaceRow;
+  }
+  const t = r.trip;
+  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place };
 });

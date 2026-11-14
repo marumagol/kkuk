@@ -150,16 +150,19 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, time, category, title, desc, editedBy, last }: {
-  index: number; time?: string; category: Category; title: string; desc?: string; editedBy?: string; last?: boolean;
+export function PinCard({ index, time, category, title, desc, editedBy, last, href }: {
+  index: number; time?: string; category: Category; title: string; desc?: string; editedBy?: string; last?: boolean; href?: string;
 }) {
+  const Box = ({ children }: { children: ReactNode }) => href
+    ? <Link href={href} className="press mb-3 block min-w-0 flex-1 rounded-pin bg-surface px-4 py-3.5">{children}</Link>
+    : <article className="mb-3 min-w-0 flex-1 rounded-pin bg-surface px-4 py-3.5">{children}</article>;
   return (
     <div className="flex gap-3">
       <div className="flex w-7 flex-none flex-col items-center gap-1 pt-3.5">
         <span className="flex size-7 items-center justify-center rounded-full bg-btn text-tiny font-bold text-on-btn">{index}</span>
         {!last && <span className="w-0 flex-1 border-l-2 border-dashed border-line-strong/60" />}
       </div>
-      <article className="mb-3 min-w-0 flex-1 rounded-pin bg-surface px-4 py-3.5">
+      <Box>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             {time && <span className="text-sub font-bold text-ink">{time}</span>}
@@ -169,7 +172,7 @@ export function PinCard({ index, time, category, title, desc, editedBy, last }: 
         </div>
         <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>
         {desc && <p className="mt-0.5 line-clamp-1 text-tiny text-ink-sub">{desc}</p>}
-      </article>
+      </Box>
     </div>
   );
 }

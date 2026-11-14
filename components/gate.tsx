@@ -78,9 +78,9 @@ export function PlusTab() {
     </GateButton>
   );
 }
-export function GateFab() {
+export function GateFab({ href }: { href?: string }) {
   return (
-    <GateButton soon="장소 추가는 장소 넣기 단계(8단계)에서 열려요"
+    <GateButton href={href} soon="장소 추가는 장소 넣기 단계에서 열려요"
       className="press inline-flex h-12 items-center gap-2 rounded-full bg-btn pl-4 pr-5 text-sub font-bold text-on-btn shadow-float">
       <Pin size={20} /> 장소 추가
     </GateButton>
