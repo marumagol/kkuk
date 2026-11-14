@@ -87,7 +87,12 @@ export default async function TripDetail({ params, searchParams }: Props) {
           <h1 className="text-title-xl font-extrabold text-ink">{trip.title}</h1>
           <p className="mt-1 text-sub text-ink-sub">{md(trip.start)} ~ {md(trip.end)}, 장소 {placeCount(trip)}개</p>
         </div>
-        {/* 여행 정보 수정 : 제목 옆 연필 (주인, 편집 가능) */}
+        {/* 일부 일정 공유 (4단계 7) + 여행 정보 수정 : 제목 옆 (주인, 편집 가능) */}
+        {editable && viewer.kind === "user" && (
+          <Link href={`/trips/${trip.id}/share`} aria-label="일정 공유" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
+            <Icon name="link" size={20} />
+          </Link>
+        )}
         {editable && (
           <Link href={`/trips/${trip.id}/edit`} aria-label="여행 정보 수정" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
             <Icon name="pencil" size={20} />

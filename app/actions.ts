@@ -496,3 +496,29 @@ export async function pickPlace(id: string, session: string): Promise<PlaceDetai
   if (!auth.user) return null;
   return details(String(id), /^[0-9a-f-]{36}$/i.test(session) ? session : undefined);
 }
+
+/* ───────── 일부 일정만 공유 (4단계 7, migration 0015) ───────── */
+const SHARE_ERRORS: Record<string, string> = {
+  days_invalid: "공유할 날을 하루 이상 골라 주세요",
+  too_many_shares: "공유 링크가 너무 많아요. 안 쓰는 링크를 끊고 다시 만들어 주세요",
+  trip_removed: "삭제된 여행이에요",
+  forbidden: "편집 가능 권한이 있어야 공유할 수 있어요",
+};
+export async function makeDayShare(tripId: string, days: number[]): Promise<{ error?: string; token?: string }> {
+  if (!isUuid(tripId) || !Array.isArray(days) || !days.length || days.some((d) => !Number.isInteger(d) || d < 0 || d > 59)) return { error: SHARE_ERRORS.days_invalid };
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data, error } = await sb.rpc("create_trip_share", { p_trip: tripId, p_days: days });
+  if (error) { const k = Object.keys(SHARE_ERRORS).find((x) => error.message.includes(x)); return { error: k ? SHARE_ERRORS[k] : "링크를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요" }; }
+  revalidatePath(`/trips/${tripId}/share`);
+  return { token: String(data) };
+}
+export async function revokeDayShare(tripId: string, token: string): Promise<{ error?: string }> {
+  if (!isUuid(tripId) || !/^[0-9a-f]{32}$/.test(token)) return { error: "다시 시도해 주세요" };
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { error } = await sb.rpc("revoke_trip_share", { p_trip: tripId, p_token: token });
+  if (error) return { error: "링크를 끊지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  revalidatePath(`/trips/${tripId}/share`);
+  return {};
+}
