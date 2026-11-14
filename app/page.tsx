@@ -68,8 +68,9 @@ export default async function Home() {
             <Link href="/trips" className="press flex flex-1 rounded-card">
               <StatTile label="내 장소" value={String(past.reduce((n, t) => n + placeCount(t), 0))} caption="지금까지 다녀온 곳" tone="point" icon={<Pin size={20} />} />
             </Link>
-            <Link href="/trips#past" className="press flex flex-1 rounded-card">
-              <StatTile label="다녀온 여행" value={String(past.length)} caption="여행 탭에서 다시 보기" tone="accent" icon={<span aria-hidden="true" className="size-5 rounded-full border-2 border-dashed border-accent" />} />
+            {/* 피그마 01 홈 "모은 도장" : 다녀온 여행의 도시 수 (도장 기능 전까지는 이 숫자로) */}
+            <Link href="/stamps" className="press flex flex-1 rounded-card">
+              <StatTile label="모은 도장" value={String(new Set(past.flatMap((t) => t.cities)).size)} caption="도시를 다녀왔어요" tone="stamp" icon={<span aria-hidden="true" className="size-5 rounded-full border-2 border-dashed border-point-text" />} />
             </Link>
           </div>
         )}

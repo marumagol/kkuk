@@ -37,9 +37,9 @@ export function BottomDock({ children, align = "center" }: { children: ReactNode
 
 /* 로고 : 마루님이 만든 피그마 "꾹 개발 시안" 01 홈의 "로고"(35:123)를 2배 PNG 로 내보낸 것 (주황 도장 + KKüK) */
 export function Logo({ height = 32 }: { height?: number }) {
-  // 원본 비율 134 : 58
+  // 원본 비율 180 : 58 (2026-11-14 마루님 피그마 새 로고, 01 홈 "로고")
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/logo.png" alt={BRAND} width={Math.round((height * 134) / 58)} height={height} className="block" />;
+  return <img src="/logo.png" alt={BRAND} width={Math.round((height * 180) / 58)} height={height} className="block" />;
 }
 
 export function Avatar({ initial, tone = "point", size = 40, ring }: { initial: string; tone?: "point" | "accent"; size?: number; ring?: boolean }) {

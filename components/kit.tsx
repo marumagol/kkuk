@@ -136,11 +136,11 @@ export function Card({ children, className }: { children: ReactNode; className?:
 }
 
 /* 내 장소 / 모은 도장 같은 숫자 타일 */
-export function StatTile({ label, value, caption, tone, icon }: { label: string; value: string; caption: string; tone: "point" | "accent"; icon: ReactNode }) {
+export function StatTile({ label, value, caption, tone, icon }: { label: string; value: string; caption: string; tone: "point" | "accent" | "stamp"; icon: ReactNode }) {
   return (
-    <div className={cx("flex-1 rounded-card p-4", tone === "point" ? "bg-point-soft" : "bg-accent-soft")}>
+    <div className={cx("flex-1 rounded-card p-4", tone === "point" ? "bg-point-soft" : tone === "stamp" ? "bg-stamp-soft" : "bg-accent-soft")}>
       <div className="flex items-center justify-between">
-        <span className={cx("text-sub font-bold", tone === "point" ? "text-point-text" : "text-accent-text")}>{label}</span>
+        <span className={cx("text-sub font-bold", tone === "accent" ? "text-accent-text" : "text-point-text")}>{label}</span>
         {icon}
       </div>
       <div className="mt-1 text-number font-extrabold text-ink">{value}</div>
