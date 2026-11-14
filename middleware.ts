@@ -6,13 +6,19 @@ import { supabaseEnv } from "@/lib/supabase/env";
 export async function middleware(request: NextRequest) {
   const env = supabaseEnv();
   if (!env) return NextResponse.next();
-  let response = NextResponse.next({ request });
+  // 화면 쪽에서 "지금 보는 주소"를 알 수 있게 머리말에 넣는다 (이름 정하기 뒤 돌아올 곳)
+  const next = () => {
+    const headers = new Headers(request.headers);
+    headers.set("x-kkuk-path", request.nextUrl.pathname + request.nextUrl.search);
+    return NextResponse.next({ request: { headers } });
+  };
+  let response = next();
   const sb = createServerClient(env.url, env.key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (list) => {
         list.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = next();
         list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },

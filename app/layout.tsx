@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { GateProvider } from "@/components/gate";
-import { getViewer, isIn } from "@/lib/viewer";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { getViewer, isIn, PATH_HEADER } from "@/lib/viewer";
 import { BRAND } from "@/components/screen";
 
 // 페이퍼로지 : 쓰는 굵기 4개만 (가이드 4장). 늦게 와도 글자가 먼저 보이게 swap
@@ -33,9 +35,15 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const v = await getViewer();
+  // 첫 로그인 : 이름을 정하기 전에는 어느 화면으로 가도 이름 정하기로 보낸다
+  if (v.kind === "user" && !v.name) {
+    const path = (await headers()).get(PATH_HEADER) ?? "/";
+    if (!path.startsWith("/welcome")) redirect(`/welcome?next=${encodeURIComponent(path.startsWith("/login") ? "/" : path)}`);
+  }
   return (
     <html lang="ko" className={paperlogy.variable}>
-      <body><GateProvider loggedIn={isIn(await getViewer())}>{children}</GateProvider></body>
+      <body><GateProvider loggedIn={isIn(v)}>{children}</GateProvider></body>
     </html>
   );
 }

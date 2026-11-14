@@ -6,15 +6,15 @@ import Link from "next/link";
 import { EmptyState, StatTile, TicketCard, Pin } from "@/components/kit";
 import { AppShell, Logo, Avatar, SectionTitle, MainTabs, MockNote, TripRow } from "@/components/screen";
 import { GateCta } from "@/components/gate";
-import { getViewer, isIn } from "@/lib/viewer";
+import { getViewer, isIn, initialOf } from "@/lib/viewer";
 import { upcomingTrips, pastTrips, statusOf, daysBetween, todayKST, periodText, placeCount } from "@/lib/mock";
 
-function Header({ loggedIn }: { loggedIn: boolean }) {
+function Header({ loggedIn, initial }: { loggedIn: boolean; initial: string }) {
   return (
     <header className="flex items-center justify-between px-5 pb-2 pt-4">
       <Link href="/" aria-label="홈" className="flex h-11 items-center"><Logo /></Link>
       {loggedIn ? (
-        <Link href="/me" aria-label="마이" className="flex size-11 items-center justify-center"><Avatar initial="도" /></Link>
+        <Link href="/me" aria-label="마이" className="flex size-11 items-center justify-center"><Avatar initial={initial} /></Link>
       ) : (
         <Link href="/login" className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-sub font-bold text-ink">로그인</Link>
       )}
@@ -32,7 +32,7 @@ export default async function Home() {
 
   return (
     <AppShell>
-      <Header loggedIn={loggedIn} />
+      <Header loggedIn={loggedIn} initial={initialOf(viewer)} />
       {loggedIn && <MockNote />}
       <div className="flex flex-col gap-4 px-5 pt-4">
         {hero ? (

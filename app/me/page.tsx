@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/kit";
 import { AppShell, Avatar, MainTabs } from "@/components/screen";
-import { getViewer } from "@/lib/viewer";
+import { getViewer, initialOf } from "@/lib/viewer";
 import { signOut } from "@/app/actions";
 import pkg from "@/package.json";
 
@@ -33,11 +33,14 @@ export default async function Me() {
           </section>
         ) : (
           <section className="flex items-center gap-3 rounded-card bg-surface p-5">
-            <Avatar initial="도" size={48} />
+            <Avatar initial={initialOf(v)} size={48} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-body font-bold text-ink">{v.kind === "user" ? v.email : "미리보기 계정"}</p>
-              <p className="text-tiny text-ink-sub">{v.kind === "user" ? "이메일 로그인" : "Supabase 연결 전 화면 확인용"}</p>
+              <p className="truncate text-body font-bold text-ink">{v.kind === "user" ? v.name : "미리보기 계정"}</p>
+              <p className="truncate text-tiny text-ink-sub">{v.kind === "user" ? `${v.email} · 이메일 로그인` : "Supabase 연결 전 화면 확인용"}</p>
             </div>
+            {v.kind === "user" && (
+              <Link href="/me/name" className="press inline-flex h-11 flex-none items-center px-1 text-sub font-semibold text-ink-sub underline underline-offset-4">이름 바꾸기</Link>
+            )}
           </section>
         )}
 
