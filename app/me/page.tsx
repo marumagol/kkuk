@@ -44,7 +44,12 @@ export default async function Me() {
         <ul className="divide-y divide-line rounded-card bg-surface">
           <Row label="이용약관" aside="준비 중" />
           <Row label="개인정보 처리방침" aside="준비 중" />
-          <Row label="앱 버전" aside={pkg.version} />
+          <li>
+            <Link href="/me/updates" className="press flex min-h-14 items-center justify-between gap-3 px-4">
+              <span className="text-body text-ink">업데이트 내역</span>
+              <span className="flex items-center gap-1 text-sub text-ink-sub">버전 {pkg.version}<Icon name="right" size={18} /></span>
+            </Link>
+          </li>
         </ul>
 
         {v.kind !== "guest" && (
