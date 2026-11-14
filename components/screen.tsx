@@ -122,7 +122,7 @@ export function TripRow({ href, title, sub, meta, badge, country, icon }: { href
     <Link href={href} className="press flex min-h-[76px] items-center gap-3 rounded-pin bg-surface px-4 py-3">
       {flag ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={flag} alt="" width={44} height={44} className="size-11 flex-none rounded-full object-cover ring-1 ring-line" />
+        <img src={flag} alt="" width={32} height={32} className="mx-1.5 size-8 flex-none rounded-full object-cover ring-1 ring-line" />
       ) : (
         <span className="flex size-11 flex-none items-center justify-center rounded-full bg-point-soft"><Pin size={22} /></span>
       )}

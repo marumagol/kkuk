@@ -39,7 +39,7 @@ export function useCityDraft(initial?: Partial<City>) {
 }
 
 /* 나라 그림 : 올린 아이콘 > 국기 > 지구 모양 글자 */
-function CountryMark({ country, icon, size = 40 }: { country: string; icon?: string | null; size?: number }) {
+function CountryMark({ country, icon, size = 30 }: { country: string; icon?: string | null; size?: number }) {
   const src = icon || flagOf(country);
   return src
     // eslint-disable-next-line @next/next/no-img-element
@@ -89,14 +89,14 @@ function CountryPicker({ draft, onError, disabled }: { draft: ReturnType<typeof 
           const on = draft.country === code;
           return (
             <button key={code} type="button" role="radio" aria-checked={on} disabled={disabled} onClick={() => choose(code)}
-              className={"press flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-field px-1 py-2 " + (on ? "bg-surface ring-2 ring-ink" : "")}>
+              className={"press flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-field px-1 py-2 " + (on ? "bg-surface ring-2 ring-ink" : "")}>
               <CountryMark country={code} />
               <span className={"line-clamp-2 text-center text-tiny leading-tight " + (on ? "font-bold text-ink" : "font-semibold text-ink-sub")}>{c.name.replace(/ \((.*)\)/, " $1")}</span>
             </button>
           );
         })}
         <button type="button" role="radio" aria-checked={draft.custom} disabled={disabled} onClick={() => choose("ETC")}
-          className={"press flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-field px-1 py-2 " + (draft.custom ? "bg-surface ring-2 ring-ink" : "")}>
+          className={"press flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-field px-1 py-2 " + (draft.custom ? "bg-surface ring-2 ring-ink" : "")}>
           <CountryMark country="ETC" icon={draft.icon?.preview} />
           <span className={"text-center text-tiny leading-tight " + (draft.custom ? "font-bold text-ink" : "font-semibold text-ink-sub")}>직접 입력</span>
         </button>
@@ -111,7 +111,7 @@ function CountryPicker({ draft, onError, disabled }: { draft: ReturnType<typeof 
           <Field label="나라 이름" name="countryName" placeholder="예 : 몰디브" value={draft.countryName} maxLength={MAX_COUNTRY_NAME} disabled={disabled}
             onChange={(e) => { draft.setCountryName(e.target.value); onError(""); }} />
           <div className="flex items-center gap-3">
-            <CountryMark country="ETC" icon={draft.icon?.preview} size={44} />
+            <CountryMark country="ETC" icon={draft.icon?.preview} size={36} />
             <div className="flex min-w-0 flex-1 flex-col">
               <span className="text-sub font-bold text-ink">아이콘 (선택)</span>
               <span className="text-tiny text-ink-sub">PNG, JPG, WEBP · 1MB 이하. 동그랗게 잘려 보여요</span>
@@ -150,8 +150,8 @@ export function CityEditor({ cities, onChange, draft, onError, disabled }: {
       {cities.length > 0 && (
         <ol className="flex flex-wrap gap-2" aria-label="넣은 도시">
           {cities.map((c, i) => (
-            <li key={c.name} className="flex h-11 items-center gap-1.5 rounded-full bg-surface pl-1.5 pr-1 text-sub font-semibold text-ink">
-              <CountryMark country={c.country} icon={c.icon && iconUrl(c.icon)} size={32} />
+            <li key={c.name} className="flex h-11 items-center gap-1.5 rounded-full bg-surface pl-2.5 pr-1 text-sub font-semibold text-ink">
+              <CountryMark country={c.country} icon={c.icon && iconUrl(c.icon)} size={24} />
               <span className="text-ink-sub">{i + 1}</span> {c.name}
               <span className="text-tiny text-ink-sub">{c.countryName ?? countryOf(c.country)?.name.replace(/ \(.*\)/, "")}</span>
               <button type="button" disabled={disabled} onClick={() => onChange(cities.filter((x) => x !== c))} aria-label={`${c.name} 빼기`}
