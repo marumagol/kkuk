@@ -5,7 +5,7 @@
 */
 import { useState } from "react";
 import { Button, Field, Icon } from "@/components/kit";
-import { COUNTRIES, countryOf } from "@/lib/countries";
+import { COUNTRIES, POPULAR_CITIES, countryOf } from "@/lib/countries";
 import { MAX_CITIES } from "@/lib/rules";
 
 export type City = { name: string; country: string };
@@ -60,10 +60,33 @@ export function CityEditor({ cities, onChange, draft, onError, disabled }: {
           {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
         </select>
       </label>
+      {/* 고른 나라의 인기 도시 : 누르면 넣고, 다시 누르면 뺀다 */}
+      {(POPULAR_CITIES[draft.country] ?? []).length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="text-sub font-bold text-ink-sub">인기 도시</span>
+          <div className="flex flex-wrap gap-2">
+            {POPULAR_CITIES[draft.country].map((name) => {
+              const on = cities.some((c) => c.name === name);
+              return (
+                <button key={name} type="button" aria-pressed={on} disabled={disabled}
+                  onClick={() => {
+                    onError("");
+                    if (on) return onChange(cities.filter((c) => c.name !== name));
+                    if (cities.length >= MAX_CITIES) return onError(`도시는 ${MAX_CITIES}개까지 넣을 수 있어요`);
+                    onChange([...cities, { name, country: draft.country }]);
+                  }}
+                  className={"press inline-flex h-11 items-center gap-1 rounded-full px-4 text-sub font-semibold " + (on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
+                  {on ? <Icon name="x" size={14} /> : <Icon name="plus" size={14} />}{name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* form 안에 form 을 못 넣어서 Enter 는 직접 받는다 */}
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
-          <Field label="도시" name="city" placeholder="예 : 삿포로" value={draft.name} maxLength={40} enterKeyHint="done" disabled={disabled}
+          <Field label="도시 직접 입력" name="city" placeholder={(POPULAR_CITIES[draft.country] ?? []).length ? "목록에 없으면 직접 입력" : "예 : 삿포로"} value={draft.name} maxLength={40} enterKeyHint="done" disabled={disabled}
             onChange={(e) => { draft.setName(e.target.value); onError(""); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); add(); } }} />
         </div>
