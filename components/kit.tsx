@@ -339,7 +339,7 @@ export function EmptyState({ title, desc, action }: { title: string; desc: strin
 export function OfflineBar() {
   return (
     <div role="status" className="flex items-center gap-2 rounded-field bg-warn-soft px-4 py-3 text-sub font-semibold text-warn-text">
-      <Icon name="wifi-off" size={18} /> 인터넷 연결을 확인해 주세요
+      <Icon name="wifi-off" size={18} /> 인터넷이 끊겼어요. 열어 본 화면은 볼 수 있고, 저장은 연결된 뒤에 해 주세요
     </div>
   );
 }

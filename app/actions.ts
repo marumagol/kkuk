@@ -16,7 +16,7 @@ export async function signOut() {
     await sb!.auth.signOut();
   }
   (await cookies()).delete(PREVIEW_COOKIE);
-  redirect("/");
+  redirect("/?out=1"); // out : 오프라인용으로 저장한 화면을 지우는 신호 (public/sw.js)
 }
 
 /* 미리보기 모드 켜기 : Supabase 연결 전에만 동작 */

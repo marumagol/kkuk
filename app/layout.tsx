@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { GateProvider } from "@/components/gate";
 import { NetworkBanner } from "@/components/network-banner";
+import { SwRegister } from "@/components/sw-register";
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getViewer, isIn, PATH_HEADER } from "@/lib/viewer";
@@ -24,6 +25,7 @@ const paperlogy = localFont({
 export const metadata: Metadata = {
   title: { default: BRAND, template: `%s | ${BRAND}` },
   description: "가고 싶은 장소를 모아 계획하고, 기록하고, 모으는 앱",
+  appleWebApp: { capable: true, title: "KKuK", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -45,7 +47,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const theme = (await cookies()).get("kkuk-theme")?.value;
   return (
     <html lang="ko" className={paperlogy.variable} data-theme={theme === "light" || theme === "dark" ? theme : undefined}>
-      <body><GateProvider loggedIn={isIn(v)}><NetworkBanner />{children}</GateProvider></body>
+      <body><GateProvider loggedIn={isIn(v)}><NetworkBanner /><SwRegister />{children}</GateProvider></body>
     </html>
   );
 }
