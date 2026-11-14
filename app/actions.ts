@@ -522,3 +522,11 @@ export async function revokeDayShare(tripId: string, token: string): Promise<{ e
   revalidatePath(`/trips/${tripId}/share`);
   return {};
 }
+
+/* 알림 모두 읽음 (4단계 8) : 알림 화면을 열면 부른다 */
+export async function readAllNotices(): Promise<void> {
+  const sb = await createClient();
+  if (!sb) return;
+  await sb.rpc("mark_notifications_read");
+  revalidatePath("/");
+}

@@ -3,20 +3,26 @@
   로그인 전은 빈 상태 (예시 여행 없음, 0단계 결정)
 */
 import Link from "next/link";
-import { EmptyState, StatTile, TicketCard, Pin, PinCard } from "@/components/kit";
+import { EmptyState, Icon, StatTile, TicketCard, Pin, PinCard } from "@/components/kit";
 import { AppShell, Logo, Avatar, SectionTitle, MainTabs, MockNote, TripRow } from "@/components/screen";
 import { GateCta } from "@/components/gate";
 import { getViewer, isIn, initialOf, avatarOf } from "@/lib/viewer";
 import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, placeCount, ddayOf } from "@/lib/mock";
-import { loadTrips, loadTrip, loadStamps } from "@/lib/trips";
+import { loadTrips, loadTrip, loadStamps, loadUnreadCount } from "@/lib/trips";
 import { StampClaim } from "@/components/stamp-claim";
 
-function Header({ loggedIn, initial, avatar }: { loggedIn: boolean; initial: string; avatar: string | null }) {
+function Header({ loggedIn, initial, avatar, unread = 0 }: { loggedIn: boolean; initial: string; avatar: string | null; unread?: number }) {
   return (
     <header className="flex items-center justify-between px-5 pb-2 pt-4">
       <Link href="/" aria-label="홈" className="flex h-11 items-center"><Logo /></Link>
       {loggedIn ? (
-        <Link href="/me" aria-label="설정" className="flex size-11 items-center justify-center"><Avatar initial={initial} src={avatar} /></Link>
+        <div className="flex items-center gap-1">
+          <Link href="/notifications" aria-label={unread ? `알림, 안 읽은 알림 ${unread}개` : "알림"} className="press relative flex size-11 items-center justify-center text-ink">
+            <Icon name="bell" size={22} />
+            {unread > 0 && <span aria-hidden className="absolute right-2 top-2 size-2.5 rounded-full bg-point ring-2 ring-bg" />}
+          </Link>
+          <Link href="/me" aria-label="설정" className="flex size-11 items-center justify-center"><Avatar initial={initial} src={avatar} /></Link>
+        </div>
       ) : (
         <Link href="/login" className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-sub font-bold text-ink">로그인</Link>
       )}
@@ -41,10 +47,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
   const canEdit = !!full && "role" in full && full.role !== "viewer" && viewer.kind === "user";
   const stamps = loggedIn ? await loadStamps(viewer) : null;
   const left = hero && !ongoing ? daysBetween(today, hero.start) : 0;
+  const unread = await loadUnreadCount(viewer);
 
   return (
     <AppShell>
-      <Header loggedIn={loggedIn} initial={initialOf(viewer)} avatar={avatarOf(viewer)} />
+      <Header loggedIn={loggedIn} initial={initialOf(viewer)} avatar={avatarOf(viewer)} unread={unread} />
       {viewer.kind === "preview" && <MockNote />}
       {bye && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">탈퇴했어요. 그동안 KKuK 를 써 주셔서 고마워요</p>}
       <div className="flex flex-col gap-4 px-5 pt-4">
