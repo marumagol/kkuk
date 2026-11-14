@@ -1,6 +1,6 @@
 /* S05 여행 목록 : 다가오는 여행 / 다녀온 여행 (지난 여행은 여기서 본다) */
 import { EmptyState } from "@/components/kit";
-import { AppShell, SectionTitle, MainTabs, MockNote, TripRow } from "@/components/screen";
+import { AppShell, SectionTitle, MainTabs, MockNote, TripRow, type BadgeTone } from "@/components/screen";
 import { GateButton, GateCta } from "@/components/gate";
 import { Icon } from "@/components/kit";
 import { getViewer } from "@/lib/viewer";
@@ -17,6 +17,11 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
   const past = pastOf(trips);
   const years = [...new Set(past.map((t) => yearOf(t.start)))];
   const badge = (t: Trip) => (statusOf(t, todayOf(t)) === "ongoing" ? "여행 중" : `D-${daysBetween(todayOf(t), t.start)}`);
+  const tone = (t: Trip): BadgeTone => {
+    if (statusOf(t, todayOf(t)) === "ongoing") return "hot";
+    const left = daysBetween(todayOf(t), t.start);
+    return left <= 7 ? "hot" : left <= 30 ? "near" : "far";
+  };
 
   return (
     <AppShell>
@@ -39,7 +44,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
             <section className="flex flex-col gap-2" aria-label="다가오는 여행">
               <SectionTitle title="다가오는 여행" aside={next.length ? `${next.length}개` : undefined} />
               {next.length ? next.map((t) => (
-                <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} badge={badge(t)} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
+                <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} badge={badge(t)} badgeTone={tone(t)} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
               )) : <p className="rounded-pin bg-surface px-4 py-4 text-sub text-ink-sub">다가오는 여행이 없어요</p>}
             </section>
 

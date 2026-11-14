@@ -116,7 +116,15 @@ export function MockNote() {
 
 /* 여행 목록 한 줄 (여행 탭, 홈의 "다른 여행") */
 /* 여행 줄 왼쪽 그림 : 올린 아이콘 > 국기 > 핀 */
-export function TripRow({ href, title, sub, meta, badge, country, icon }: { href: string; title: string; sub: string; meta: string; badge?: string; country?: string; icon?: string }) {
+/* 디데이 배지 색 : 가까울수록 진하게 (2026-11-14 마루님). hot = 여행 중, D-7 이내 / near = D-30 이내 / far = 그보다 멀리 */
+export type BadgeTone = "hot" | "near" | "far";
+const BADGE: Record<BadgeTone, string> = {
+  hot: "bg-[#C23A18] text-white",
+  near: "bg-point-soft text-point-text",
+  far: "bg-surface-soft text-ink-sub",
+};
+
+export function TripRow({ href, title, sub, meta, badge, badgeTone = "near", country, icon }: { href: string; title: string; sub: string; meta: string; badge?: string; badgeTone?: BadgeTone; country?: string; icon?: string }) {
   const flag = icon || flagOf(country);
   return (
     <Link href={href} className="press flex min-h-[76px] items-center gap-3 rounded-pin bg-surface px-4 py-3">
@@ -128,7 +136,7 @@ export function TripRow({ href, title, sub, meta, badge, country, icon }: { href
       )}
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-2">
-          {badge && <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-tiny font-bold text-point-text">{badge}</span>}
+          {badge && <span className={`flex-none rounded-full px-2 py-0.5 text-tiny font-bold ${BADGE[badgeTone]}`}>{badge}</span>}
           <span className="truncate text-body font-bold text-ink">{title}</span>
         </span>
         <span className="block truncate text-tiny text-ink-sub">{sub}</span>
