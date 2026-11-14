@@ -3,12 +3,12 @@
   로그인 전은 빈 상태 (예시 여행 없음, 0단계 결정)
 */
 import Link from "next/link";
-import { EmptyState, StatTile, TicketCard, Pin } from "@/components/kit";
+import { EmptyState, StatTile, TicketCard, Pin, PinCard } from "@/components/kit";
 import { AppShell, Logo, Avatar, SectionTitle, MainTabs, MockNote, TripRow } from "@/components/screen";
 import { GateCta } from "@/components/gate";
 import { getViewer, isIn, initialOf } from "@/lib/viewer";
 import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, placeCount } from "@/lib/mock";
-import { loadTrips } from "@/lib/trips";
+import { loadTrips, loadTrip } from "@/lib/trips";
 
 function Header({ loggedIn, initial }: { loggedIn: boolean; initial: string }) {
   return (
@@ -31,6 +31,13 @@ export default async function Home() {
   const past = pastOf(trips);
   const hero = next[0];
   const today = hero ? todayOf(hero) : "";
+  // 여행 중이면 오늘(여행 시간대 기준) 일정을 먼저 보여 준다
+  const ongoing = !!hero && statusOf(hero, today) === "ongoing";
+  const dayNo = ongoing ? daysBetween(hero.start, today) + 1 : 0;
+  const full = ongoing ? await loadTrip(viewer, hero.id) : null;
+  const todayItems = full && "trip" in full ? full.trip.days[dayNo - 1]?.items ?? [] : [];
+  const canEdit = !!full && "role" in full && full.role !== "viewer" && viewer.kind === "user";
+  const left = hero && !ongoing ? daysBetween(today, hero.start) : 0;
 
   return (
     <AppShell>
@@ -45,7 +52,8 @@ export default async function Home() {
               </h1>
             ) : (
               <h1 className="text-title-xl font-extrabold text-ink">
-                {hero.cities[0]}까지<br /><span className="text-point-text">{daysBetween(today, hero.start)}일</span> 남았어요
+                {left === 1 ? <>{hero.cities[0]},<br /><span className="text-point-text">내일</span> 떠나요</>
+                  : <>{hero.cities[0]}까지<br /><span className="text-point-text">{left}일</span> 남았어요</>}
               </h1>
             )}
             <Link href={`/trips/${hero.id}`} aria-label={`${hero.title} 일정 보기`} className="press block rounded-deep">
@@ -54,6 +62,26 @@ export default async function Home() {
                 title={hero.title} period={periodText(hero)} stops={hero.cities} pinCount={placeCount(hero)}
                 ready={hero.ready} members={hero.members} />
             </Link>
+            {ongoing && (
+              <section className="flex flex-col gap-3 pt-2" aria-labelledby="today-title">
+                <div className="flex items-end justify-between">
+                  <h2 id="today-title" className="text-title-lg font-extrabold text-ink">오늘 일정</h2>
+                  <Link href={`/trips/${hero.id}?day=${dayNo}`} className="press inline-flex h-11 items-center px-1 text-sub font-semibold text-ink-sub underline underline-offset-4">전체 일정</Link>
+                </div>
+                {todayItems.length ? (
+                  <div>
+                    {todayItems.map((it, i) => (
+                      <PinCard key={it.id ?? i} index={i + 1} time={it.time ?? ""} category={it.category} title={it.title}
+                        desc={it.desc ?? ""} last={i === todayItems.length - 1}
+                        href={canEdit && it.id ? `/trips/${hero.id}/places/${it.id}` : undefined} />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState title="오늘은 아직 장소가 없어요" desc="오늘 갈 곳을 추가해 보세요"
+                    action={canEdit ? <GateCta icon="plus" href={`/trips/${hero.id}/places/new?day=${dayNo}`}>장소 추가</GateCta> : undefined} />
+                )}
+              </section>
+            )}
           </>
         ) : (
           <>
