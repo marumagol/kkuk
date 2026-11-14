@@ -104,11 +104,11 @@ export function MainTabs({ active }: { active: "홈" | "여행" | "도장" | "�
   return <BottomDock><TabBar active={active} plus={<PlusTab />} /></BottomDock>;
 }
 
-/* 6단계(DB) 전까지 로그인해도 가짜 여행이 보인다는 표시 */
+/* 미리보기(Supabase 연결 전)에서 가짜 여행이 보인다는 표시 */
 export function MockNote() {
   return (
     <p className="mx-5 mt-3 rounded-field bg-accent-soft px-3 py-2 text-tiny font-semibold text-accent-text">
-      지금은 가짜 여행으로 보여 드려요. 실제 저장은 6단계(DB)부터예요
+      미리보기라 가짜 여행으로 보여 드려요. 저장은 되지 않아요
     </p>
   );
 }

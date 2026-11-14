@@ -3,7 +3,7 @@
   - guest   : 로그인 전. 둘러보기만 (화면은 빈 상태, 쓰기 버튼은 "로그인이 필요해요")
   - user    : 로그인함
   - preview : Supabase 연결 전에만 있는 "로그인한 것처럼 보기" (마루님 화면 확인용, 마이 탭에서 켬)
-  7단계(여행 만들기) 전까지는 user, preview 모두 lib/mock.ts 의 가짜 여행을 본다. 이름(profiles)은 6단계부터 DB
+  user 는 DB 여행(lib/trips.ts), preview 는 lib/mock.ts 의 가짜 여행을 본다
 */
 import { cache } from "react";
 import { cookies } from "next/headers";

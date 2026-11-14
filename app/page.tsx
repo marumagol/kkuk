@@ -7,7 +7,8 @@ import { EmptyState, StatTile, TicketCard, Pin } from "@/components/kit";
 import { AppShell, Logo, Avatar, SectionTitle, MainTabs, MockNote, TripRow } from "@/components/screen";
 import { GateCta } from "@/components/gate";
 import { getViewer, isIn, initialOf } from "@/lib/viewer";
-import { upcomingTrips, pastTrips, statusOf, daysBetween, todayKST, periodText, placeCount } from "@/lib/mock";
+import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, placeCount } from "@/lib/mock";
+import { loadTrips } from "@/lib/trips";
 
 function Header({ loggedIn, initial }: { loggedIn: boolean; initial: string }) {
   return (
@@ -25,15 +26,16 @@ function Header({ loggedIn, initial }: { loggedIn: boolean; initial: string }) {
 export default async function Home() {
   const viewer = await getViewer();
   const loggedIn = isIn(viewer);
-  const today = todayKST();
-  const next = loggedIn ? upcomingTrips(today) : [];
-  const past = loggedIn ? pastTrips(today) : [];
+  const trips = await loadTrips(viewer);
+  const next = upcomingOf(trips);
+  const past = pastOf(trips);
   const hero = next[0];
+  const today = hero ? todayOf(hero) : "";
 
   return (
     <AppShell>
       <Header loggedIn={loggedIn} initial={initialOf(viewer)} />
-      {loggedIn && <MockNote />}
+      {viewer.kind === "preview" && <MockNote />}
       <div className="flex flex-col gap-4 px-5 pt-4">
         {hero ? (
           <>
@@ -50,14 +52,14 @@ export default async function Home() {
               <TicketCard
                 dday={statusOf(hero, today) === "ongoing" ? `${daysBetween(hero.start, today) + 1}일차` : `D-${daysBetween(today, hero.start)}`}
                 title={hero.title} period={periodText(hero)} stops={hero.cities} pinCount={placeCount(hero)}
-                ready={hero.ready ?? 0} members={hero.members} />
+                ready={hero.ready} members={hero.members} />
             </Link>
           </>
         ) : (
           <>
             <h1 className="text-title-xl font-extrabold text-ink">어디로<br />떠나 볼까요?</h1>
             <EmptyState title={loggedIn ? "다가오는 여행이 없어요" : "아직 여행이 없어요"} desc="도시와 날짜만 정하면 바로 시작할 수 있어요"
-              action={<GateCta soon="여행 만들기는 7단계에서 열려요">여행 만들기</GateCta>} />
+              action={<GateCta href="/trips/new">여행 만들기</GateCta>} />
           </>
         )}
 

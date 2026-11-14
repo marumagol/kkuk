@@ -85,9 +85,9 @@ export function GateFab() {
     </GateButton>
   );
 }
-export function GateCta({ children, icon = "arrow", soon }: { children: ReactNode; icon?: "arrow" | "plus"; soon?: string }) {
+export function GateCta({ children, icon = "arrow", soon, href }: { children: ReactNode; icon?: "arrow" | "plus"; soon?: string; href?: string }) {
   return (
-    <GateButton soon={soon} className="press inline-flex h-14 w-full items-center justify-center gap-2 rounded-btn bg-btn px-5 text-[16px] font-bold text-on-btn">
+    <GateButton soon={soon} href={href} className="press inline-flex h-14 w-full items-center justify-center gap-2 rounded-btn bg-btn px-5 text-[16px] font-bold text-on-btn">
       {children}<Icon name={icon} size={20} />
     </GateButton>
   );

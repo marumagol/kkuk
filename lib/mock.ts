@@ -9,6 +9,8 @@ export type Trip = {
   id: string; title: string; start: string; end: string; // YYYY-MM-DD
   cities: string[]; members: { initial: string; tone: "point" | "accent" }[];
   ready?: number; // 준비 % (2단계 기능, 지금은 가짜)
+  timeZone?: string; // 여행 시간대 (DB 여행). 없으면 한국 시간
+  places?: number;   // 목록에서 쓰는 장소 수 (DB 여행은 days 를 다 읽지 않고 개수만)
   days: { title?: string; items: Item[] }[]; // 일차별 (0 = 1일차)
   undated: Item[];
 };
@@ -62,13 +64,18 @@ export const TRIPS: Trip[] = [
   },
 ];
 
-/* ---------- 날짜 계산 (여행 시간대 처리는 6단계에서. 지금은 한국 날짜 기준) ---------- */
+/* ---------- 날짜 계산. "오늘"은 여행 시간대 기준 ---------- */
 const day = (s: string) => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d); };
 export const todayKST = () => { const n = new Date(Date.now() + 9 * 3600 * 1000); return n.toISOString().slice(0, 10); };
+export const todayIn = (tz: string) => {
+  try { return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
+  catch { return todayKST(); }
+};
+export const todayOf = (t: Pick<Trip, "timeZone">) => (t.timeZone ? todayIn(t.timeZone) : todayKST());
 export const daysBetween = (a: string, b: string) => Math.round((day(b) - day(a)) / 86400000);
 export const tripLength = (t: Trip) => daysBetween(t.start, t.end) + 1;
 export const statusOf = (t: Trip, today = todayKST()) => (today < t.start ? "upcoming" : today > t.end ? "past" : "ongoing") as "upcoming" | "ongoing" | "past";
-export const placeCount = (t: Trip) => t.days.reduce((n, d) => n + d.items.length, 0) + t.undated.length;
+export const placeCount = (t: Trip) => t.places ?? t.days.reduce((n, d) => n + d.items.length, 0) + t.undated.length;
 
 const WD = ["일", "월", "화", "수", "목", "금", "토"];
 export const weekday = (s: string) => WD[new Date(day(s)).getUTCDay()];
@@ -78,5 +85,8 @@ export const periodText = (t: Trip) => `${md(t.start)} (${weekday(t.start)}) ~ $
 export const yearOf = (s: string) => s.slice(0, 4);
 
 export const getTrip = (id: string) => TRIPS.find((t) => t.id === id);
+/* 목록 나누기 : 오늘은 여행마다 그 여행 시간대로 */
+export const upcomingOf = (list: Trip[]) => list.filter((t) => statusOf(t, todayOf(t)) !== "past").sort((a, b) => a.start.localeCompare(b.start));
+export const pastOf = (list: Trip[]) => list.filter((t) => statusOf(t, todayOf(t)) === "past").sort((a, b) => b.start.localeCompare(a.start));
 export const upcomingTrips = (today = todayKST()) => TRIPS.filter((t) => statusOf(t, today) !== "past").sort((a, b) => a.start.localeCompare(b.start));
 export const pastTrips = (today = todayKST()) => TRIPS.filter((t) => statusOf(t, today) === "past").sort((a, b) => b.start.localeCompare(a.start));

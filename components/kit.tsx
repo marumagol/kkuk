@@ -233,7 +233,7 @@ export function Stamp({ name, date, earned = true, tilt = -6, fluid }: { name: s
 
 /* ---------- 탑승권 카드 (다가오는 여행) ---------- */
 export function TicketCard({ dday, title, period, stops, pinCount, ready, members }: {
-  dday: string; title: string; period: string; stops: string[]; pinCount: number; ready: number; members: { initial: string; tone: "point" | "accent" }[];
+  dday: string; title: string; period: string; stops: string[]; pinCount: number; ready?: number; members: { initial: string; tone: "point" | "accent" }[];
 }) {
   return (
     <article className="relative overflow-hidden rounded-deep bg-deep text-on-deep">
@@ -271,12 +271,15 @@ export function TicketCard({ dday, title, period, stops, pinCount, ready, member
         <div className="border-t-2 border-dashed border-on-deep/25" />
       </div>
       <div className="flex flex-col gap-2 px-5 pb-5 pt-4">
-        <div className="h-1.5 overflow-hidden rounded-full bg-deep-soft" role="progressbar" aria-valuenow={ready} aria-valuemin={0} aria-valuemax={100} aria-label="준비">
-          <div className="h-full rounded-full bg-point" style={{ width: `${ready}%` }} />
-        </div>
+        {/* 준비 % 는 2단계(준비 탭) 기능이라 값이 있을 때만 */}
+        {ready != null && (
+          <div className="h-1.5 overflow-hidden rounded-full bg-deep-soft" role="progressbar" aria-valuenow={ready} aria-valuemin={0} aria-valuemax={100} aria-label="준비">
+            <div className="h-full rounded-full bg-point" style={{ width: `${ready}%` }} />
+          </div>
+        )}
         <div className="flex justify-between text-tiny">
           <span className="text-on-deep-sub">장소 {pinCount}개</span>
-          <span className="font-bold">준비 {ready}%</span>
+          {ready != null && <span className="font-bold">준비 {ready}%</span>}
         </div>
       </div>
     </article>

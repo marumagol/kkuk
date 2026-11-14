@@ -7,13 +7,14 @@ import { CategoryChip, PinCard, EmptyState, Icon } from "@/components/kit";
 import { AppShell, BottomDock, Avatar, SectionTitle, MockNote } from "@/components/screen";
 import { GateFab, GateCta } from "@/components/gate";
 import { getViewer, isIn } from "@/lib/viewer";
-import { getTrip, addDays, weekday, md, placeCount, statusOf, daysBetween, todayKST, tripLength } from "@/lib/mock";
+import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
+import { loadTrip } from "@/lib/trips";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string }> };
 
 export async function generateMetadata({ params }: Props) {
-  const t = getTrip((await params).id);
-  return { title: t?.title ?? "여행" };
+  const r = await loadTrip(await getViewer(), (await params).id);
+  return { title: "trip" in r ? r.trip.title : "여행" };
 }
 
 function BackLink() {
@@ -25,17 +26,20 @@ function BackLink() {
 }
 
 export default async function TripDetail({ params, searchParams }: Props) {
-  const loggedIn = isIn(await getViewer());
-  const trip = loggedIn ? getTrip((await params).id) : undefined;
+  const viewer = await getViewer();
+  const loggedIn = isIn(viewer);
+  const r = await loadTrip(viewer, (await params).id);
+  const trip = "trip" in r ? r.trip : undefined;
 
   if (!trip) {
+    const removed = "missing" in r && r.missing === "removed";
     return (
       <AppShell>
         <div className="px-5 pt-4"><BackLink /></div>
         <div className="px-5 pt-6">
           <div role="alert" className="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-8 text-center">
-            <h1 className="text-title font-bold text-ink">볼 수 없는 여행이에요</h1>
-            <p className="text-sub text-ink-sub">{loggedIn ? "지워졌거나 함께하는 사람에서 빠진 여행일 수 있어요" : "로그인하면 내 여행을 볼 수 있어요"}</p>
+            <h1 className="text-title font-bold text-ink">{removed ? "삭제된 여행이에요" : "볼 수 없는 여행이에요"}</h1>
+            <p className="text-sub text-ink-sub">{removed ? "여행 주인이 이 여행을 삭제했어요" : loggedIn ? "지워졌거나 함께하는 사람에서 빠진 여행일 수 있어요" : "로그인하면 내 여행을 볼 수 있어요"}</p>
             <Link href={loggedIn ? "/trips" : "/login"} className="press inline-flex h-11 items-center rounded-btn border border-line-strong bg-surface px-4 text-sub font-bold text-ink">
               {loggedIn ? "여행 목록으로" : "로그인"}
             </Link>
@@ -46,7 +50,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
   }
 
   const len = tripLength(trip);
-  const today = todayKST();
+  const today = todayOf(trip);
   const fallback = statusOf(trip, today) === "ongoing" ? daysBetween(trip.start, today) + 1 : 1;
   const asked = Number((await searchParams).day);
   const day = Number.isInteger(asked) && asked >= 1 && asked <= len ? asked : fallback;
@@ -60,7 +64,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
           {trip.members.map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring />)}
         </span>
       </div>
-      <MockNote />
+      {viewer.kind === "preview" && <MockNote />}
       <div className="px-5 pt-3">
         <h1 className="text-title-xl font-extrabold text-ink">{trip.title}</h1>
         <p className="mt-1 text-sub text-ink-sub">{md(trip.start)} ~ {md(trip.end)}, 장소 {placeCount(trip)}개</p>

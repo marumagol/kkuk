@@ -1,0 +1,4 @@
+/* 여행 규칙 (서버와 화면이 같이 쓴다) */
+export const MAX_TRIP_DAYS = 60;   // 여행 최대 기간 (기획 02 추천안)
+export const MAX_CITIES = 10;
+export const MAX_TRIP_TITLE = 30;
