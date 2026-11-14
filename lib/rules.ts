@@ -5,3 +5,5 @@ export const MAX_TRIP_TITLE = 30;
 export const MAX_PLACE_TITLE = 80;
 export const MAX_PLACE_ADDRESS = 200;
 export const MAX_PLACE_MEMO = 2000;
+
+export const MAX_PLACE_PHOTOS = 5; // 장소 사진 (2026-11-14 마루님 선택)

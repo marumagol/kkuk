@@ -155,8 +155,8 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, time, category, title, desc, editedBy, last, href }: {
-  index: number; time?: string; category: Category; title: string; desc?: string; editedBy?: string; last?: boolean; href?: string;
+export function PinCard({ index, time, category, title, desc, editedBy, last, href, photo, photoCount }: {
+  index: number; time?: string; category: Category; title: string; desc?: string; editedBy?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
 }) {
   const Box = ({ children }: { children: ReactNode }) => href
     ? <Link href={href} className="press mb-3 block min-w-0 flex-1 rounded-pin bg-surface px-4 py-3.5">{children}</Link>
@@ -175,8 +175,19 @@ export function PinCard({ index, time, category, title, desc, editedBy, last, hr
           </div>
           {editedBy && <span className="text-tiny font-bold text-point-text">{editedBy}님이 방금 고쳤어요</span>}
         </div>
-        <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>
-        {desc && <p className="mt-0.5 line-clamp-1 text-tiny text-ink-sub">{desc}</p>}
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>
+            {desc && <p className="mt-0.5 line-clamp-1 text-tiny text-ink-sub">{desc}</p>}
+          </div>
+          {photo && (
+            <span className="relative mt-1.5 flex-none">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo} alt="" width={56} height={56} loading="lazy" className="size-14 rounded-field object-cover" />
+              {(photoCount ?? 0) > 1 && <span className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 text-[11px] font-bold leading-4 text-white">{photoCount}</span>}
+            </span>
+          )}
+        </div>
       </Box>
     </div>
   );

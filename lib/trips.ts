@@ -54,8 +54,17 @@ export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {
 export type Role = "owner" | "editor" | "viewer";
 export type PlaceRow = {
   id: string; day_index: number | null; sort_order: number; title: string; address: string | null; category: string;
-  start_time: string | null; estimated_cost: number | null; cost_currency: string | null; memo: string | null;
+  start_time: string | null; estimated_cost: number | null; cost_currency: string | null; memo: string | null; photos: string[];
 };
+
+/* 장소 사진 (비공개 저장소) : 1시간짜리 주소로 바꿔서 보여 준다 */
+async function photoUrls(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, paths: string[]): Promise<Map<string, string>> {
+  const m = new Map<string, string>();
+  if (!paths.length) return m;
+  const { data } = await sb.storage.from("place-photos").createSignedUrls(paths, 3600);
+  (data ?? []).forEach((d) => { if (d.path && d.signedUrl) m.set(d.path, d.signedUrl); });
+  return m;
+}
 export type TripResult = { trip: Trip; role: Role } | { missing: "none" | "removed" };
 
 /* 여행 하나와 일자별 장소 */
@@ -70,15 +79,16 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   if (r.removed_at) return { missing: "removed" };
 
   const { data: rows } = await sb.from("itinerary_items")
-    .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo")
+    .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos")
     .eq("trip_id", id).is("removed_at", null).order("sort_order");
   const trip = base(r);
   const len = daysBetween(trip.start, trip.end) + 1;
   trip.days = Array.from({ length: len }, () => ({ items: [] as Item[] }));
+  const photos = await photoUrls(sb, ((rows ?? []) as PlaceRow[]).flatMap((it) => it.photos ?? []));
   for (const it of (rows ?? []) as PlaceRow[]) {
     const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
     const desc = [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
-    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", time: it.start_time?.slice(0, 5), desc: desc || undefined };
+    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", time: it.start_time?.slice(0, 5), desc: desc || undefined, photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }
@@ -112,7 +122,7 @@ export const loadTripForEdit = cache(async (v: Viewer, id: string): Promise<Trip
 
 /* 장소 추가/수정 화면용 : 여행 기본 정보, 기본 통화, (수정이면) 그 장소 */
 export type PlaceContext = {
-  tripId: string; tripTitle: string; start: string; days: number; role: Role; currency: string; place?: PlaceRow;
+  tripId: string; tripTitle: string; start: string; days: number; role: Role; currency: string; place?: PlaceRow; photos?: { path: string; url: string }[];
 };
 export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?: string): Promise<PlaceContext | null> => {
   if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
@@ -124,11 +134,12 @@ export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?
   let place: PlaceRow | undefined;
   if (placeId) {
     const { data } = await sb.from("itinerary_items")
-      .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo")
+      .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos")
       .eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).maybeSingle();
     if (!data) return null;
     place = data as PlaceRow;
   }
   const t = r.trip;
-  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place };
+  const photos = placeId ? [...t.days.flatMap((d) => d.items), ...t.undated].find((it) => it.id === placeId)?.photos : undefined;
+  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos };
 });

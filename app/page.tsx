@@ -74,7 +74,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
                   <div>
                     {todayItems.map((it, i) => (
                       <PinCard key={it.id ?? i} index={i + 1} time={it.time ?? ""} category={it.category} title={it.title}
-                        desc={it.desc ?? ""} last={i === todayItems.length - 1}
+                        desc={it.desc ?? ""} photo={it.photos?.[0]?.url} photoCount={it.photos?.length} last={i === todayItems.length - 1}
                         href={canEdit && it.id ? `/trips/${hero.id}/places/${it.id}` : undefined} />
                     ))}
                   </div>

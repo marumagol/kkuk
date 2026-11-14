@@ -6,7 +6,7 @@ import { supabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
 import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
-import { MAX_TRIP_DAYS, MAX_CITIES, MAX_TRIP_TITLE, MAX_PLACE_TITLE, MAX_PLACE_ADDRESS, MAX_PLACE_MEMO } from "@/lib/rules";
+import { MAX_TRIP_DAYS, MAX_CITIES, MAX_TRIP_TITLE, MAX_PLACE_TITLE, MAX_PLACE_ADDRESS, MAX_PLACE_MEMO, MAX_PLACE_PHOTOS } from "@/lib/rules";
 
 /* 로그아웃 → 둘러보기 (홈) */
 export async function signOut() {
@@ -152,6 +152,7 @@ export async function removeTrip(id: string): Promise<CreateTripResult> {
 export type PlaceInput = {
   title: string; address: string; category: string; time: string; cost: string; currency: string; memo: string;
   day: number | null; // 0 = 1일차, null = 날짜 미정
+  photos?: string[]; // 저장소 place-photos 안 위치 (<여행 id>/<그림 id>.jpg), 순서대로 최대 5장
 };
 const CATEGORIES = ["transport", "food", "sight", "shopping", "stay"];
 
@@ -172,6 +173,9 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   if (time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return { error: "시간을 다시 골라 주세요" };
   if (day != null && (!Number.isInteger(day) || day < 0 || day >= MAX_TRIP_DAYS)) return { error: "날짜를 다시 골라 주세요" };
   if (!/^[A-Z]{3}$/.test(currency)) return { error: "통화를 다시 골라 주세요" };
+  const photos = (Array.isArray(input?.photos) ? input.photos : []).map(String);
+  if (photos.length > MAX_PLACE_PHOTOS) return { error: `사진은 ${MAX_PLACE_PHOTOS}장까지 올릴 수 있어요` };
+  if (photos.some((x) => !new RegExp(`^${tripId}/[0-9a-f-]{36}\\.(jpg|png|webp)$`).test(x))) return { error: "사진을 다시 올려 주세요" };
   let cost: number | null = null;
   if (costText) {
     const d = decimalsOf(currency);
@@ -193,7 +197,7 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   };
   const row = {
     title, address: address || null, memo: memo || null, category: input.category, start_time: time || null,
-    estimated_cost: cost, cost_currency: cost == null ? null : currency, day_index: day,
+    estimated_cost: cost, cost_currency: cost == null ? null : currency, day_index: day, photos,
   };
 
   if (placeId) {

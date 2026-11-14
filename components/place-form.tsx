@@ -3,14 +3,17 @@
   S08 장소 추가 / 장소 수정
   1단계는 직접 입력 (장소 검색은 4단계). 이름만 꼭 넣고 나머지는 선택
   날짜를 바꾸면 그 날 맨 뒤로 간다. 삭제는 확인 창을 거쳐 removed_at
+  사진은 최대 5장 (2026-11-14). 고르는 즉시 줄여서 비공개 저장소 place-photos/<여행 id>/ 에 올리고, 저장할 때 위치 목록을 함께 저장
 */
-import { useState, useTransition } from "react";
-import { Button, Field } from "@/components/kit";
+import { useRef, useState, useTransition } from "react";
+import { Button, Field, Icon } from "@/components/kit";
+import { createClient } from "@/lib/supabase/client";
+import { shrinkImage } from "@/lib/image";
 import { AlertDialog } from "@/components/gate";
 import { savePlace, removePlace } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 import { decimalsOf } from "@/lib/countries";
-import { MAX_PLACE_MEMO, MAX_PLACE_TITLE } from "@/lib/rules";
+import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
 
@@ -34,6 +37,30 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [busy, startBusy] = useTransition();
+  const [photos, setPhotos] = useState<{ path: string; url: string }[]>(ctx.photos ?? []);
+  const [uploading, setUploading] = useState(0);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function addPhotos(files: File[]) {
+    setError("");
+    const room = MAX_PLACE_PHOTOS - photos.length;
+    if (files.length > room) setError(`사진은 ${MAX_PLACE_PHOTOS}장까지 올릴 수 있어요`);
+    const pick = files.slice(0, Math.max(0, room)).filter((f) => f.type.startsWith("image/"));
+    const sb = createClient();
+    if (!sb || !pick.length) return;
+    setUploading((n) => n + pick.length);
+    await Promise.all(pick.map(async (f) => {
+      try {
+        const blob = await shrinkImage(f);
+        const path = `${ctx.tripId}/${crypto.randomUUID()}.jpg`;
+        const { error: e } = await sb.storage.from("place-photos").upload(path, blob, { contentType: "image/jpeg" });
+        if (e) throw e;
+        setPhotos((p) => (p.length < MAX_PLACE_PHOTOS ? [...p, { path, url: URL.createObjectURL(blob) }] : p));
+      } catch {
+        setError("사진을 올리지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요");
+      } finally { setUploading((n) => n - 1); }
+    }));
+  }
 
   const currencies = [...new Set([ctx.currency, startCur, "KRW", "USD"])];
   const titleLen = [...title.trim()].length;
@@ -43,7 +70,7 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
     setError("");
     if (!titleLen) return setError("장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: photos.map((x) => x.path) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -111,6 +138,34 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
             className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
         </label>
 
+        <div className="flex flex-col gap-2">
+          <span className="text-sub font-bold text-ink-sub">사진 (선택, {photos.length}/{MAX_PLACE_PHOTOS})</span>
+          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+            {photos.map((ph, i) => (
+              <span key={ph.path} className="relative flex-none">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={ph.url} alt={`사진 ${i + 1}`} width={88} height={88} className="size-22 rounded-field object-cover" />
+                <button type="button" aria-label={`사진 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== ph))}
+                  className="press absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-btn text-on-btn">
+                  <Icon name="x" size={14} />
+                </button>
+              </span>
+            ))}
+            {Array.from({ length: uploading }, (_, i) => (
+              <span key={`up${i}`} className="flex size-22 flex-none items-center justify-center rounded-field bg-surface text-tiny text-ink-sub">올리는 중</span>
+            ))}
+            {photos.length + uploading < MAX_PLACE_PHOTOS && (
+              <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}
+                className="press flex size-22 flex-none flex-col items-center justify-center gap-1 rounded-field border border-dashed border-line-strong bg-surface text-tiny font-semibold text-ink-sub">
+                <Icon name="camera" size={22} />사진 추가
+              </button>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+            onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ""; void addPhotos(fs); }} />
+          <p className="text-tiny text-ink-sub">함께하는 사람만 볼 수 있어요. 올릴 때 크기를 줄여요</p>
+        </div>
+
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
 
         {p && (
@@ -121,7 +176,7 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
       </div>
 
       <div className="sticky bottom-0 mt-6 bg-bg px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
-        <Button full onClick={save} disabled={busy || !titleLen}>{busy ? "저장하는 중" : p ? "저장" : "장소 추가"}</Button>
+        <Button full onClick={save} disabled={busy || !titleLen || uploading > 0}>{busy ? "저장하는 중" : uploading ? "사진 올리는 중" : p ? "저장" : "장소 추가"}</Button>
       </div>
 
       {confirm && <AlertDialog title="장소를 삭제할까요?" desc={`"${p?.title}"이(가) 일정에서 사라져요`} confirmLabel="삭제"
