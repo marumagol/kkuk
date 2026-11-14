@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Icon, Pin, Button, TabBar } from "@/components/kit";
 import { flagOf } from "@/lib/countries";
-import { PlusTab } from "@/components/gate";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -104,7 +103,7 @@ export function PhotoThumb({ size = 48 }: { size?: number }) {
 
 /* 하단 탭 (홈, 여행, 도장, 마이 화면에서). + 는 로그인 문지기를 거친다 */
 export function MainTabs({ active }: { active: "홈" | "여행" | "도장" | "설정" }) {
-  return <BottomDock><TabBar active={active} plus={<PlusTab />} /></BottomDock>;
+  return <BottomDock><TabBar active={active} /></BottomDock>;
 }
 
 /* 미리보기(Supabase 연결 전)에서 가짜 여행이 보인다는 표시 */

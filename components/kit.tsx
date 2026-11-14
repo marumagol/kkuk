@@ -341,7 +341,8 @@ export function SkeletonPinCard() {
 
 /* ---------- 하단 탭 (떠 있는 알약) ---------- */
 /* 2026-11-14 : "지도" 탭을 "도장" 으로 (마루님 결정. 지도는 4단계라 아직 없음) */
-export function TabBar({ active = "홈", plus }: { active?: "홈" | "여행" | "도장" | "설정"; plus?: ReactNode }) {
+/* 하단 탭 4개. 가운데 + 는 뺐음 (2026-11-14 마루님) */
+export function TabBar({ active = "홈" }: { active?: "홈" | "여행" | "도장" | "설정" }) {
   const tabs: { name: "홈" | "여행" | "도장" | "설정"; icon: IconName; href: string }[] = [
     { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" },
     { name: "도장", icon: "stamp", href: "/stamps" }, { name: "설정", icon: "gear", href: "/me" },
@@ -356,13 +357,7 @@ export function TabBar({ active = "홈", plus }: { active?: "홈" | "여행" | "
   );
   return (
     <nav className="mx-auto flex w-fit items-center gap-0.5 rounded-bar bg-deep p-2 shadow-float" aria-label="하단 메뉴">
-      {tabs.slice(0, 2).map(item)}
-      {plus ?? (
-        <button aria-label="장소 추가" className="press flex size-[52px] items-center justify-center rounded-full bg-point text-white">
-          <Icon name="plus" size={24} strokeWidth={2.5} />
-        </button>
-      )}
-      {tabs.slice(2).map(item)}
+      {tabs.map(item)}
     </nav>
   );
 }
