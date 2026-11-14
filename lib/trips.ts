@@ -16,7 +16,7 @@ const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사"
 
 type Row = {
   id: string; title: string; start_date: string; end_date: string; time_zone: string; removed_at: string | null;
-  trip_cities: { name: string; sort_order: number }[];
+  trip_cities: { name: string; sort_order: number; country_code: string | null }[];
   trip_members: { display_name: string; role: string; removed_at: string | null; created_at: string }[];
 };
 
@@ -27,12 +27,12 @@ const members = (r: Row) =>
     .map((m, i) => ({ initial: [...m.display_name][0] ?? "?", tone: (i % 2 ? "accent" : "point") as "point" | "accent" }));
 
 const base = (r: Row): Trip => ({
-  id: r.id, title: r.title, start: r.start_date, end: r.end_date, timeZone: r.time_zone,
+  id: r.id, country: [...r.trip_cities].sort((a, b) => a.sort_order - b.sort_order)[0]?.country_code ?? undefined, title: r.title, start: r.start_date, end: r.end_date, timeZone: r.time_zone,
   cities: [...r.trip_cities].sort((a, b) => a.sort_order - b.sort_order).map((c) => c.name),
   members: members(r), days: [], undated: [],
 });
 
-const SELECT = "id, title, start_date, end_date, time_zone, removed_at, trip_cities(name, sort_order), trip_members(display_name, role, removed_at, created_at)";
+const SELECT = "id, title, start_date, end_date, time_zone, removed_at, trip_cities(name, sort_order, country_code), trip_members(display_name, role, removed_at, created_at)";
 
 /* 내 여행 목록 (삭제된 여행 빼고) */
 export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {

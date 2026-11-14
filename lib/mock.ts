@@ -10,6 +10,7 @@ export type Trip = {
   cities: string[]; members: { initial: string; tone: "point" | "accent" }[];
   ready?: number; // 준비 % (2단계 기능, 지금은 가짜)
   timeZone?: string; // 여행 시간대 (DB 여행). 없으면 한국 시간
+  country?: string; // 첫 도시의 나라 코드 (목록 국기). ETC 나 없으면 핀
   places?: number;   // 목록에서 쓰는 장소 수 (DB 여행은 days 를 다 읽지 않고 개수만)
   days: { title?: string; items: Item[] }[]; // 일차별 (0 = 1일차)
   undated: Item[];
@@ -17,7 +18,7 @@ export type Trip = {
 
 export const TRIPS: Trip[] = [
   {
-    id: "sapporo", title: "삿포로 겨울 여행", start: "2026-12-28", end: "2027-01-04",
+    id: "sapporo", country: "JP", title: "삿포로 겨울 여행", start: "2026-12-28", end: "2027-01-04",
     cities: ["삿포로", "오타루", "노보리베츠", "비에이"], members: [{ initial: "도", tone: "point" }, { initial: "윤", tone: "accent" }], ready: 68,
     days: [
       { title: "삿포로 도착", items: [
@@ -40,7 +41,7 @@ export const TRIPS: Trip[] = [
     undated: [{ category: "식사", title: "징기스칸 다루마 본점" }, { category: "관광", title: "시로이 코이비토 파크" }],
   },
   {
-    id: "fukuoka", title: "후쿠오카 봄 여행", start: "2026-05-03", end: "2026-05-06",
+    id: "fukuoka", country: "JP", title: "후쿠오카 봄 여행", start: "2026-05-03", end: "2026-05-06",
     cities: ["후쿠오카", "다자이후"], members: [{ initial: "도", tone: "point" }],
     days: [
       { title: "도착하고 나카스", items: [{ time: "17:00", category: "식사", title: "나카스 포장마차 거리" }] },
@@ -51,13 +52,13 @@ export const TRIPS: Trip[] = [
     undated: [],
   },
   {
-    id: "kyoto", title: "교토 단풍 여행", start: "2025-11-08", end: "2025-11-11",
+    id: "kyoto", country: "JP", title: "교토 단풍 여행", start: "2025-11-08", end: "2025-11-11",
     cities: ["교토"], members: [{ initial: "도", tone: "point" }, { initial: "윤", tone: "accent" }],
     days: [{ items: [{ time: "09:00", category: "관광", title: "후시미 이나리 신사" }] }, { items: [{ time: "10:00", category: "관광", title: "아라시야마 대나무숲" }] }, { items: [] }, { items: [] }],
     undated: [],
   },
   {
-    id: "taipei", title: "타이베이 주말 여행", start: "2025-02-14", end: "2025-02-16",
+    id: "taipei", country: "TW", title: "타이베이 주말 여행", start: "2025-02-14", end: "2025-02-16",
     cities: ["타이베이"], members: [{ initial: "도", tone: "point" }],
     days: [{ items: [{ time: "19:00", category: "식사", title: "라오허제 야시장" }] }, { items: [] }, { items: [] }],
     undated: [],

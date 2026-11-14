@@ -114,10 +114,19 @@ export function MockNote() {
 }
 
 /* 여행 목록 한 줄 (여행 탭, 홈의 "다른 여행") */
-export function TripRow({ href, title, sub, meta, badge }: { href: string; title: string; sub: string; meta: string; badge?: string }) {
+/* 국기 그림은 public/flags (country-flag-icons, MIT). 있는 나라만, 없으면 핀 */
+const FLAGS = new Set("KR JP TW HK MO CN MN TH VN PH SG MY ID LA KH IN AE TR GU MP US CA AU NZ GB FR IT ES PT DE CH AT CZ NL GR".split(" "));
+
+export function TripRow({ href, title, sub, meta, badge, country }: { href: string; title: string; sub: string; meta: string; badge?: string; country?: string }) {
+  const flag = country && FLAGS.has(country.slice(0, 2)) ? country.slice(0, 2) : null;
   return (
     <Link href={href} className="press flex min-h-[76px] items-center gap-3 rounded-pin bg-surface px-4 py-3">
-      <span className="flex size-11 flex-none items-center justify-center rounded-full bg-point-soft"><Pin size={22} /></span>
+      {flag ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={`/flags/${flag}.svg`} alt="" width={44} height={44} className="size-11 flex-none rounded-full object-cover ring-1 ring-line" />
+      ) : (
+        <span className="flex size-11 flex-none items-center justify-center rounded-full bg-point-soft"><Pin size={22} /></span>
+      )}
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-2">
           {badge && <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-tiny font-bold text-point-text">{badge}</span>}
