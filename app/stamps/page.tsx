@@ -23,7 +23,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
     <AppShell>
       <header className="relative px-5 pt-6">
         <h1 className="text-title-xl font-extrabold text-ink">도장</h1>
-        <Link href="/stamps/map" className="press absolute right-5 top-6 flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-sub font-semibold text-ink">지도</Link>
+        <Link href="/stamps/map" className="press absolute right-5 top-5 flex h-11 items-center gap-1 rounded-full bg-surface px-4 text-sub font-semibold text-ink">지도</Link>
         <p className="mt-1 text-sub text-ink-sub">여행 중에 그 도시에 있으면 도장이 찍혀요</p>
       </header>
       {viewer.kind === "preview" && <MockNote />}
