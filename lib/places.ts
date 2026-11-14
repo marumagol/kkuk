@@ -18,8 +18,12 @@ export async function autocomplete(input: string, session: string, kind: "place"
   if (bias) body.locationBias = { circle: { center: { latitude: bias.lat, longitude: bias.lng }, radius: 50000 } };
   const res = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
     method: "POST", headers: { "Content-Type": "application/json", "X-Goog-Api-Key": KEY() }, body: JSON.stringify(body), cache: "no-store",
-  }).catch(() => null);
-  if (!res?.ok) return [];
+  }).catch((e) => { console.error("[places] autocomplete 연결 실패", String(e).slice(0, 200)); return null; });
+  if (!res?.ok) {
+    // 원인 확인용 서버 기록 (구글 오류 문구에는 키가 들어 있지 않다)
+    if (res) console.error("[places] autocomplete", res.status, (await res.text().catch(() => "")).slice(0, 400));
+    return [];
+  }
   const j = (await res.json()) as { suggestions?: { placePrediction?: { placeId: string; structuredFormat?: { mainText?: { text: string }; secondaryText?: { text: string } }; text?: { text: string } } }[] };
   return (j.suggestions ?? []).flatMap((s) => {
     const p = s.placePrediction;
@@ -33,8 +37,11 @@ export async function details(id: string, session?: string): Promise<PlaceDetail
   const q = new URLSearchParams({ languageCode: "ko", ...(session ? { sessionToken: session } : {}) });
   const res = await fetch(`https://places.googleapis.com/v1/places/${id}?${q}`, {
     headers: { "X-Goog-Api-Key": KEY(), "X-Goog-FieldMask": "id,displayName,formattedAddress,location,addressComponents" }, cache: "no-store",
-  }).catch(() => null);
-  if (!res?.ok) return null;
+  }).catch((e) => { console.error("[places] details 연결 실패", String(e).slice(0, 200)); return null; });
+  if (!res?.ok) {
+    if (res) console.error("[places] details", res.status, (await res.text().catch(() => "")).slice(0, 400));
+    return null;
+  }
   const j = (await res.json()) as {
     id: string; displayName?: { text: string }; formattedAddress?: string; location?: { latitude: number; longitude: number };
     addressComponents?: { shortText?: string; types?: string[] }[];
