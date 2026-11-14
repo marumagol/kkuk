@@ -10,7 +10,7 @@ export default function Updates() {
   return (
     <AppShell bottomGap={false}>
       <div className="flex items-center gap-2 px-5 pt-4">
-        <Link href="/me" aria-label="마이로" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink">
+        <Link href="/me" aria-label="설정으로" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink">
           <Icon name="back" size={20} />
         </Link>
         <h1 className="text-title-lg font-extrabold text-ink">업데이트 내역</h1>

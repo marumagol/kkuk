@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { GateProvider } from "@/components/gate";
 import { NetworkBanner } from "@/components/network-banner";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getViewer, isIn, PATH_HEADER } from "@/lib/viewer";
 import { BRAND } from "@/components/screen";
@@ -42,8 +42,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     const path = (await headers()).get(PATH_HEADER) ?? "/";
     if (!path.startsWith("/welcome")) redirect(`/welcome?next=${encodeURIComponent(path.startsWith("/login") ? "/" : path)}`);
   }
+  const theme = (await cookies()).get("kkuk-theme")?.value;
   return (
-    <html lang="ko" className={paperlogy.variable}>
+    <html lang="ko" className={paperlogy.variable} data-theme={theme === "light" || theme === "dark" ? theme : undefined}>
       <body><GateProvider loggedIn={isIn(v)}><NetworkBanner />{children}</GateProvider></body>
     </html>
   );

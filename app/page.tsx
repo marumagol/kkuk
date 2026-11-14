@@ -15,7 +15,7 @@ function Header({ loggedIn, initial }: { loggedIn: boolean; initial: string }) {
     <header className="flex items-center justify-between px-5 pb-2 pt-4">
       <Link href="/" aria-label="홈" className="flex h-11 items-center"><Logo /></Link>
       {loggedIn ? (
-        <Link href="/me" aria-label="마이" className="flex size-11 items-center justify-center"><Avatar initial={initial} /></Link>
+        <Link href="/me" aria-label="설정" className="flex size-11 items-center justify-center"><Avatar initial={initial} /></Link>
       ) : (
         <Link href="/login" className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-sub font-bold text-ink">로그인</Link>
       )}

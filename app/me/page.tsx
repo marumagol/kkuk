@@ -1,12 +1,14 @@
-/* S14 마이 : 로그인 / 로그아웃, 약관, 앱 버전 */
+/* S14 설정 (옛 이름 마이, 2026-11-14 마루님) : 로그인 / 로그아웃, 화면 모드, 약관, 앱 버전 */
 import Link from "next/link";
 import { Icon } from "@/components/kit";
 import { AppShell, Avatar, MainTabs } from "@/components/screen";
 import { getViewer, initialOf } from "@/lib/viewer";
 import { signOut } from "@/app/actions";
 import pkg from "@/package.json";
+import { cookies } from "next/headers";
+import { ThemePicker, type Theme } from "@/components/theme-picker";
 
-export const metadata = { title: "마이" };
+export const metadata = { title: "설정" };
 
 function Row({ label, aside }: { label: string; aside?: string }) {
   return (
@@ -19,9 +21,11 @@ function Row({ label, aside }: { label: string; aside?: string }) {
 
 export default async function Me() {
   const v = await getViewer();
+  const saved = (await cookies()).get("kkuk-theme")?.value;
+  const theme: Theme = saved === "light" || saved === "dark" ? saved : "system";
   return (
     <AppShell>
-      <header className="px-5 pt-6"><h1 className="text-title-xl font-extrabold text-ink">마이</h1></header>
+      <header className="px-5 pt-6"><h1 className="text-title-xl font-extrabold text-ink">설정</h1></header>
       <div className="flex flex-col gap-4 px-5 pt-5">
         {v.kind === "guest" ? (
           <section className="flex flex-col gap-3 rounded-card bg-surface p-5">
@@ -46,6 +50,11 @@ export default async function Me() {
           </section>
         )}
 
+        <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-labelledby="theme-title">
+          <h2 id="theme-title" className="text-body font-bold text-ink">화면 모드</h2>
+          <ThemePicker initial={theme} />
+        </section>
+
         <ul className="divide-y divide-line rounded-card bg-surface">
           <Row label="이용약관" aside="준비 중" />
           <Row label="개인정보 처리방침" aside="준비 중" />
@@ -66,7 +75,7 @@ export default async function Me() {
           <Link href="/me/withdraw" className="press mx-auto inline-flex h-11 items-center px-2 text-sub font-semibold text-ink-sub underline underline-offset-4">탈퇴하기</Link>
         )}
       </div>
-      <MainTabs active="마이" />
+      <MainTabs active="설정" />
     </AppShell>
   );
 }
