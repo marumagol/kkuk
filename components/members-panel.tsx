@@ -100,7 +100,7 @@ function MemberRow({ m, owner, busy, onRole, onKick, onGive }: {
   return (
     <li className="flex flex-col gap-2 px-4 py-3">
       <div className="flex items-center gap-3">
-        <Avatar initial={[...m.name][0] ?? "?"} size={40} tone={m.role === "owner" ? "point" : "accent"} />
+        <Avatar initial={[...m.name][0] ?? "?"} size={40} tone={m.role === "owner" ? "point" : "accent"} src={m.avatar} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-body font-bold text-ink">{m.name}{m.isMe && <span className="ml-1 text-tiny font-semibold text-ink-sub">(나)</span>}</p>
           <p className="text-tiny text-ink-sub">{ROLE_NAME[m.role]}</p>

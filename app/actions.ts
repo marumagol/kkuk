@@ -349,3 +349,48 @@ export async function joinInvite(token: string): Promise<CreateTripResult> {
   revalidatePath("/", "layout");
   redirect(`/trips/${r.data}?joined=1`);
 }
+
+/* ───────── 준비 탭 (2단계 6~7) : RLS 가 편집 권한을 검사 ───────── */
+async function prepClient(tripId: string) {
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" } as const;
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect(`/login?next=/trips/${tripId}/prep`);
+  return { sb, uid: auth.user.id } as const;
+}
+const PREP_FAIL = { error: "저장하지 못했어요. 고칠 권한이 없거나 잠시 문제가 생겼어요" };
+
+export async function addPrepItem(tripId: string, kind: string, title: string, due: string | null): Promise<CreateTripResult> {
+  const t = String(title ?? "").trim();
+  if (!isUuid(tripId) || (kind !== "item" && kind !== "reservation")) return PREP_FAIL;
+  if (![...t].length) return { error: "내용을 적어 주세요" };
+  if ([...t].length > 80) return { error: "80자까지 쓸 수 있어요" };
+  if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) return { error: "날짜를 다시 골라 주세요" };
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const { data: last } = await c.sb.from("checklist_items").select("sort_order").eq("trip_id", tripId).eq("kind", kind).is("removed_at", null).order("sort_order", { ascending: false }).limit(1).maybeSingle();
+  const { error } = await c.sb.from("checklist_items").insert({ trip_id: tripId, kind, title: t, due_date: due || null, sort_order: (last?.sort_order ?? -1) + 1, created_by: c.uid });
+  if (error) return PREP_FAIL;
+  revalidatePath(`/trips/${tripId}/prep`);
+}
+export async function updatePrepItem(tripId: string, id: string, patch: { done?: boolean; assignee?: string | null; remove?: boolean }): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !isUuid(id)) return PREP_FAIL;
+  if (patch.assignee && !isUuid(patch.assignee)) return PREP_FAIL;
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const row: Record<string, unknown> = {};
+  if (patch.done !== undefined) row.done_at = patch.done ? new Date().toISOString() : null;
+  if (patch.assignee !== undefined) row.assignee_id = patch.assignee;
+  if (patch.remove) row.removed_at = new Date().toISOString();
+  const { data, error } = await c.sb.from("checklist_items").update(row).eq("trip_id", tripId).eq("id", id).select("id");
+  if (error || !data?.length) return PREP_FAIL;
+  revalidatePath(`/trips/${tripId}/prep`);
+}
+export async function saveBudget(tripId: string, currency: string, amount: string): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !/^[A-Z]{3}$/.test(currency)) return PREP_FAIL;
+  const text = String(amount ?? "").replace(/,/g, "").trim();
+  const d = decimalsOf(currency);
+  if (!new RegExp(`^\\d{1,12}${d ? `(\\.\\d{1,${d}})?` : ""}$`).test(text)) return { error: "예산은 숫자로 적어 주세요" };
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const { error } = await c.sb.from("trip_budgets").upsert({ trip_id: tripId, currency, total: Math.round(Number(text) * 10 ** d), updated_by: c.uid }, { onConflict: "trip_id" });
+  if (error) return PREP_FAIL;
+  revalidatePath(`/trips/${tripId}/prep`);
+}

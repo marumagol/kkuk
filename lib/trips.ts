@@ -10,6 +10,7 @@ import type { Category } from "@/components/kit";
 import { createClient } from "@/lib/supabase/server";
 import { TRIPS, getTrip, daysBetween, type Trip, type Item } from "@/lib/mock";
 import { currencyOf, formatMoney, iconUrl } from "@/lib/countries";
+import { avatarUrl } from "@/lib/storage";
 import type { Viewer } from "@/lib/viewer";
 
 const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소" };
@@ -24,7 +25,16 @@ const members = (r: Row) =>
   r.trip_members
     .filter((m) => !m.removed_at)
     .sort((a, b) => (a.role === "owner" ? -1 : b.role === "owner" ? 1 : a.created_at.localeCompare(b.created_at)))
-    .map((m, i) => ({ initial: [...m.display_name][0] ?? "?", tone: (i % 2 ? "accent" : "point") as "point" | "accent" }));
+    .map((m, i) => ({ initial: [...m.display_name][0] ?? "?", tone: (i % 2 ? "accent" : "point") as "point" | "accent", userId: m.user_id ?? undefined }));
+
+/* 함께하는 사람 얼굴 사진 (0010 부터 서로 볼 수 있음). 실패하면 글자 그대로 */
+async function faces(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, ids: string[]): Promise<Map<string, string>> {
+  const m = new Map<string, string>();
+  if (!ids.length) return m;
+  const { data } = await sb.from("profiles").select("user_id, avatar_url").in("user_id", ids);
+  (data ?? []).forEach((p: { user_id: string; avatar_url: string | null }) => { const u = avatarUrl(p.avatar_url); if (u) m.set(p.user_id, u); });
+  return m;
+}
 
 const firstCity = (r: Row) => [...r.trip_cities].sort((a, b) => a.sort_order - b.sort_order)[0];
 const base = (r: Row): Trip => ({
@@ -86,6 +96,8 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   const dayAgo = Date.now() - 24 * 3600 * 1000;
   const editorOf = (it: PlaceRow) => it.updated_by && it.updated_by !== v.id && it.updated_at && Date.parse(it.updated_at) > dayAgo ? names.get(it.updated_by) : undefined;
   const trip = base(r);
+  const face = await faces(sb, trip.members.flatMap((m) => (m.userId ? [m.userId] : [])));
+  trip.members = trip.members.map((m) => ({ ...m, avatar: m.userId ? face.get(m.userId) : undefined }));
   const len = daysBetween(trip.start, trip.end) + 1;
   trip.days = Array.from({ length: len }, () => ({ items: [] as Item[] }));
   const photos = await photoUrls(sb, ((rows ?? []) as PlaceRow[]).flatMap((it) => it.photos ?? []));
@@ -149,7 +161,7 @@ export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?
 });
 
 /* 함께하는 사람 화면 (2단계) : 목록, 내 권한, (주인이면) 살아 있는 초대 링크 */
-export type Member = { id: string; name: string; role: Role; isMe: boolean };
+export type Member = { id: string; name: string; role: Role; isMe: boolean; avatar?: string; userId?: string };
 export type MembersView = {
   tripId: string; tripTitle: string; role: Role; members: Member[];
   invite: { token: string; role: "editor" | "viewer"; expiresAt: string } | null;
@@ -163,7 +175,7 @@ export const loadMembers = cache(async (v: Viewer, tripId: string): Promise<Memb
     .eq("trip_id", tripId).is("removed_at", null).order("created_at");
   const order: Record<string, number> = { owner: 0, editor: 1, viewer: 2 };
   const members = ((rows ?? []) as { id: string; user_id: string | null; display_name: string; role: Role }[])
-    .map((m) => ({ id: m.id, name: m.display_name, role: m.role, isMe: m.user_id === v.id }))
+    .map((m) => ({ id: m.id, name: m.display_name, role: m.role, isMe: m.user_id === v.id, userId: m.user_id ?? undefined, avatar: r.trip.members.find((x) => x.userId && x.userId === m.user_id)?.avatar }))
     .sort((a, b) => order[a.role] - order[b.role]);
   let invite: MembersView["invite"] = null;
   if (r.role === "owner") {
@@ -172,4 +184,37 @@ export const loadMembers = cache(async (v: Viewer, tripId: string): Promise<Memb
     if (data) invite = { token: data.token, role: data.role, expiresAt: data.expires_at };
   }
   return { tripId, tripTitle: r.trip.title, role: r.role, members, invite };
+});
+
+/* 준비 탭 (2단계 6~7) : 챙길 것, 예약, 예산 */
+export type PrepItem = { id: string; kind: "item" | "reservation"; title: string; due: string | null; assignee: string | null; done: boolean };
+export type PrepView = {
+  tripId: string; tripTitle: string; start: string; end: string; role: Role; currency: string;
+  items: PrepItem[]; budget: { currency: string; total: number } | null;
+  spent: number; // 예산 통화로 적은 장소 예상 비용 합 (최소 단위)
+  people: { userId: string; name: string }[];
+};
+export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepView | null> => {
+  if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
+  const r = await loadTrip(v, tripId);
+  if (!("trip" in r)) return null;
+  const sb = (await createClient())!;
+  const [{ data: rows }, { data: budget }, { data: city }, mv] = await Promise.all([
+    sb.from("checklist_items").select("id, kind, title, due_date, assignee_id, done_at, sort_order, created_at")
+      .eq("trip_id", tripId).is("removed_at", null).order("sort_order").order("created_at"),
+    sb.from("trip_budgets").select("currency, total").eq("trip_id", tripId).maybeSingle(),
+    sb.from("trip_cities").select("country_code").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle(),
+    loadMembers(v, tripId),
+  ]);
+  const currency = budget?.currency ?? currencyOf(city?.country_code);
+  const { data: costs } = await sb.from("itinerary_items").select("estimated_cost").eq("trip_id", tripId).is("removed_at", null).eq("cost_currency", currency);
+  const spent = (costs ?? []).reduce((n: number, c: { estimated_cost: number | null }) => n + (c.estimated_cost ?? 0), 0);
+  return {
+    tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency,
+    items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null }[])
+      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at })),
+    budget: budget ? { currency: budget.currency, total: Number(budget.total) } : null,
+    spent,
+    people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name }] : [])),
+  };
 });

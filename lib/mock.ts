@@ -7,7 +7,7 @@ import type { Category } from "@/components/kit";
 export type Item = { id?: string; time?: string; category: Category; title: string; desc?: string; editedBy?: string; photos?: { path: string; url: string }[] /* 장소 사진 (url 은 1시간짜리 주소) */ };
 export type Trip = {
   id: string; title: string; start: string; end: string; // YYYY-MM-DD
-  cities: string[]; members: { initial: string; tone: "point" | "accent" }[];
+  cities: string[]; members: { initial: string; tone: "point" | "accent"; userId?: string; avatar?: string }[];
   ready?: number; // 준비 % (2단계 기능, 지금은 가짜)
   timeZone?: string; // 여행 시간대 (DB 여행). 없으면 한국 시간
   country?: string; // 첫 도시의 나라 코드 (목록 국기). ETC 나 없으면 핀

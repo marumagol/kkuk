@@ -7,6 +7,7 @@ import { CategoryChip, EmptyState, Icon } from "@/components/kit";
 import { AppShell, BottomDock, Avatar, SectionTitle, MockNote } from "@/components/screen";
 import { GateFab, GateCta } from "@/components/gate";
 import { SortablePlaces } from "@/components/sortable-places";
+import { TripTabs } from "@/components/trip-tabs";
 import { getViewer, isIn } from "@/lib/viewer";
 import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
 import { loadTrip } from "@/lib/trips";
@@ -70,7 +71,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
         <Link href={viewer.kind === "user" ? `/trips/${trip.id}/members` : "#"} aria-label={`함께하는 사람 ${trip.members.length}명${canEdit && "role" in r && r.role === "owner" ? ", 초대하기" : ""}`}
           className="press flex h-11 items-center gap-1 rounded-full bg-surface pl-1.5 pr-3">
           <span className="flex -space-x-2">
-            {trip.members.slice(0, 4).map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring />)}
+            {trip.members.slice(0, 4).map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring src={m.avatar} />)}
           </span>
           {"role" in r && r.role === "owner" && viewer.kind === "user" ? <Icon name="plus" size={16} className="text-ink-sub" /> : <span className="text-tiny font-bold text-ink-sub">{trip.members.length}</span>}
         </Link>
@@ -91,6 +92,8 @@ export default async function TripDetail({ params, searchParams }: Props) {
           </Link>
         )}
       </div>
+
+      {viewer.kind === "user" && <TripTabs tripId={trip.id} active="일정" />}
 
       <nav className="mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]" aria-label="날짜">
         {Array.from({ length: len }).map((_, i) => {
