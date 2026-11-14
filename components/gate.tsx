@@ -72,7 +72,7 @@ export function GateButton({ href, soon = "이 기능은 다음 단계에서 열
 /* 자주 쓰는 모양 3가지 */
 export function PlusTab() {
   return (
-    <GateButton label="장소 추가" soon="장소 추가는 장소 넣기 단계(8단계)에서 열려요"
+    <GateButton label="장소 추가" href="/add"
       className="press flex size-[52px] items-center justify-center rounded-full bg-point text-white">
       <Icon name="plus" size={24} strokeWidth={2.5} />
     </GateButton>
