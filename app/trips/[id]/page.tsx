@@ -65,21 +65,24 @@ export default async function TripDetail({ params, searchParams }: Props) {
     <AppShell>
       <div className="flex items-center justify-between px-5 pt-4">
         <BackLink />
-        <span className="flex items-center gap-2">
-          <span className="flex -space-x-2" aria-label={`함께하는 사람 ${trip.members.length}명`}>
-            {trip.members.map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring />)}
-          </span>
-          {canEdit && viewer.kind === "user" && (
-            <Link href={`/trips/${trip.id}/edit`} className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-sub font-bold text-ink">수정</Link>
-          )}
+        <span className="flex -space-x-2" aria-label={`함께하는 사람 ${trip.members.length}명`}>
+          {trip.members.map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring />)}
         </span>
       </div>
       {sp.removed && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">삭제했어요</p>}
       {sp.saved && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행 정보를 저장했어요</p>}
       {viewer.kind === "preview" && <MockNote />}
-      <div className="px-5 pt-3">
-        <h1 className="text-title-xl font-extrabold text-ink">{trip.title}</h1>
-        <p className="mt-1 text-sub text-ink-sub">{md(trip.start)} ~ {md(trip.end)}, 장소 {placeCount(trip)}개</p>
+      <div className="flex items-start gap-2 px-5 pt-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-title-xl font-extrabold text-ink">{trip.title}</h1>
+          <p className="mt-1 text-sub text-ink-sub">{md(trip.start)} ~ {md(trip.end)}, 장소 {placeCount(trip)}개</p>
+        </div>
+        {/* 여행 정보 수정 : 제목 옆 연필 (주인, 편집 가능) */}
+        {editable && (
+          <Link href={`/trips/${trip.id}/edit`} aria-label="여행 정보 수정" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
+            <Icon name="pencil" size={20} />
+          </Link>
+        )}
       </div>
 
       <nav className="mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]" aria-label="날짜">
