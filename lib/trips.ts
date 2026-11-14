@@ -360,3 +360,19 @@ export const loadPublicEntry = cache(async (token: string): Promise<PublicEntry 
     updatedAt: r.updated_at, author: r.author, tripTitle: r.trip_title, start: r.start_date, end: r.end_date,
   };
 });
+
+/* 여행 요약 숫자 (3단계 8) : 함께한 날, 장소 수, 남긴 사진(장소 + 내가 볼 수 있는 일기), 이 여행에서 받은 도장 */
+export type TripSummary = { days: number; places: number; photos: number; stamps: number };
+export const loadTripSummary = cache(async (v: Viewer, trip: Trip): Promise<TripSummary> => {
+  const days = daysBetween(trip.start, trip.end) + 1;
+  const places = trip.days.reduce((n, d) => n + d.items.length, 0);
+  const placePhotos = trip.days.reduce((n, d) => n + d.items.reduce((m, i) => m + (i.photos?.length ?? 0), 0), 0);
+  if (v.kind !== "user") return { days, places, photos: placePhotos, stamps: 0 };
+  const sb = (await createClient())!;
+  const [{ data: entries }, { count }] = await Promise.all([
+    sb.from("journal_entries").select("photos").eq("trip_id", trip.id).is("removed_at", null),
+    sb.from("stamp_grants").select("city_id", { count: "exact", head: true }).eq("trip_id", trip.id).eq("user_id", v.id),
+  ]);
+  const diaryPhotos = (entries ?? []).reduce((n: number, e: { photos: string[] }) => n + e.photos.length, 0);
+  return { days, places, photos: placePhotos + diaryPhotos, stamps: count ?? 0 };
+});

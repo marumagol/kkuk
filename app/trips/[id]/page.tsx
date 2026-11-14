@@ -11,7 +11,8 @@ import { TripTabs } from "@/components/trip-tabs";
 import { StampClaim } from "@/components/stamp-claim";
 import { getViewer, isIn } from "@/lib/viewer";
 import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
-import { loadTrip } from "@/lib/trips";
+import { loadTrip, loadTripSummary } from "@/lib/trips";
+import { TripSummaryRow } from "@/components/trip-summary";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; removed?: string; undated?: string; joined?: string }> };
 
@@ -94,6 +95,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
         )}
       </div>
 
+      {statusOf(trip, todayOf(trip)) === "past" && <TripSummaryRow s={await loadTripSummary(viewer, trip)} className="mx-5 mt-3" />}
       {viewer.kind === "user" && <TripTabs tripId={trip.id} active="일정" />}
       {viewer.kind === "user" && statusOf(trip, todayOf(trip)) === "ongoing" && <StampClaim tripId={trip.id} />}
 

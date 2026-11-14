@@ -1,7 +1,8 @@
 /* 일기 쓰기 / 고치기. ?day=2 (2일차) 또는 ?recap=1 (여행 회고). 내 일기만 */
 import { notFound, redirect } from "next/navigation";
 import { getViewer } from "@/lib/viewer";
-import { loadEntryContext } from "@/lib/trips";
+import { loadEntryContext, loadTrip, loadTripSummary } from "@/lib/trips";
+import { TripSummaryRow } from "@/components/trip-summary";
 import { addDays, md } from "@/lib/mock";
 import { PlaceShell } from "../places/place-shell";
 import { JournalForm } from "@/components/journal-form";
@@ -19,9 +20,12 @@ export default async function WriteDiary({ params, searchParams }: { params: Pro
   const ctx = await loadEntryContext(viewer, id, kind, kind === "day" ? Number(sp.day ?? 1) - 1 : null);
   if (!ctx) notFound();
   const slot = kind === "recap" ? "여행 회고" : `${ctx.dayIndex! + 1}일차 · ${md(addDays(ctx.start, ctx.dayIndex!))}`;
+  const full = kind === "recap" ? await loadTrip(viewer, id) : null;
+  const summary = full && "trip" in full ? await loadTripSummary(viewer, full.trip) : null;
   return (
     <PlaceShell tripId={id} title={ctx.entry ? "일기 고치기" : "일기 쓰기"} back={ctx.entry ? `/diary/${ctx.entry.id}` : `/trips/${id}${kind === "day" ? `?day=${ctx.dayIndex! + 1}` : ""}`}>
       <p className="px-5 pt-2 text-sub font-semibold text-point-text">{ctx.tripTitle} · {slot}</p>
+      {summary && <TripSummaryRow s={summary} className="mx-5 mt-3" />}
       <JournalForm ctx={ctx} />
     </PlaceShell>
   );
