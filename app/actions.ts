@@ -199,3 +199,16 @@ export async function removePlace(tripId: string, placeId: string, day: number |
   revalidatePath("/", "layout");
   redirect(`/trips/${tripId}?removed=1${day == null ? "&undated=1#undated" : `&day=${day + 1}`}`);
 }
+
+/* 장소 순서 바꾸기 (S07). 한 날의 장소 id 를 새 순서대로. DB 함수 reorder_items 가 한 번에 저장 */
+export async function reorderPlaces(tripId: string, ids: string[]): Promise<CreateTripResult> {
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (!uuid.test(tripId) || !Array.isArray(ids) || !ids.length || ids.length > 500 || !ids.every((x) => uuid.test(String(x)))) {
+    return { error: "순서를 저장하지 못했어요" };
+  }
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
+  const { error } = await sb.rpc("reorder_items", { p_trip: tripId, p_ids: ids });
+  if (error) return { error: error.message?.includes("forbidden") ? "이 여행을 고칠 권한이 없어요" : "순서를 저장하지 못했어요. 원래 자리로 돌려놨어요" };
+  revalidatePath(`/trips/${tripId}`);
+}

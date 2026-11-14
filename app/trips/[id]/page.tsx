@@ -3,9 +3,10 @@
   준비/기록 탭은 2단계 (1단계는 숨김). 장소 추가는 로그인 문지기를 거친다
 */
 import Link from "next/link";
-import { CategoryChip, PinCard, EmptyState, Icon } from "@/components/kit";
+import { CategoryChip, EmptyState, Icon } from "@/components/kit";
 import { AppShell, BottomDock, Avatar, SectionTitle, MockNote } from "@/components/screen";
 import { GateFab, GateCta } from "@/components/gate";
+import { SortablePlaces } from "@/components/sortable-places";
 import { getViewer, isIn } from "@/lib/viewer";
 import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
 import { loadTrip } from "@/lib/trips";
@@ -106,13 +107,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
           <h2 className="text-title-lg font-extrabold text-ink">{plan.title ?? `${md(addDays(trip.start, day - 1))} (${weekday(addDays(trip.start, day - 1))})`}</h2>
         </div>
         {plan.items.length ? (
-          <div>
-            {plan.items.map((it, i) => (
-              <PinCard key={it.id ?? i} index={i + 1} time={it.time ?? ""} category={it.category} title={it.title}
-                desc={it.desc ?? ""} editedBy={it.editedBy} last={i === plan.items.length - 1}
-                href={editable && it.id ? `/trips/${trip.id}/places/${it.id}` : undefined} />
-            ))}
-          </div>
+          <SortablePlaces key={day} tripId={trip.id} items={plan.items} editable={editable} />
         ) : (
           <EmptyState title="이 날은 아직 장소가 없어요" desc="가고 싶은 곳을 하나씩 추가해 보세요"
             action={canEdit ? <GateCta icon="plus" href={addHref}>장소 추가</GateCta> : undefined} />
