@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+/*
+  핀모리 디자인 토큰 (2026-11-14 확정)
+  기준 : 마루님 피그마 "핀모리 v2" + 디자인-가이드.md 3~4장 (글자 대비 보정값 포함)
+  규칙 : 화면에서는 아래 토큰만 쓴다. 색 값을 직접 쓰지 않는다.
+*/
+
+/* 글꼴 : 페이퍼로지 (마루님 결정, SIL OFL 1.1). app/layout.tsx 에서 next/font/local 로 불러 --font-paperlogy 로 넘긴다 */
+
+:root {
+  color-scheme: light;
+
+  /* 바탕과 글자 */
+  --bg: #F5F3EE;            /* 화면 바탕, 시트 바탕 */
+  --surface: #FFFFFF;       /* 카드, 입력칸 */
+  --surface-soft: #EFEDE7;  /* 기본 칩, 눌린 자리 */
+  --ink: #2D3139;           /* 본문 글자 */
+  --ink-sub: #686D75;       /* 보조 글자 (피그마 #7A7F87 대비 보정) */
+  --line: #E9E6DF;          /* 구분선 */
+  --line-strong: #96918A;   /* 입력칸 테두리 (바탕과 3 : 1 이상) */
+
+  /* 다크 카드 (탑승권, 남은 예산), 탭바, 기본 버튼 */
+  --deep: #2D3139;
+  --on-deep: #FFFFFF;
+  --on-deep-sub: #A9ADB3;
+  --deep-soft: rgb(255 255 255 / 0.14);
+
+  /* 포인트 (주황) : 면과 아이콘에만. 글자는 --point-text */
+  --point: #FF5A36;
+  --point-text: #C23A18;
+  --point-soft: #FFE9E2;
+
+  /* 보조 (보라) */
+  --accent: #6B4EFF;
+  --accent-text: #5335E0;
+  --accent-soft: #ECE6FF;
+
+  /* 주의 (노랑), 성공/관광 (초록) */
+  --warn-soft: #FFF1C9;
+  --warn-text: #8A5F00;
+  --ok-soft: #DDF3E8;
+  --ok-text: #0A7A54;
+
+  /* 기본 버튼 (짙은 회색 바탕, 흰 글자) */
+  --btn: #2D3139;
+  --on-btn: #FFFFFF;
+
+  --kakao: #FEE500;
+
+  /* 시트 뒤 어둡게 */
+  --scrim: rgb(23 24 28 / 0.5);
+
+  /* 그림자는 떠 있는 것에만 */
+  --float-shadow: 0 12px 28px rgb(45 49 57 / 0.28);
+}
+
+/* 다크 모드 : 기기 설정을 따르고, data-theme 으로 강제할 수 있다 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #17181C;
+    --surface: #23262C;
+    --surface-soft: #2E3138;
+    --ink: #F2F1EC;
+    --ink-sub: #A6ABB3;
+    --line: #383C44;
+    --line-strong: #7A7F88;
+    --deep: #2A2E36;
+    --on-deep: #FFFFFF;
+    --on-deep-sub: #A9ADB3;
+    --deep-soft: rgb(255 255 255 / 0.12);
+    --point: #FF5A36;
+    --point-text: #FF8466;
+    --point-soft: #3A241D;
+    --accent: #8C75FF;
+    --accent-text: #B4A5FF;
+    --accent-soft: #29243F;
+    --warn-soft: #3A311E;
+    --warn-text: #F2C766;
+    --ok-soft: #16352A;
+    --ok-text: #6FD3A8;
+    --btn: #F2F1EC;
+    --on-btn: #17181C;
+    --float-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
+    --scrim: rgb(0 0 0 / 0.6);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #17181C;
+  --surface: #23262C;
+  --surface-soft: #2E3138;
+  --ink: #F2F1EC;
+  --ink-sub: #A6ABB3;
+  --line: #383C44;
+  --line-strong: #7A7F88;
+  --deep: #2A2E36;
+  --on-deep: #FFFFFF;
+  --on-deep-sub: #A9ADB3;
+  --deep-soft: rgb(255 255 255 / 0.12);
+  --point: #FF5A36;
+  --point-text: #FF8466;
+  --point-soft: #3A241D;
+  --accent: #8C75FF;
+  --accent-text: #B4A5FF;
+  --accent-soft: #29243F;
+  --warn-soft: #3A311E;
+  --warn-text: #F2C766;
+  --ok-soft: #16352A;
+  --ok-text: #6FD3A8;
+  --btn: #F2F1EC;
+  --on-btn: #17181C;
+  --float-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
+  --scrim: rgb(0 0 0 / 0.6);
+}
+
+/* Tailwind 에서 쓰는 이름 : bg-bg, text-ink, rounded-card 처럼 */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-ink: var(--ink);
+  --color-ink-sub: var(--ink-sub);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-deep: var(--deep);
+  --color-on-deep: var(--on-deep);
+  --color-on-deep-sub: var(--on-deep-sub);
+  --color-deep-soft: var(--deep-soft);
+  --color-point: var(--point);
+  --color-point-text: var(--point-text);
+  --color-point-soft: var(--point-soft);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-text: var(--warn-text);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-text: var(--ok-text);
+  --color-btn: var(--btn);
+  --color-on-btn: var(--on-btn);
+  --color-kakao: var(--kakao);
+  --color-scrim: var(--scrim);
+
+  --font-sans: var(--font-paperlogy), "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+
+  /* 글자 크기 (가이드 4장) */
+  --text-dday: 52px;
+  --text-dday--line-height: 1.1;
+  --text-number: 36px;
+  --text-number--line-height: 1.15;
+  --text-title-xl: 28px;
+  --text-title-xl--line-height: 1.3;
+  --text-title-lg: 22px;
+  --text-title-lg--line-height: 1.3;
+  --text-title: 17px;
+  --text-title--line-height: 1.35;
+  --text-body: 15px;
+  --text-body--line-height: 1.55;
+  --text-sub: 13px;
+  --text-sub--line-height: 1.45;
+  --text-tiny: 12px;
+  --text-tiny--line-height: 1.4;
+
+  /* 모서리 */
+  --radius-deep: 28px;
+  --radius-card: 24px;
+  --radius-pin: 20px;
+  --radius-btn: 18px;
+  --radius-field: 16px;
+  --radius-bar: 36px;
+
+  --shadow-float: var(--float-shadow);
+
+  /* 움직임 */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 누름 : 살짝 작아짐 */
+.press {
+  transition: transform 100ms var(--ease-out-soft);
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* 동작 줄이기 설정이면 움직임을 모두 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
