@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
 import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
 import { AVATAR_PATH } from "@/lib/storage";
+import { autocomplete, details, type Suggestion, type PlaceDetail } from "@/lib/places";
 import { MAX_TRIP_DAYS, MAX_CITIES, MAX_TRIP_TITLE, MAX_PLACE_TITLE, MAX_PLACE_ADDRESS, MAX_PLACE_MEMO, MAX_PLACE_PHOTOS } from "@/lib/rules";
 
 /* 로그아웃 → 둘러보기 (홈) */
@@ -46,7 +47,7 @@ export async function saveName(_prev: NameState, formData: FormData): Promise<Na
 
 /* 여행 만들기 (S06). 여행 + 여행 주인 + 도시를 DB 함수 create_trip 으로 한 번에 저장 */
 /* 도시 : country 는 나라 목록 코드. 직접 입력한 나라는 country "ETC" + countryName (+ 올린 아이콘 icon) */
-export type TripCity = { name: string; country: string; countryName?: string; icon?: string };
+export type TripCity = { name: string; country: string; countryName?: string; icon?: string; placeId?: string; lat?: number; lng?: number };
 export type NewTrip = { title: string; start: string; end: string; cities: TripCity[] };
 export type CreateTripResult = { error: string } | undefined;
 
@@ -61,6 +62,9 @@ function checkTrip(input: NewTrip): { error: string } | { title: string; start: 
         name: String(c?.name ?? "").trim(), country,
         countryName: custom ? String(c?.countryName ?? "").trim() || undefined : undefined,
         icon: custom && c?.icon ? String(c.icon) : undefined,
+        // 장소 검색으로 고른 도시 (4단계) : 형식이 맞을 때만, 틀리면 DB 함수가 비운다
+        ...(c?.placeId && /^[A-Za-z0-9_-]{10,255}$/.test(String(c.placeId)) && Number.isFinite(c?.lat) && Number.isFinite(c?.lng)
+          ? { placeId: String(c.placeId), lat: Number(c.lat), lng: Number(c.lng) } : {}),
       };
     })
     .filter((c) => c.name);
@@ -101,7 +105,7 @@ export async function createTrip(input: NewTrip): Promise<CreateTripResult> {
   const { data, error } = await sb.rpc("create_trip", {
     p_title: title, p_start_date: start, p_end_date: end,
     p_time_zone: countryOf(cities[0].country)!.tz,
-    p_cities: cities.map((c) => ({ name: c.name, country_code: isoOf(c.country) })),
+    p_cities: cities.map((c) => ({ name: c.name, country_code: isoOf(c.country), place_id: c.placeId, lat: c.lat, lng: c.lng })),
   });
   if (error || !data) {
     if (error?.message?.includes("profile_required")) redirect("/welcome?next=/trips/new");
@@ -125,7 +129,7 @@ export async function updateTrip(id: string, input: NewTrip & { prevFirstCountry
   const { error } = await sb.rpc("update_trip", {
     p_trip: id, p_title: c.title, p_start_date: c.start, p_end_date: c.end,
     p_time_zone: first === input.prevFirstCountry ? null : countryOf(first)!.tz,
-    p_cities: c.cities.map((x) => ({ name: x.name, country_code: isoOf(x.country) })),
+    p_cities: c.cities.map((x) => ({ name: x.name, country_code: isoOf(x.country), place_id: x.placeId, lat: x.lat, lng: x.lng })),
   });
   if (error) {
     if (error.message?.includes("forbidden")) return { error: "이 여행을 고칠 권한이 없어요" };
@@ -154,8 +158,15 @@ export type PlaceInput = {
   title: string; address: string; category: string; time: string; cost: string; currency: string; memo: string;
   day: number | null; // 0 = 1일차, null = 날짜 미정
   photos?: string[]; // 저장소 place-photos 안 위치 (<여행 id>/<그림 id>.jpg), 순서대로 최대 5장
+  place?: { id: string; lat: number; lng: number } | null; // 장소 검색으로 고른 구글 장소 (4단계). null 이면 연결 끊기, 없으면 그대로
 };
 const CATEGORIES = ["transport", "food", "sight", "shopping", "stay"];
+const placeCols = (pl: PlaceInput["place"]) => {
+  if (pl === undefined) return {};
+  const ok = pl && /^[A-Za-z0-9_-]{10,255}$/.test(String(pl.id)) && Number.isFinite(pl.lat) && Number.isFinite(pl.lng)
+    && Math.abs(pl.lat) <= 90 && Math.abs(pl.lng) <= 180;
+  return ok ? { google_place_id: pl!.id, lat: pl!.lat, lng: pl!.lng, coords_at: new Date().toISOString() } : { google_place_id: null, lat: null, lng: null, coords_at: null };
+};
 
 export async function savePlace(tripId: string, placeId: string | null, input: PlaceInput): Promise<CreateTripResult> {
   const title = String(input?.title ?? "").trim();
@@ -199,6 +210,7 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   const row = {
     title, address: address || null, memo: memo || null, category: input.category, start_time: time || null,
     estimated_cost: cost, cost_currency: cost == null ? null : currency, day_index: day, photos,
+    ...placeCols(input?.place),
   };
 
   if (placeId) {
@@ -466,4 +478,21 @@ export async function claimStamp(tripId: string, lat: number, lng: number, accur
   const r = (Array.isArray(data) ? data[0] : data) as { status: "new" | "again" | "already"; city_name: string; country_code: string; visits: number; verified_by_me: boolean };
   revalidatePath("/stamps"); revalidatePath("/");
   return { ok: true, status: r.status, city: r.city_name, country: r.country_code, visits: r.visits, byMe: r.verified_by_me };
+}
+
+/* ───────── 장소 검색 (4단계 2~3) : 로그인한 사람만. 키는 서버에서만 쓴다 ───────── */
+export async function findPlaces(input: string, session: string, kind: "place" | "city", bias?: { lat: number; lng: number } | null): Promise<Suggestion[]> {
+  const q = String(input ?? "").trim().slice(0, 80);
+  if ([...q].length < 2 || !/^[0-9a-f-]{36}$/i.test(session)) return [];
+  const sb = await createClient();
+  const { data: auth } = sb ? await sb.auth.getUser() : { data: { user: null } };
+  if (!auth.user) return [];
+  const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null;
+  return autocomplete(q, session, kind === "city" ? "city" : "place", b);
+}
+export async function pickPlace(id: string, session: string): Promise<PlaceDetail | null> {
+  const sb = await createClient();
+  const { data: auth } = sb ? await sb.auth.getUser() : { data: { user: null } };
+  if (!auth.user) return null;
+  return details(String(id), /^[0-9a-f-]{36}$/i.test(session) ? session : undefined);
 }

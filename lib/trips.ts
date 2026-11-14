@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TRIPS, getTrip, daysBetween, type Trip, type Item } from "@/lib/mock";
 import { currencyOf, formatMoney, iconUrl } from "@/lib/countries";
 import { avatarUrl } from "@/lib/storage";
+import { placesEnabled } from "@/lib/places";
 import type { Viewer } from "@/lib/viewer";
 
 const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소" };
@@ -65,6 +66,7 @@ export type Role = "owner" | "editor" | "viewer";
 export type PlaceRow = {
   id: string; day_index: number | null; sort_order: number; title: string; address: string | null; category: string;
   start_time: string | null; estimated_cost: number | null; cost_currency: string | null; memo: string | null; photos: string[]; updated_by?: string | null; updated_at?: string;
+  google_place_id?: string | null; lat?: number | null; lng?: number | null;
 };
 
 /* 장소 사진 (비공개 저장소) : 1시간짜리 주소로 바꿔서 보여 준다 */
@@ -115,7 +117,8 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
 /* 여행 정보 수정 화면용 : 도시의 나라 코드와 일차별 장소 수까지 */
 export type TripForEdit = {
   id: string; title: string; start: string; end: string; timeZone: string; role: Role;
-  cities: { name: string; country: string; countryName?: string; icon?: string }[];
+  cities: { name: string; country: string; countryName?: string; icon?: string; placeId?: string; lat?: number; lng?: number }[];
+  searchable: boolean;
   dayCounts: number[]; // 일차별 장소 수 (0 = 1일차)
 };
 export const loadTripForEdit = cache(async (v: Viewer, id: string): Promise<TripForEdit | null> => {
@@ -123,12 +126,14 @@ export const loadTripForEdit = cache(async (v: Viewer, id: string): Promise<Trip
   const r = await loadTrip(v, id);
   if (!("trip" in r)) return null;
   const sb = (await createClient())!;
-  const { data: cities } = await sb.from("trip_cities").select("name, country_code, country_name, country_icon, sort_order").eq("trip_id", id).order("sort_order");
+  const { data: cities } = await sb.from("trip_cities").select("*").eq("trip_id", id).order("sort_order");
   const t = r.trip;
   return {
     id, title: t.title, start: t.start, end: t.end, timeZone: t.timeZone ?? "Asia/Seoul", role: r.role,
-    cities: (cities ?? []).map((c: { name: string; country_code: string | null; country_name: string | null; country_icon: string | null }, i: number) => ({
+    searchable: placesEnabled(),
+    cities: (cities ?? []).map((c: { name: string; country_code: string | null; country_name: string | null; country_icon: string | null; google_place_id?: string | null; lat?: number | null; lng?: number | null }, i: number) => ({
       name: c.name, countryName: c.country_name ?? undefined, icon: c.country_icon ?? undefined,
+      ...(c.google_place_id && c.lat != null && c.lng != null ? { placeId: c.google_place_id, lat: c.lat, lng: c.lng } : {}),
       // 화면의 나라 목록 코드로 되돌림 (하와이는 시간대로 구분, 나라 코드 없음 = 그 밖의 나라)
       country: !c.country_code ? "ETC" : c.country_code === "US" && i === 0 && t.timeZone === "Pacific/Honolulu" ? "US-HI" : c.country_code,
     })),
@@ -139,6 +144,7 @@ export const loadTripForEdit = cache(async (v: Viewer, id: string): Promise<Trip
 /* 장소 추가/수정 화면용 : 여행 기본 정보, 기본 통화, (수정이면) 그 장소 */
 export type PlaceContext = {
   tripId: string; tripTitle: string; start: string; days: number; role: Role; currency: string; place?: PlaceRow; photos?: { path: string; url: string }[];
+  searchable: boolean; bias: { lat: number; lng: number } | null; // 장소 검색 (4단계) : 키가 있을 때만, 첫 도시 근처를 먼저
 };
 export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?: string): Promise<PlaceContext | null> => {
   if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
@@ -146,18 +152,24 @@ export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?
   const r = await loadTrip(v, tripId);
   if (!("trip" in r)) return null;
   const sb = (await createClient())!;
-  const { data: city } = await sb.from("trip_cities").select("country_code").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle();
+  // "*" : 0014(좌표 칸) 적용 전에도 깨지지 않게
+  const { data: city } = await sb.from("trip_cities").select("*").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle();
+  let bias: { lat: number; lng: number } | null = city?.lat != null ? { lat: city.lat, lng: city.lng } : null;
+  if (!bias && city?.country_code) {
+    const { data: c } = await sb.from("cities").select("lat, lng").eq("country_code", city.country_code).eq("name", city.name).maybeSingle();
+    if (c?.lat != null) bias = { lat: c.lat, lng: c.lng };
+  }
   let place: PlaceRow | undefined;
   if (placeId) {
     const { data } = await sb.from("itinerary_items")
-      .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos")
+      .select("*")
       .eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).maybeSingle();
     if (!data) return null;
     place = data as PlaceRow;
   }
   const t = r.trip;
   const photos = placeId ? [...t.days.flatMap((d) => d.items), ...t.undated].find((it) => it.id === placeId)?.photos : undefined;
-  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos };
+  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos, searchable: placesEnabled(), bias };
 });
 
 /* 함께하는 사람 화면 (2단계) : 목록, 내 권한, (주인이면) 살아 있는 초대 링크 */

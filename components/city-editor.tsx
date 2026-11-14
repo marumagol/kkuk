@@ -9,8 +9,9 @@ import { Button, Field, Icon } from "@/components/kit";
 import { COUNTRIES, POPULAR_CITIES, POPULAR_COUNTRIES, MAX_COUNTRY_NAME, countryOf, flagOf, iconUrl } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/client";
 import { MAX_CITIES } from "@/lib/rules";
+import { PlaceSuggest, type Picked } from "@/components/place-search";
 
-export type City = { name: string; country: string; countryName?: string; icon?: string };
+export type City = { name: string; country: string; countryName?: string; icon?: string; placeId?: string; lat?: number; lng?: number };
 
 export function useCityDraft(initial?: Partial<City>) {
   const [name, setName] = useState("");
@@ -131,9 +132,21 @@ function CountryPicker({ draft, onError, disabled }: { draft: ReturnType<typeof 
   );
 }
 
-export function CityEditor({ cities, onChange, draft, onError, disabled }: {
-  cities: City[]; onChange: (c: City[]) => void; draft: ReturnType<typeof useCityDraft>; onError: (e: string) => void; disabled?: boolean;
+export function CityEditor({ cities, onChange, draft, onError, disabled, searchable }: {
+  cities: City[]; onChange: (c: City[]) => void; draft: ReturnType<typeof useCityDraft>; onError: (e: string) => void; disabled?: boolean; searchable?: boolean;
 }) {
+  // 장소 검색으로 고른 도시 : 구글이 알려 준 나라가 목록에 있으면 그 나라, 없으면 지금 고른 나라
+  const addPicked = (d: Picked) => {
+    const n = (d.name || "").trim().slice(0, 40);
+    if (!n) return;
+    if (cities.length >= MAX_CITIES) return onError(`도시는 ${MAX_CITIES}개까지 넣을 수 있어요`);
+    if (cities.some((c) => c.name === n)) return onError("이미 넣은 도시예요");
+    const fromGoogle = d.country && countryOf(d.country) ? d.country : null;
+    const base = fromGoogle ? { country: fromGoogle } : draft.pick();
+    if (typeof base === "string") return onError(base);
+    onChange([...cities, { name: n, ...base, placeId: d.id, lat: d.lat, lng: d.lng }]);
+    draft.clear(); onError("");
+  };
   const add = () => {
     const n = draft.pending;
     if (!n) return onError("도시 이름을 적어 주세요");
@@ -189,12 +202,13 @@ export function CityEditor({ cities, onChange, draft, onError, disabled }: {
       {/* form 안에 form 을 못 넣어서 Enter 는 직접 받는다 */}
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
-          <Field label="도시 직접 입력" name="city" placeholder={(POPULAR_CITIES[draft.country] ?? []).length ? "목록에 없으면 직접 입력" : "예 : 삿포로"} value={draft.name} maxLength={40} enterKeyHint="done" disabled={disabled}
+          <Field label={searchable ? "도시 검색" : "도시 직접 입력"} name="city" placeholder={searchable ? "도시 이름을 치면 후보가 떠요" : (POPULAR_CITIES[draft.country] ?? []).length ? "목록에 없으면 직접 입력" : "예 : 삿포로"} value={draft.name} maxLength={40} enterKeyHint="done" disabled={disabled}
             onChange={(e) => { draft.setName(e.target.value); onError(""); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); add(); } }} />
         </div>
         <Button type="button" variant="secondary" size="lg" onClick={add} disabled={!draft.pending || disabled}>추가</Button>
       </div>
+      {searchable && <PlaceSuggest query={draft.name} kind="city" onPick={addPicked} disabled={disabled} />}
       <p className="text-tiny text-ink-sub">도시를 여러 개 넣을 수 있어요. 넣은 순서대로 여행 경로가 돼요. 여행 시간은 첫 도시의 나라에 맞춰요</p>
     </div>
   );

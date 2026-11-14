@@ -1,7 +1,7 @@
 "use client";
 /*
   S08 장소 추가 / 장소 수정
-  1단계는 직접 입력 (장소 검색은 4단계). 이름만 꼭 넣고 나머지는 선택
+  이름을 치면 장소 검색 후보가 뜬다 (4단계, 구글). 골라도 되고 직접 입력해도 된다. 이름만 꼭 넣고 나머지는 선택
   날짜를 바꾸면 그 날 맨 뒤로 간다. 삭제는 확인 창을 거쳐 removed_at
   사진은 최대 5장 (2026-11-14). 고르는 즉시 줄여서 비공개 저장소 place-photos/<여행 id>/ 에 올리고, 저장할 때 위치 목록을 함께 저장
 */
@@ -16,6 +16,7 @@ import { decimalsOf } from "@/lib/countries";
 import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
+import { PlaceSuggest, type Picked } from "@/components/place-search";
 
 const CATS = [
   { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
@@ -33,6 +34,9 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
   const [currency, setCurrency] = useState(startCur);
   const [cost, setCost] = useState(p?.estimated_cost != null ? String(p.estimated_cost / 10 ** decimalsOf(startCur)) : "");
   const [memo, setMemo] = useState(p?.memo ?? "");
+  // 장소 검색으로 고른 구글 장소. undefined = 건드리지 않음, null = 연결 끊음
+  const [linked, setLinked] = useState<{ id: string; lat: number; lng: number } | null | undefined>(undefined);
+  const isLinked = linked === undefined ? !!p?.google_place_id : !!linked;
   const [dayValue, setDayValue] = useState(day == null ? "none" : String(day));
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState(false);
@@ -70,7 +74,7 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
     setError("");
     if (!titleLen) return setError("장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: photos.map((x) => x.path) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: photos.map((x) => x.path), ...(linked !== undefined ? { place: linked } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -85,6 +89,16 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
         <Field label="장소 이름" name="title" placeholder="예 : 오타루 운하" value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
           onChange={(e) => { setTitle(e.target.value); setError(""); }} autoFocus={!p}
           error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
+        {ctx.searchable && !isLinked && (
+          <PlaceSuggest query={title} kind="place" bias={ctx.bias} disabled={busy}
+            onPick={(d: Picked) => { setTitle(d.name.slice(0, MAX_PLACE_TITLE)); if (d.address) setAddress(d.address.slice(0, 200)); setLinked({ id: d.id, lat: d.lat, lng: d.lng }); }} />
+        )}
+        {isLinked && (
+          <div className="-mt-4 flex items-center gap-2 text-tiny text-ink-sub">
+            <Icon name="map" size={14} />지도에 위치가 연결된 장소예요
+            <button type="button" onClick={() => setLinked(null)} disabled={busy} className="press ml-auto h-9 px-2 font-semibold text-ink underline underline-offset-2">연결 끊기</button>
+          </div>
+        )}
 
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-2 text-sub font-bold text-ink-sub">분류</legend>

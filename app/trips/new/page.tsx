@@ -1,5 +1,6 @@
 /* S06 여행 만들기 */
 import { redirect } from "next/navigation";
+import { placesEnabled } from "@/lib/places";
 import { AppShell } from "@/components/screen";
 import { TripCreate } from "@/components/trip-create";
 import { getViewer } from "@/lib/viewer";
@@ -12,7 +13,7 @@ export default async function NewTrip() {
   if (v.kind === "guest") redirect("/login?next=/trips/new");
   return (
     <AppShell bottomGap={false}>
-      <TripCreate today={todayKST()} />
+      <TripCreate today={todayKST()} searchable={placesEnabled()} />
     </AppShell>
   );
 }

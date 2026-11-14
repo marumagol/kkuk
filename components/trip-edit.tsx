@@ -72,7 +72,7 @@ export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) 
 
         <section className="flex flex-col gap-3" aria-labelledby="edit-cities">
           <h2 id="edit-cities" className="text-title font-bold text-ink">도시</h2>
-          <CityEditor cities={cities} onChange={setCities} draft={draft} onError={setError} disabled={busy} />
+          <CityEditor cities={cities} onChange={setCities} draft={draft} onError={setError} disabled={busy} searchable={trip.searchable} />
         </section>
 
         <section className="flex flex-col gap-3" aria-labelledby="edit-dates">
