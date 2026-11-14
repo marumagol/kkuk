@@ -27,7 +27,7 @@ export const COUNTRIES: Country[] = [
   { code: "TR", name: "튀르키예", tz: "Europe/Istanbul" },
   { code: "GU", name: "괌", tz: "Pacific/Guam" },
   { code: "MP", name: "사이판", tz: "Pacific/Saipan" },
-  { code: "US", name: "미국 (하와이 말고)", tz: "America/Los_Angeles" },
+  { code: "US", name: "미국", tz: "America/Los_Angeles" },
   { code: "US-HI", name: "미국 하와이", tz: "Pacific/Honolulu" },
   { code: "CA", name: "캐나다", tz: "America/Vancouver" },
   { code: "AU", name: "호주", tz: "Australia/Sydney" },
