@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { GateProvider } from "@/components/gate";
+import { NetworkBanner } from "@/components/network-banner";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getViewer, isIn, PATH_HEADER } from "@/lib/viewer";
@@ -43,7 +44,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   }
   return (
     <html lang="ko" className={paperlogy.variable}>
-      <body><GateProvider loggedIn={isIn(v)}>{children}</GateProvider></body>
+      <body><GateProvider loggedIn={isIn(v)}><NetworkBanner />{children}</GateProvider></body>
     </html>
   );
 }

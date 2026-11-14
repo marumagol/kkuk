@@ -212,3 +212,19 @@ export async function reorderPlaces(tripId: string, ids: string[]): Promise<Crea
   if (error) return { error: error.message?.includes("forbidden") ? "이 여행을 고칠 권한이 없어요" : "순서를 저장하지 못했어요. 원래 자리로 돌려놨어요" };
   revalidatePath(`/trips/${tripId}`);
 }
+
+/* 탈퇴 (S13). DB 함수 delete_my_account 가 내 여행과 로그인 정보를 지운다. 끝나면 이 기기에서 로그아웃 */
+export async function withdraw(): Promise<CreateTripResult> {
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect("/login?next=/me/withdraw");
+  const { error } = await sb.rpc("delete_my_account");
+  if (error) {
+    if (error.message?.includes("transfer_required")) return { error: "함께하는 사람이 있는 여행은 먼저 여행 주인을 넘겨 주세요" };
+    return { error: "탈퇴하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  }
+  await sb.auth.signOut({ scope: "local" }).catch(() => {});
+  revalidatePath("/", "layout");
+  redirect("/?bye=1");
+}

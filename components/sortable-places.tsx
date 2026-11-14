@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon, PinCard } from "@/components/kit";
 import { reorderPlaces } from "@/app/actions";
+import { safeCall } from "@/lib/safe-call";
 import type { Item } from "@/lib/mock";
 
 export function SortablePlaces({ tripId, items, editable }: { tripId: string; items: Item[]; editable: boolean }) {
@@ -27,7 +28,7 @@ export function SortablePlaces({ tripId, items, editable }: { tripId: string; it
     const prev = before.current;
     if (next.map((i) => i.id).join() === prev.map((i) => i.id).join()) return;
     setMsg("");
-    const r = await reorderPlaces(tripId, next.map((i) => i.id!));
+    const r = await safeCall(() => reorderPlaces(tripId, next.map((i) => i.id!)));
     if (r?.error) { setOrder(prev); setMsg(r.error); }
     else setMsg("순서를 바꿨어요");
   };

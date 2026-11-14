@@ -60,6 +60,9 @@ export default async function Me() {
             <button className="press h-12 w-full rounded-btn border border-line-strong bg-surface text-body font-bold text-ink">로그아웃</button>
           </form>
         )}
+        {v.kind === "user" && (
+          <Link href="/me/withdraw" className="press mx-auto inline-flex h-11 items-center px-2 text-sub font-semibold text-ink-sub underline underline-offset-4">탈퇴하기</Link>
+        )}
       </div>
       <MainTabs active="마이" />
     </AppShell>

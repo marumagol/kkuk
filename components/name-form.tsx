@@ -3,9 +3,10 @@
 import { useActionState, useState } from "react";
 import { Field, Button } from "@/components/kit";
 import { saveName, type NameState } from "@/app/actions";
+import { safeCall } from "@/lib/safe-call";
 
 export function NameForm({ next, initial = "", submitLabel }: { next: string; initial?: string; submitLabel: string }) {
-  const [state, action, busy] = useActionState<NameState, FormData>(saveName, {});
+  const [state, action, busy] = useActionState<NameState, FormData>((prev, fd) => safeCall(() => saveName(prev, fd)), {});
   const [name, setName] = useState(initial);
   const len = [...name.trim()].length;
   return (

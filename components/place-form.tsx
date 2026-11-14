@@ -8,6 +8,7 @@ import { useState, useTransition } from "react";
 import { Button, Field } from "@/components/kit";
 import { AlertDialog } from "@/components/gate";
 import { savePlace, removePlace } from "@/app/actions";
+import { safeCall } from "@/lib/safe-call";
 import { decimalsOf } from "@/lib/countries";
 import { MAX_PLACE_MEMO, MAX_PLACE_TITLE } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
@@ -42,12 +43,12 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
     setError("");
     if (!titleLen) return setError("장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum });
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum }));
       if (r?.error) setError(r.error);
     });
   };
   const remove = () => startBusy(async () => {
-    const r = await removePlace(ctx.tripId, p!.id, p!.day_index);
+    const r = await safeCall(() => removePlace(ctx.tripId, p!.id, p!.day_index));
     if (r?.error) setError(r.error);
   });
 

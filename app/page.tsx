@@ -23,7 +23,8 @@ function Header({ loggedIn, initial }: { loggedIn: boolean; initial: string }) {
   );
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ bye?: string }> }) {
+  const { bye } = await searchParams;
   const viewer = await getViewer();
   const loggedIn = isIn(viewer);
   const trips = await loadTrips(viewer);
@@ -43,6 +44,7 @@ export default async function Home() {
     <AppShell>
       <Header loggedIn={loggedIn} initial={initialOf(viewer)} />
       {viewer.kind === "preview" && <MockNote />}
+      {bye && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">탈퇴했어요. 그동안 KKuK 를 써 주셔서 고마워요</p>}
       <div className="flex flex-col gap-4 px-5 pt-4">
         {hero ? (
           <>

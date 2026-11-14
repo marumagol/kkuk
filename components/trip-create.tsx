@@ -10,6 +10,7 @@ import { RangeCalendar } from "@/components/range-calendar";
 import { CityEditor, useCityDraft, type City } from "@/components/city-editor";
 import { MAX_TRIP_DAYS, MAX_TRIP_TITLE } from "@/lib/rules";
 import { createTrip } from "@/app/actions";
+import { safeCall } from "@/lib/safe-call";
 import { daysBetween, md, weekday } from "@/lib/mock";
 
 const STEPS = ["어디로 가요?", "언제 가요?", "여행 이름을 정해요"];
@@ -46,7 +47,7 @@ export function TripCreate({ today }: { today: string }) {
     if (!titleLen) return setError("여행 이름을 적어 주세요");
     if (titleLen > MAX_TRIP_TITLE) return setError(`여행 이름은 ${MAX_TRIP_TITLE}자까지 쓸 수 있어요`);
     startSaving(async () => {
-      const r = await createTrip({ title: title.trim(), start: start!, end: end!, cities });
+      const r = await safeCall(() => createTrip({ title: title.trim(), start: start!, end: end!, cities }));
       if (r?.error) setError(r.error);
     });
   };

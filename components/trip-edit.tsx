@@ -12,6 +12,7 @@ import { RangeCalendar } from "@/components/range-calendar";
 import { CityEditor, useCityDraft, type City } from "@/components/city-editor";
 import { MAX_TRIP_DAYS, MAX_TRIP_TITLE } from "@/lib/rules";
 import { updateTrip, removeTrip } from "@/app/actions";
+import { safeCall } from "@/lib/safe-call";
 import { daysBetween, md, weekday } from "@/lib/mock";
 import type { TripForEdit } from "@/lib/trips";
 
@@ -43,7 +44,7 @@ export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) 
     if (titleLen > MAX_TRIP_TITLE) return setError(`여행 이름은 ${MAX_TRIP_TITLE}자까지 쓸 수 있어요`);
     setCities(all); draft.clear();
     const run = () => startBusy(async () => {
-      const r = await updateTrip(trip.id, { title: title.trim(), start, end, cities: all, prevFirstCountry: trip.cities[0]?.country });
+      const r = await safeCall(() => updateTrip(trip.id, { title: title.trim(), start, end, cities: all, prevFirstCountry: trip.cities[0]?.country }));
       if (r?.error) setError(r.error);
     });
     if (moving > 0) {
@@ -60,7 +61,7 @@ export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) 
     title: "여행을 삭제할까요?",
     desc: "일정과 장소가 모두 목록에서 사라져요. 함께하는 사람에게도 보이지 않아요",
     label: "삭제",
-    run: () => startBusy(async () => { const r = await removeTrip(trip.id); if (r?.error) setError(r.error); }),
+    run: () => startBusy(async () => { const r = await safeCall(() => removeTrip(trip.id)); if (r?.error) setError(r.error); }),
   });
 
   return (
