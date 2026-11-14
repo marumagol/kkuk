@@ -394,3 +394,46 @@ export async function saveBudget(tripId: string, currency: string, amount: strin
   if (error) return PREP_FAIL;
   revalidatePath(`/trips/${tripId}/prep`);
 }
+
+/* ───────── 여행일기 (2단계) : 내 일기만 쓰고 고친다 (RLS) ───────── */
+export type EntryInput = { kind: "day" | "recap"; day: number | null; title: string; body: string; visibility: string; photos: string[] };
+export async function saveEntry(tripId: string, input: EntryInput): Promise<CreateTripResult> {
+  if (!isUuid(tripId)) return PREP_FAIL;
+  const kind = input?.kind === "recap" ? "recap" : "day";
+  const day = kind === "day" ? Number(input?.day) : null;
+  if (kind === "day" && (!Number.isInteger(day) || day! < 0 || day! >= MAX_TRIP_DAYS)) return { error: "날짜를 다시 골라 주세요" };
+  const title = String(input?.title ?? "").trim();
+  const body = String(input?.body ?? "").trim();
+  const visibility = input?.visibility === "private" ? "private" : "members";
+  const photos = (Array.isArray(input?.photos) ? input.photos : []).map(String);
+  if ([...title].length > 60) return { error: "제목은 60자까지 쓸 수 있어요" };
+  if ([...body].length > 5000) return { error: "글은 5,000자까지 쓸 수 있어요" };
+  if (!title && !body && !photos.length) return { error: "글이나 사진을 하나 이상 넣어 주세요" };
+  if (photos.length > 10) return { error: "사진은 10장까지 올릴 수 있어요" };
+  if (photos.some((p) => !new RegExp(`^${tripId}/j/[0-9a-f-]{36}\\.jpg$`).test(p))) return { error: "사진을 다시 올려 주세요" };
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect(`/login?next=/trips/${tripId}/diary`);
+  const row = { title: title || null, body, visibility, photos };
+  let q = sb.from("journal_entries").select("id").eq("trip_id", tripId).eq("author_id", auth.user.id).eq("kind", kind).is("removed_at", null);
+  q = day == null ? q.is("day_index", null) : q.eq("day_index", day);
+  const { data: prev } = await q.maybeSingle();
+  const { data, error } = prev
+    ? await sb.from("journal_entries").update(row).eq("id", prev.id).select("id").single()
+    : await sb.from("journal_entries").insert({ ...row, trip_id: tripId, kind, day_index: day, author_id: auth.user.id }).select("id").single();
+  if (error || !data) return { error: "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  revalidatePath("/", "layout");
+  redirect(`/diary/${data.id}?saved=1`);
+}
+export async function removeEntry(id: string): Promise<CreateTripResult> {
+  if (!isUuid(id)) return PREP_FAIL;
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect("/login?next=/diary");
+  const { data, error } = await sb.from("journal_entries").update({ removed_at: new Date().toISOString() }).eq("id", id).eq("author_id", auth.user.id).select("id");
+  if (error || !data?.length) return { error: "삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  revalidatePath("/", "layout");
+  redirect("/diary?removed=1");
+}

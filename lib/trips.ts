@@ -218,3 +218,62 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
     people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name }] : [])),
   };
 });
+
+/* ───────── 여행일기 (2단계 8~10) ───────── */
+export type Visibility = "private" | "members" | "public";
+export type Entry = {
+  id: string; tripId: string; tripTitle: string; tripStart: string; kind: "day" | "recap"; dayIndex: number | null;
+  title: string | null; body: string; photos: { path: string; url: string }[]; visibility: Visibility;
+  author: string; mine: boolean; updatedAt: string;
+};
+type EntryRow = { id: string; trip_id: string; author_id: string; kind: "day" | "recap"; day_index: number | null; title: string | null; body: string; photos: string[]; visibility: Visibility; updated_at: string };
+const ENTRY_COLS = "id, trip_id, author_id, kind, day_index, title, body, photos, visibility, updated_at";
+
+async function toEntries(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, v: Viewer & { kind: "user" }, rows: EntryRow[], allPhotos: boolean): Promise<Entry[]> {
+  if (!rows.length) return [];
+  const tripIds = [...new Set(rows.map((r) => r.trip_id))];
+  const [{ data: trips }, { data: people }] = await Promise.all([
+    sb.from("trips").select("id, title, start_date").in("id", tripIds),
+    sb.from("trip_members").select("trip_id, user_id, display_name").in("trip_id", tripIds),
+  ]);
+  const tripOf = new Map((trips ?? []).map((t: { id: string; title: string; start_date: string }) => [t.id, t]));
+  const nameOf = new Map((people ?? []).map((p: { trip_id: string; user_id: string | null; display_name: string }) => [`${p.trip_id}:${p.user_id}`, p.display_name]));
+  const urls = await photoUrls(sb, rows.flatMap((r) => (allPhotos ? r.photos : r.photos.slice(0, 1))));
+  return rows.filter((r) => tripOf.has(r.trip_id)).map((r) => ({
+    id: r.id, tripId: r.trip_id, tripTitle: tripOf.get(r.trip_id)!.title, tripStart: tripOf.get(r.trip_id)!.start_date,
+    kind: r.kind, dayIndex: r.day_index, title: r.title, body: r.body, visibility: r.visibility, updatedAt: r.updated_at,
+    photos: r.photos.map((p) => ({ path: p, url: urls.get(p) ?? "" })).filter((p) => p.url),
+    author: nameOf.get(`${r.trip_id}:${r.author_id}`) ?? "나간 사람", mine: r.author_id === v.id,
+  }));
+}
+
+/* 일기 탭 : 내가 볼 수 있는 일기 최신순 (RLS 가 남의 나만 보기를 걸러 냄) */
+export const loadDiaryFeed = cache(async (v: Viewer): Promise<Entry[]> => {
+  if (v.kind !== "user") return [];
+  const sb = (await createClient())!;
+  const { data } = await sb.from("journal_entries").select(ENTRY_COLS).is("removed_at", null).order("updated_at", { ascending: false }).limit(60);
+  return toEntries(sb, v, (data ?? []) as EntryRow[], false);
+});
+
+export const loadEntry = cache(async (v: Viewer, id: string): Promise<Entry | null> => {
+  if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const sb = (await createClient())!;
+  const { data } = await sb.from("journal_entries").select(ENTRY_COLS).eq("id", id).is("removed_at", null).maybeSingle();
+  return data ? (await toEntries(sb, v, [data as EntryRow], true))[0] ?? null : null;
+});
+
+/* 일기 쓰기 화면 : 그 칸(하루 또는 회고)의 내 일기 + 그날 장소 이름 */
+export type EntryContext = { tripId: string; tripTitle: string; start: string; days: number; kind: "day" | "recap"; dayIndex: number | null; places: string[]; entry: Entry | null };
+export const loadEntryContext = cache(async (v: Viewer, tripId: string, kind: "day" | "recap", dayIndex: number | null): Promise<EntryContext | null> => {
+  if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
+  const r = await loadTrip(v, tripId);
+  if (!("trip" in r)) return null;
+  if (kind === "day" && (dayIndex == null || dayIndex < 0 || dayIndex >= r.trip.days.length)) return null;
+  const sb = (await createClient())!;
+  let q = sb.from("journal_entries").select(ENTRY_COLS).eq("trip_id", tripId).eq("author_id", v.id).eq("kind", kind).is("removed_at", null);
+  q = dayIndex == null ? q.is("day_index", null) : q.eq("day_index", dayIndex);
+  const { data } = await q.maybeSingle();
+  const entry = data ? (await toEntries(sb, v, [data as EntryRow], true))[0] ?? null : null;
+  const places = kind === "day" ? r.trip.days[dayIndex!].items.map((i) => i.title) : [];
+  return { tripId, tripTitle: r.trip.title, start: r.trip.start, days: r.trip.days.length, kind, dayIndex, places, entry };
+});

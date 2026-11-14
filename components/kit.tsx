@@ -11,13 +11,14 @@ const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).jo
 /* ---------- 아이콘 (선 1.75, 둥근 끝) ---------- */
 type IconName =
   | "plus" | "bell" | "home" | "cal" | "map" | "user" | "arrow" | "camera"
-  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check";
+  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book";
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
   bell: <><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7z" /><path d="M10 19a2 2 0 0 0 4 0" /></>,
   home: <path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1v-8z" />,
   cal: <><rect x="4" y="5" width="16" height="15" rx="2.5" /><path d="M4 10h16M8 3v4M16 3v4" /></>,
   map: <><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></>,
+  book: <><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" /><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" /><path d="M9 7.5h6" /></>,
   check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
   sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
   moon: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />,
@@ -342,10 +343,10 @@ export function SkeletonPinCard() {
 
 /* ---------- 하단 탭 (떠 있는 알약) ---------- */
 /* 2026-11-14 : "지도" 탭을 "도장" 으로 (마루님 결정. 지도는 4단계라 아직 없음) */
-/* 하단 탭 4개. 가운데 + 는 뺐음 (2026-11-14 마루님) */
-export function TabBar({ active = "홈" }: { active?: "홈" | "여행" | "도장" | "설정" }) {
-  const tabs: { name: "홈" | "여행" | "도장" | "설정"; icon: IconName; href: string }[] = [
-    { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" },
+/* 하단 탭 5개 : 홈/여행/일기/도장/설정. 가운데 + 는 뺐음 (2026-11-14 마루님) */
+export function TabBar({ active = "홈" }: { active?: "홈" | "여행" | "일기" | "도장" | "설정" }) {
+  const tabs: { name: "홈" | "여행" | "일기" | "도장" | "설정"; icon: IconName; href: string }[] = [
+    { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" }, { name: "일기", icon: "book", href: "/diary" },
     { name: "도장", icon: "stamp", href: "/stamps" }, { name: "설정", icon: "gear", href: "/me" },
   ];
   const item = (t: (typeof tabs)[number]) => (

@@ -111,7 +111,12 @@ export default async function TripDetail({ params, searchParams }: Props) {
       </nav>
 
       <section className="flex flex-col gap-3 px-5 pt-5" aria-label={`${day}일차 일정`}>
-        <div>
+        <div className="relative">
+          {viewer.kind === "user" && (
+            <Link href={`/trips/${trip.id}/diary?day=${day}`} className="press absolute right-0 top-0 inline-flex h-11 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+              <Icon name="book" size={16} />이 날 일기
+            </Link>
+          )}
           <span className="text-sub font-bold text-point-text">{day}일차</span>
           <h2 className="text-title-lg font-extrabold text-ink">{plan.title ?? `${md(addDays(trip.start, day - 1))} (${weekday(addDays(trip.start, day - 1))})`}</h2>
         </div>

@@ -102,7 +102,7 @@ export function PhotoThumb({ size = 48 }: { size?: number }) {
 }
 
 /* 하단 탭 (홈, 여행, 도장, 마이 화면에서). + 는 로그인 문지기를 거친다 */
-export function MainTabs({ active }: { active: "홈" | "여행" | "도장" | "설정" }) {
+export function MainTabs({ active }: { active: "홈" | "여행" | "일기" | "도장" | "설정" }) {
   return <BottomDock><TabBar active={active} /></BottomDock>;
 }
 
