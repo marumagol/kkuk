@@ -1,6 +1,7 @@
-/* S05 여행 목록 : 다가오는 여행 / 다녀온 여행 (지난 여행은 여기서 본다) */
+/* S05 여행 목록 : 다가오는 여행 / 다녀온 여행 탭 (?tab=past, 2026-11-14 마루님) */
+import Link from "next/link";
 import { EmptyState } from "@/components/kit";
-import { AppShell, SectionTitle, MainTabs, MockNote, TripRow, type BadgeTone } from "@/components/screen";
+import { AppShell, MainTabs, MockNote, TripRow, type BadgeTone } from "@/components/screen";
 import { GateButton, GateCta } from "@/components/gate";
 import { Icon } from "@/components/kit";
 import { getViewer } from "@/lib/viewer";
@@ -9,12 +10,13 @@ import { loadTrips } from "@/lib/trips";
 
 export const metadata = { title: "여행" };
 
-export default async function Trips({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
-  const { deleted } = await searchParams;
+export default async function Trips({ searchParams }: { searchParams: Promise<{ deleted?: string; tab?: string }> }) {
+  const { deleted, tab } = await searchParams;
   const viewer = await getViewer();
   const trips = await loadTrips(viewer);
   const next = upcomingOf(trips);
   const past = pastOf(trips);
+  const showPast = tab === "past";
   const years = [...new Set(past.map((t) => yearOf(t.start)))];
   const badge = (t: Trip) => (statusOf(t, todayOf(t)) === "ongoing" ? "여행 중" : `D-${daysBetween(todayOf(t), t.start)}`);
   const tone = (t: Trip): BadgeTone => {
@@ -41,25 +43,36 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
             action={<GateCta href="/trips/new">여행 만들기</GateCta>} />
         ) : (
           <>
-            <section className="flex flex-col gap-2" aria-label="다가오는 여행">
-              <SectionTitle title="다가오는 여행" aside={next.length ? `${next.length}개` : undefined} />
-              {next.length ? next.map((t) => (
-                <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} badge={badge(t)} badgeTone={tone(t)} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
-              )) : <p className="rounded-pin bg-surface px-4 py-4 text-sub text-ink-sub">다가오는 여행이 없어요</p>}
-            </section>
-
-            <section id="past" className="flex scroll-mt-4 flex-col gap-2" aria-label="다녀온 여행">
-              <SectionTitle title="다녀온 여행" aside={past.length ? `${past.length}개` : undefined} />
-              {past.length === 0 && <p className="rounded-pin bg-surface px-4 py-4 text-sub text-ink-sub">아직 다녀온 여행이 없어요</p>}
-              {years.map((y) => (
-                <div key={y} className="flex flex-col gap-2">
-                  <h3 className="pt-1 text-sub font-bold text-ink-sub">{y}년</h3>
-                  {past.filter((t) => yearOf(t.start) === y).map((t) => (
-                    <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
-                  ))}
-                </div>
+            <nav aria-label="여행 나누기" className="-mb-2 flex border-b border-line">
+              {[{ key: "next", label: "다가오는 여행", n: next.length, on: !showPast, href: "/trips" },
+                { key: "past", label: "다녀온 여행", n: past.length, on: showPast, href: "/trips?tab=past" }].map((x) => (
+                <Link key={x.key} href={x.href} replace aria-current={x.on ? "page" : undefined}
+                  className={"press -mb-px flex h-12 flex-1 items-center justify-center gap-1 border-b-2 text-body " +
+                    (x.on ? "border-ink font-bold text-ink" : "border-transparent font-semibold text-ink-sub")}>
+                  {x.label}<span className="text-sub">{x.n}</span>
+                </Link>
               ))}
-            </section>
+            </nav>
+
+            {!showPast ? (
+              <section className="flex flex-col gap-2" aria-label="다가오는 여행">
+                {next.length ? next.map((t) => (
+                  <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} badge={badge(t)} badgeTone={tone(t)} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
+                )) : <EmptyState title="다가오는 여행이 없어요" desc="도시와 날짜만 정하면 바로 시작할 수 있어요" action={<GateCta href="/trips/new">여행 만들기</GateCta>} />}
+              </section>
+            ) : (
+              <section className="flex flex-col gap-2" aria-label="다녀온 여행">
+                {past.length === 0 && <p className="rounded-pin bg-surface px-4 py-4 text-sub text-ink-sub">아직 다녀온 여행이 없어요</p>}
+                {years.map((y) => (
+                  <div key={y} className="flex flex-col gap-2">
+                    <h3 className="pt-1 text-sub font-bold text-ink-sub">{y}년</h3>
+                    {past.filter((t) => yearOf(t.start) === y).map((t) => (
+                      <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
+                    ))}
+                  </div>
+                ))}
+              </section>
+            )}
           </>
         )}
       </div>
