@@ -1,6 +1,6 @@
 "use client";
 /*
-  이메일 → 6자리 코드 → 로그인
+  이메일 → 숫자 코드(Supabase 설정에 따라 6~8자리) → 로그인
   Supabase : signInWithOtp (메일 보내기) → verifyOtp type "email" (확인)
   메일 템플릿에 {{ .Token }} 이 있어야 링크 대신 6자리가 간다 (guides/ 안내 참고)
 */
@@ -52,7 +52,7 @@ export function LoginForm({ next, configured }: { next: string; configured: bool
 
   const onCode = async (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (!/^\d{6}$/.test(code)) return setError("6자리 숫자를 넣어 주세요");
+    if (!/^\d{6,8}$/.test(code)) return setError("메일로 받은 숫자 코드를 모두 넣어 주세요");
     const sb = createClient();
     if (!sb) return;
     setBusy(true); setError("");
@@ -78,11 +78,11 @@ export function LoginForm({ next, configured }: { next: string; configured: bool
 
   return (
     <form onSubmit={onCode} noValidate className="flex flex-col gap-4">
-      <p className="text-sub text-ink"><b className="font-bold">{email}</b> 로 6자리 코드를 보냈어요. 메일이 안 보이면 스팸함도 확인해 주세요</p>
-      <Field label="로그인 코드" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6자리 숫자"
-        value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
+      <p className="text-sub text-ink"><b className="font-bold">{email}</b> 로 로그인 코드를 보냈어요. 메일이 안 보이면 스팸함도 확인해 주세요</p>
+      <Field label="로그인 코드" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={8} placeholder="숫자 코드"
+        value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, "").slice(0, 8)); setError(""); }}
         error={error || undefined} hint={notice || undefined} disabled={busy} autoFocus />
-      <Button full type="submit" disabled={busy || code.length !== 6}>{busy ? "확인하는 중" : "로그인"}</Button>
+      <Button full type="submit" disabled={busy || code.length < 6}>{busy ? "확인하는 중" : "로그인"}</Button>
       <div className="flex items-center justify-between">
         <button type="button" onClick={() => { setStep("email"); setError(""); }} className="press h-11 px-1 text-sub font-semibold text-ink-sub underline underline-offset-4">이메일 바꾸기</button>
         <button type="button" disabled={left > 0 || busy} onClick={async () => { await send(); setNotice("새 코드를 보냈어요"); }}

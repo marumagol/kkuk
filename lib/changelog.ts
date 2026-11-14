@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-14 22:10", version: "0.1.0", items: ["메일로 받은 로그인 코드가 8자리여도 넣을 수 있어요"] },
   { at: "2026-11-14 22:05", version: "0.1.0", items: ["마이에서 업데이트 내역을 볼 수 있어요"] },
   { at: "2026-11-14 21:48", version: "0.1.0", items: ["새 로고로 바뀌었어요"] },
   {
