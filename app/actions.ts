@@ -404,7 +404,7 @@ export async function saveEntry(tripId: string, input: EntryInput): Promise<Crea
   if (kind === "day" && (!Number.isInteger(day) || day! < 0 || day! >= MAX_TRIP_DAYS)) return { error: "날짜를 다시 골라 주세요" };
   const title = String(input?.title ?? "").trim();
   const body = String(input?.body ?? "").trim();
-  const visibility = input?.visibility === "private" ? "private" : "members";
+  const visibility = input?.visibility === "private" || input?.visibility === "public" ? input.visibility : "members";
   const photos = (Array.isArray(input?.photos) ? input.photos : []).map(String);
   if ([...title].length > 60) return { error: "제목은 60자까지 쓸 수 있어요" };
   if ([...body].length > 5000) return { error: "글은 5,000자까지 쓸 수 있어요" };

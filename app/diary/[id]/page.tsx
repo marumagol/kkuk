@@ -7,6 +7,7 @@ import { getViewer } from "@/lib/viewer";
 import { loadEntry } from "@/lib/trips";
 import { VIS_NAME, slotOf } from "@/components/entry-card";
 import { EntryRemove } from "@/components/entry-remove";
+import { ShareLink } from "@/components/share-link";
 
 export const metadata = { title: "일기" };
 
@@ -31,6 +32,7 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
           {e.title && <h1 className="mt-1 text-title-xl font-extrabold text-ink">{e.title}</h1>}
           <p className="mt-1 text-tiny text-ink-sub">{e.mine ? "내 일기" : `${e.author}님의 일기`} · {VIS_NAME[e.visibility]}</p>
         </div>
+        {e.mine && e.shareToken && <ShareLink path={`/j/${e.shareToken}`} />}
         {e.photos.length > 0 && (
           <div className="-mx-5 flex snap-x gap-2 overflow-x-auto px-5">
             {e.photos.map((p, i) => (

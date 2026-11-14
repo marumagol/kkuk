@@ -14,7 +14,7 @@ export function JournalForm({ ctx }: { ctx: EntryContext }) {
   const e = ctx.entry;
   const [title, setTitle] = useState(e?.title ?? "");
   const [body, setBody] = useState(e?.body ?? "");
-  const [visibility, setVisibility] = useState<"members" | "private">(e?.visibility === "private" ? "private" : "members");
+  const [visibility, setVisibility] = useState<"members" | "private" | "public">(e?.visibility ?? "members");
   const [photos, setPhotos] = useState<{ path: string; url: string }[]>(e?.photos ?? []);
   const [uploading, setUploading] = useState(0);
   const [error, setError] = useState("");
@@ -86,13 +86,13 @@ export function JournalForm({ ctx }: { ctx: EntryContext }) {
 
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-2 text-sub font-bold text-ink-sub">누가 볼 수 있나요</legend>
-          <div role="radiogroup" className="grid grid-cols-2 gap-1 rounded-full bg-surface-soft p-1">
-            {([["members", "함께하는 사람"], ["private", "나만 보기"]] as const).map(([v, label]) => (
+          <div role="radiogroup" className="grid grid-cols-3 gap-1 rounded-full bg-surface-soft p-1">
+            {([["members", "함께하는 사람"], ["private", "나만 보기"], ["public", "링크 공개"]] as const).map(([v, label]) => (
               <button key={v} type="button" role="radio" aria-checked={visibility === v} disabled={busy} onClick={() => setVisibility(v)}
                 className={"press relative after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] h-9 rounded-full text-tiny font-bold " + (visibility === v ? "bg-surface text-ink shadow-sm" : "text-ink")}>{label}</button>
             ))}
           </div>
-          <p className="text-tiny text-ink-sub">{visibility === "private" ? "나만 볼 수 있어요" : "이 여행을 함께하는 사람이 볼 수 있어요"}. 링크로 공개하기는 다음 단계에서 열려요</p>
+          <p className="text-tiny text-ink-sub">{visibility === "private" ? "나만 볼 수 있어요" : visibility === "public" ? "링크를 아는 사람은 로그인 없이 이 글과 사진을 볼 수 있어요. 검색에는 나오지 않고, 공개를 끄면 링크가 끊겨요" : "이 여행을 함께하는 사람이 볼 수 있어요"}</p>
         </fieldset>
 
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}

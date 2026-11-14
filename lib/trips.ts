@@ -224,10 +224,10 @@ export type Visibility = "private" | "members" | "public";
 export type Entry = {
   id: string; tripId: string; tripTitle: string; tripStart: string; kind: "day" | "recap"; dayIndex: number | null;
   title: string | null; body: string; photos: { path: string; url: string }[]; visibility: Visibility;
-  author: string; mine: boolean; updatedAt: string;
+  author: string; mine: boolean; updatedAt: string; shareToken: string | null;
 };
-type EntryRow = { id: string; trip_id: string; author_id: string; kind: "day" | "recap"; day_index: number | null; title: string | null; body: string; photos: string[]; visibility: Visibility; updated_at: string };
-const ENTRY_COLS = "id, trip_id, author_id, kind, day_index, title, body, photos, visibility, updated_at";
+type EntryRow = { id: string; trip_id: string; author_id: string; kind: "day" | "recap"; day_index: number | null; title: string | null; body: string; photos: string[]; visibility: Visibility; updated_at: string; share_token: string | null };
+const ENTRY_COLS = "id, trip_id, author_id, kind, day_index, title, body, photos, visibility, updated_at, share_token";
 
 async function toEntries(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, v: Viewer & { kind: "user" }, rows: EntryRow[], allPhotos: boolean): Promise<Entry[]> {
   if (!rows.length) return [];
@@ -241,7 +241,7 @@ async function toEntries(sb: NonNullable<Awaited<ReturnType<typeof createClient>
   const urls = await photoUrls(sb, rows.flatMap((r) => (allPhotos ? r.photos : r.photos.slice(0, 1))));
   return rows.filter((r) => tripOf.has(r.trip_id)).map((r) => ({
     id: r.id, tripId: r.trip_id, tripTitle: tripOf.get(r.trip_id)!.title, tripStart: tripOf.get(r.trip_id)!.start_date,
-    kind: r.kind, dayIndex: r.day_index, title: r.title, body: r.body, visibility: r.visibility, updatedAt: r.updated_at,
+    kind: r.kind, dayIndex: r.day_index, title: r.title, body: r.body, visibility: r.visibility, updatedAt: r.updated_at, shareToken: r.author_id === v.id ? r.share_token : null,
     photos: r.photos.map((p) => ({ path: p, url: urls.get(p) ?? "" })).filter((p) => p.url),
     author: nameOf.get(`${r.trip_id}:${r.author_id}`) ?? "나간 사람", mine: r.author_id === v.id,
   }));
@@ -338,4 +338,25 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
     missing.push({ cityId: known.get(key)!, name: c.name, country: c.country_code, earned: false, visits: 0, trips: [] });
   }
   return { earned, missing, cityCount: earned.length, countryCount: new Set(earned.map((s) => s.country)).size };
+});
+
+/* ───────── 링크로 공개한 일기 (3단계 7, migration 0013) : 로그인 없이 읽는다 ───────── */
+export type PublicEntry = {
+  kind: "day" | "recap"; dayIndex: number | null; title: string | null; body: string; photos: string[];
+  updatedAt: string; author: string; tripTitle: string; start: string; end: string;
+};
+export const loadPublicEntry = cache(async (token: string): Promise<PublicEntry | null> => {
+  if (!/^[0-9a-f]{32}$/.test(token)) return null;
+  const sb = await createClient();
+  if (!sb) return null;
+  const { data } = await sb.rpc("public_entry", { p_token: token });
+  const r = (Array.isArray(data) ? data[0] : data) as
+    | { kind: "day" | "recap"; day_index: number | null; title: string | null; body: string; photos: string[]; updated_at: string; author: string; trip_title: string; start_date: string; end_date: string }
+    | undefined;
+  if (!r) return null;
+  const urls = await photoUrls(sb, r.photos);
+  return {
+    kind: r.kind, dayIndex: r.day_index, title: r.title, body: r.body, photos: r.photos.map((p) => urls.get(p) ?? "").filter(Boolean),
+    updatedAt: r.updated_at, author: r.author, tripTitle: r.trip_title, start: r.start_date, end: r.end_date,
+  };
 });
