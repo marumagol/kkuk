@@ -1,7 +1,7 @@
 "use client";
 /* 함께하는 사람 화면 내용. 버튼은 권한에 맞게만 보이고, 실제 검사는 DB 함수가 한다
    초대 링크는 항상 보기만으로 들어오고, 주인이 들어온 뒤 권한을 바꾼다 (2026-11-14 마루님) */
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/kit";
 import { Avatar } from "@/components/screen";
 import { AlertDialog } from "@/components/gate";
@@ -28,6 +28,12 @@ export function MembersPanel({ view }: { view: MembersView }) {
     if (r && "token" in r && r.token) setToken(r.token);
     if (done) setMsg(done);
   });
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => setCanShare(typeof navigator.share === "function"), []);
+  const share = async (u: string) => {
+    try { await navigator.share({ title: "KKuK 여행 초대", text: "같이 여행 계획해요", url: u }); }
+    catch (e) { if ((e as Error)?.name !== "AbortError") await copy(u); }
+  };
   const copy = async (u: string) => {
     try { await navigator.clipboard.writeText(u); setMsg("초대 링크를 복사했어요. 함께할 사람에게 보내 주세요"); }
     catch { setMsg("복사하지 못했어요. 링크를 길게 눌러 복사해 주세요"); }
@@ -42,8 +48,9 @@ export function MembersPanel({ view }: { view: MembersView }) {
           {token ? (
             <>
               <p className="break-all rounded-field bg-bg px-3 py-2 text-tiny text-ink-sub">{url}</p>
+              {canShare && <Button full onClick={() => share(url)} disabled={busy}>카카오톡 등으로 보내기</Button>}
               <div className="flex gap-2">
-                <Button full onClick={() => copy(url)} disabled={busy}>링크 복사</Button>
+                <Button full variant={canShare ? "secondary" : undefined} onClick={() => copy(url)} disabled={busy}>링크 복사</Button>
                 <Button variant="secondary" disabled={busy} onClick={() => setAsk({ title: "초대 링크를 끊을까요?", desc: "이 링크로는 더 이상 들어올 수 없어요. 이미 함께하는 사람은 그대로예요", label: "끊기",
                   run: async () => { const r = await revokeInvite(view.tripId); if (!r?.error) setToken(""); return r; } })}>끊기</Button>
               </div>

@@ -9,7 +9,20 @@ import { createClient } from "@/lib/supabase/server";
 import { md } from "@/lib/mock";
 import { JoinButton } from "@/components/join-button";
 
-export const metadata = { title: "초대" };
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }) {
+  // 카카오톡 등 메신저 미리보기 카드 (4단계 6) : 여행 이름, 날짜, 초대한 사람
+  const { token } = await params;
+  const sb = /^[0-9a-f]{32}$/.test(token) ? await createClient() : null;
+  const { data } = sb ? await sb.rpc("invite_preview", { p_token: token }) : { data: null };
+  const p = ((data ?? []) as Preview[])[0];
+  if (!p || p.status !== "ok" || !p.title) return { title: "초대", robots: { index: false } };
+  const title = `${p.inviter ?? "함께할 사람"}님이 "${p.title}" 여행에 초대했어요`;
+  const description = p.start_date && p.end_date ? `${md(p.start_date)} ~ ${md(p.end_date)} · KKuK 에서 함께 계획해요` : "KKuK 에서 함께 계획해요";
+  return {
+    title, description, robots: { index: false },
+    openGraph: { title, description, siteName: "KKuK", images: [{ url: "/icon-512.png", width: 512, height: 512 }] },
+  };
+}
 
 type Preview = { trip_id: string | null; title: string | null; start_date: string | null; end_date: string | null; inviter: string | null; role: string | null; status: string };
 const BAD: Record<string, string> = {
