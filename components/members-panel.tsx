@@ -1,5 +1,6 @@
 "use client";
-/* 함께하는 사람 화면 내용. 버튼은 권한에 맞게만 보이고, 실제 검사는 DB 함수가 한다 */
+/* 함께하는 사람 화면 내용. 버튼은 권한에 맞게만 보이고, 실제 검사는 DB 함수가 한다
+   초대 링크는 항상 보기만으로 들어오고, 주인이 들어온 뒤 권한을 바꾼다 (2026-11-14 마루님) */
 import { useState, useTransition } from "react";
 import { Button } from "@/components/kit";
 import { Avatar } from "@/components/screen";
@@ -13,7 +14,6 @@ type Ask = { title: string; desc: string; label: string; run: () => Promise<{ er
 
 export function MembersPanel({ view }: { view: MembersView }) {
   const owner = view.role === "owner";
-  const [linkRole, setLinkRole] = useState<"editor" | "viewer">(view.invite?.role ?? "editor");
   const [token, setToken] = useState(view.invite?.token ?? "");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
@@ -38,15 +38,7 @@ export function MembersPanel({ view }: { view: MembersView }) {
       {owner && (
         <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-labelledby="invite-title">
           <h2 id="invite-title" className="text-body font-bold text-ink">초대 링크</h2>
-          <div role="radiogroup" aria-label="링크로 들어온 사람의 권한" className="grid grid-cols-2 gap-1 rounded-full bg-surface-soft p-1">
-            {(["editor", "viewer"] as const).map((r) => (
-              <button key={r} type="button" role="radio" aria-checked={linkRole === r} disabled={busy}
-                onClick={() => { setLinkRole(r); if (token && r !== linkRole) run(async () => makeInvite(view.tripId, r), `이제 링크로 들어오면 ${ROLE_NAME[r]}이에요. 예전 링크는 끊겼어요`); }}
-                className={"press h-9 rounded-full text-tiny font-bold " + (linkRole === r ? "bg-surface text-ink shadow-sm" : "text-ink-sub")}>
-                {ROLE_NAME[r]}로 초대
-              </button>
-            ))}
-          </div>
+          <p className="text-tiny text-ink-sub">링크로 들어온 사람은 먼저 보기만이에요. 들어온 뒤 아래 목록에서 편집 가능으로 바꿀 수 있어요</p>
           {token ? (
             <>
               <p className="break-all rounded-field bg-bg px-3 py-2 text-tiny text-ink-sub">{url}</p>
@@ -59,7 +51,7 @@ export function MembersPanel({ view }: { view: MembersView }) {
             </>
           ) : (
             <Button full disabled={busy} onClick={() => run(async () => {
-              const r = await makeInvite(view.tripId, linkRole);
+              const r = await makeInvite(view.tripId, "viewer");
               if (r.token) await copy(`${window.location.origin}/invite/${r.token}`);
               return r;
             })}>초대 링크 만들기</Button>
