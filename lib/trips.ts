@@ -17,7 +17,7 @@ const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사"
 type Row = {
   id: string; title: string; start_date: string; end_date: string; time_zone: string; removed_at: string | null;
   trip_cities: { name: string; sort_order: number; country_code: string | null; country_icon: string | null }[];
-  trip_members: { display_name: string; role: string; removed_at: string | null; created_at: string }[];
+  trip_members: { user_id: string | null; display_name: string; role: string; removed_at: string | null; created_at: string }[];
 };
 
 const members = (r: Row) =>
@@ -33,7 +33,7 @@ const base = (r: Row): Trip => ({
   members: members(r), days: [], undated: [],
 });
 
-const SELECT = "id, title, start_date, end_date, time_zone, removed_at, trip_cities(name, sort_order, country_code, country_icon), trip_members(display_name, role, removed_at, created_at)";
+const SELECT = "id, title, start_date, end_date, time_zone, removed_at, trip_cities(name, sort_order, country_code, country_icon), trip_members(user_id, display_name, role, removed_at, created_at)";
 
 /* 내 여행 목록 (삭제된 여행 빼고) */
 export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {
@@ -54,7 +54,7 @@ export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {
 export type Role = "owner" | "editor" | "viewer";
 export type PlaceRow = {
   id: string; day_index: number | null; sort_order: number; title: string; address: string | null; category: string;
-  start_time: string | null; estimated_cost: number | null; cost_currency: string | null; memo: string | null; photos: string[];
+  start_time: string | null; estimated_cost: number | null; cost_currency: string | null; memo: string | null; photos: string[]; updated_by?: string | null; updated_at?: string;
 };
 
 /* 장소 사진 (비공개 저장소) : 1시간짜리 주소로 바꿔서 보여 준다 */
@@ -79,8 +79,12 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   if (r.removed_at) return { missing: "removed" };
 
   const { data: rows } = await sb.from("itinerary_items")
-    .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos")
+    .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos, updated_by, updated_at")
     .eq("trip_id", id).is("removed_at", null).order("sort_order");
+  // 누가 고쳤는지 : 다른 사람이 24시간 안에 고친 장소에 이름 (2단계)
+  const names = new Map(r.trip_members.filter((m) => m.user_id).map((m) => [m.user_id!, m.display_name]));
+  const dayAgo = Date.now() - 24 * 3600 * 1000;
+  const editorOf = (it: PlaceRow) => it.updated_by && it.updated_by !== v.id && it.updated_at && Date.parse(it.updated_at) > dayAgo ? names.get(it.updated_by) : undefined;
   const trip = base(r);
   const len = daysBetween(trip.start, trip.end) + 1;
   trip.days = Array.from({ length: len }, () => ({ items: [] as Item[] }));
@@ -88,7 +92,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   for (const it of (rows ?? []) as PlaceRow[]) {
     const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
     const desc = [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
-    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", time: it.start_time?.slice(0, 5), desc: desc || undefined, photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
+    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }
@@ -142,4 +146,30 @@ export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?
   const t = r.trip;
   const photos = placeId ? [...t.days.flatMap((d) => d.items), ...t.undated].find((it) => it.id === placeId)?.photos : undefined;
   return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos };
+});
+
+/* 함께하는 사람 화면 (2단계) : 목록, 내 권한, (주인이면) 살아 있는 초대 링크 */
+export type Member = { id: string; name: string; role: Role; isMe: boolean };
+export type MembersView = {
+  tripId: string; tripTitle: string; role: Role; members: Member[];
+  invite: { token: string; role: "editor" | "viewer"; expiresAt: string } | null;
+};
+export const loadMembers = cache(async (v: Viewer, tripId: string): Promise<MembersView | null> => {
+  if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
+  const r = await loadTrip(v, tripId);
+  if (!("trip" in r)) return null;
+  const sb = (await createClient())!;
+  const { data: rows } = await sb.from("trip_members").select("id, user_id, display_name, role, created_at")
+    .eq("trip_id", tripId).is("removed_at", null).order("created_at");
+  const order: Record<string, number> = { owner: 0, editor: 1, viewer: 2 };
+  const members = ((rows ?? []) as { id: string; user_id: string | null; display_name: string; role: Role }[])
+    .map((m) => ({ id: m.id, name: m.display_name, role: m.role, isMe: m.user_id === v.id }))
+    .sort((a, b) => order[a.role] - order[b.role]);
+  let invite: MembersView["invite"] = null;
+  if (r.role === "owner") {
+    const { data } = await sb.from("trip_invites").select("token, role, expires_at")
+      .eq("trip_id", tripId).is("revoked_at", null).gt("expires_at", new Date().toISOString()).maybeSingle();
+    if (data) invite = { token: data.token, role: data.role, expiresAt: data.expires_at };
+  }
+  return { tripId, tripTitle: r.trip.title, role: r.role, members, invite };
 });

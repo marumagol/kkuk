@@ -173,7 +173,7 @@ export function PinCard({ index, time, category, title, desc, editedBy, last, hr
             {time && <span className="text-sub font-bold text-ink">{time}</span>}
             <CategoryChip category={category} />
           </div>
-          {editedBy && <span className="text-tiny font-bold text-point-text">{editedBy}님이 방금 고쳤어요</span>}
+          {editedBy && <span className="text-tiny font-bold text-point-text">{editedBy}님이 고쳤어요</span>}
         </div>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">

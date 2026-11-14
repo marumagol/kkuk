@@ -270,3 +270,82 @@ export async function saveAvatar(path: string | null): Promise<CreateTripResult>
   if (prev?.avatar_url && prev.avatar_url !== path && AVATAR_PATH.test(prev.avatar_url)) await sb.storage.from("avatars").remove([prev.avatar_url]);
   revalidatePath("/", "layout");
 }
+
+/* ───────── 같이 쓰기 (2단계) : 모두 DB 함수가 권한을 검사한다 ───────── */
+const MEMBER_ERRORS: Record<string, string> = {
+  forbidden: "여행 주인만 할 수 있어요",
+  trip_removed: "삭제된 여행이에요",
+  transfer_required: "여행 주인은 먼저 다른 사람에게 주인을 넘겨야 나갈 수 있어요",
+  owner_role_fixed: "여행 주인의 권한은 바꿀 수 없어요. 주인 넘기기를 써 주세요",
+  owner_cannot_leave: "여행 주인은 내보낼 수 없어요",
+  member_not_found: "이미 나간 사람이에요. 새로고침해 주세요",
+  invite_not_found: "없는 초대 링크예요",
+  invite_revoked: "여행 주인이 끊은 초대 링크예요. 새 링크를 받아 주세요",
+  invite_expired: "기간이 지난 초대 링크예요. 새 링크를 받아 주세요",
+  trip_full: "함께하는 사람이 가득 찼어요 (최대 10명)",
+  profile_required: "이름을 먼저 정해 주세요",
+};
+function memberError(msg?: string) {
+  const key = Object.keys(MEMBER_ERRORS).find((k) => msg?.includes(k));
+  return { error: key ? MEMBER_ERRORS[key] : "처리하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+}
+async function memberRpc(fn: string, args: Record<string, unknown>, back: string): Promise<{ error: string } | { data: unknown }> {
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect(`/login?next=${encodeURIComponent(back)}`);
+  const { data, error } = await sb.rpc(fn, args);
+  if (error) return memberError(error.message);
+  return { data };
+}
+const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s);
+const okRole = (r: string) => r === "editor" || r === "viewer";
+
+export async function makeInvite(tripId: string, role: string): Promise<{ error?: string; token?: string }> {
+  if (!isUuid(tripId) || !okRole(role)) return { error: "다시 시도해 주세요" };
+  const r = await memberRpc("create_invite", { p_trip: tripId, p_role: role }, `/trips/${tripId}/members`);
+  if ("error" in r) return r;
+  revalidatePath(`/trips/${tripId}/members`);
+  return { token: String(r.data) };
+}
+export async function revokeInvite(tripId: string): Promise<CreateTripResult> {
+  if (!isUuid(tripId)) return { error: "다시 시도해 주세요" };
+  const r = await memberRpc("revoke_invite", { p_trip: tripId }, `/trips/${tripId}/members`);
+  if ("error" in r) return r;
+  revalidatePath(`/trips/${tripId}/members`);
+}
+export async function changeMemberRole(tripId: string, memberId: string, role: string): Promise<CreateTripResult> {
+  if (!isUuid(memberId) || !okRole(role)) return { error: "다시 시도해 주세요" };
+  const r = await memberRpc("set_member_role", { p_member: memberId, p_role: role }, `/trips/${tripId}/members`);
+  if ("error" in r) return r;
+  revalidatePath("/", "layout");
+}
+export async function kickMember(tripId: string, memberId: string): Promise<CreateTripResult> {
+  if (!isUuid(memberId)) return { error: "다시 시도해 주세요" };
+  const r = await memberRpc("remove_member", { p_member: memberId }, `/trips/${tripId}/members`);
+  if ("error" in r) return r;
+  revalidatePath("/", "layout");
+}
+export async function giveOwner(tripId: string, memberId: string): Promise<CreateTripResult> {
+  if (!isUuid(memberId)) return { error: "다시 시도해 주세요" };
+  const r = await memberRpc("transfer_owner", { p_member: memberId }, `/trips/${tripId}/members`);
+  if ("error" in r) return r;
+  revalidatePath("/", "layout");
+}
+export async function leaveTrip(tripId: string): Promise<CreateTripResult> {
+  if (!isUuid(tripId)) return { error: "다시 시도해 주세요" };
+  const r = await memberRpc("leave_trip", { p_trip: tripId }, `/trips/${tripId}/members`);
+  if ("error" in r) return r;
+  revalidatePath("/", "layout");
+  redirect("/trips?left=1");
+}
+export async function joinInvite(token: string): Promise<CreateTripResult> {
+  if (!/^[0-9a-f]{32}$/.test(token)) return { error: MEMBER_ERRORS.invite_not_found };
+  const r = await memberRpc("accept_invite", { p_token: token }, `/invite/${token}`);
+  if ("error" in r) {
+    if (r.error === MEMBER_ERRORS.profile_required) redirect(`/welcome?next=/invite/${token}`);
+    return r;
+  }
+  revalidatePath("/", "layout");
+  redirect(`/trips/${r.data}?joined=1`);
+}

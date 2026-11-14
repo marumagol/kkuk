@@ -11,7 +11,7 @@ import { getViewer, isIn } from "@/lib/viewer";
 import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
 import { loadTrip } from "@/lib/trips";
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; removed?: string; undated?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; removed?: string; undated?: string; joined?: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const r = await loadTrip(await getViewer(), (await params).id);
@@ -66,11 +66,17 @@ export default async function TripDetail({ params, searchParams }: Props) {
     <AppShell>
       <div className="flex items-center justify-between px-5 pt-4">
         <BackLink />
-        <span className="flex -space-x-2" aria-label={`함께하는 사람 ${trip.members.length}명`}>
-          {trip.members.map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring />)}
-        </span>
+        {/* 함께하는 사람 : 누르면 목록과 초대 (2단계) */}
+        <Link href={viewer.kind === "user" ? `/trips/${trip.id}/members` : "#"} aria-label={`함께하는 사람 ${trip.members.length}명${canEdit && "role" in r && r.role === "owner" ? ", 초대하기" : ""}`}
+          className="press flex h-11 items-center gap-1 rounded-full bg-surface pl-1.5 pr-3">
+          <span className="flex -space-x-2">
+            {trip.members.slice(0, 4).map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring />)}
+          </span>
+          {"role" in r && r.role === "owner" && viewer.kind === "user" ? <Icon name="plus" size={16} className="text-ink-sub" /> : <span className="text-tiny font-bold text-ink-sub">{trip.members.length}</span>}
+        </Link>
       </div>
       {sp.removed && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">삭제했어요</p>}
+      {sp.joined && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행에 함께하게 됐어요</p>}
       {sp.saved && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행 정보를 저장했어요</p>}
       {viewer.kind === "preview" && <MockNote />}
       <div className="flex items-start gap-2 px-5 pt-3">
