@@ -437,3 +437,33 @@ export async function removeEntry(id: string): Promise<CreateTripResult> {
   revalidatePath("/", "layout");
   redirect("/diary?removed=1");
 }
+
+/* ───────── 위치 도장 받기 (3단계 2) : 위치 확인은 DB 함수 claim_stamp 가 한다 ───────── */
+export type ClaimResult =
+  | { ok: true; status: "new" | "again" | "already"; city: string; country: string; visits: number; byMe: boolean }
+  | { ok: false; code: string; error: string };
+const STAMP_ERRORS: Record<string, string> = {
+  not_member: "이 여행을 함께하는 사람만 도장을 받을 수 있어요",
+  trip_removed: "삭제된 여행이에요",
+  not_in_dates: "여행 기간에만 도장을 받을 수 있어요",
+  low_accuracy: "위치가 정확하지 않아요. 밖에서 잠시 뒤 다시 눌러 주세요",
+  bad_location: "위치를 읽지 못했어요. 다시 눌러 주세요",
+  no_city: "이 여행의 도시는 아직 도장이 없어요. 목록에 있는 도시만 도장을 받을 수 있어요",
+  too_far: "여행 도시에서 멀리 있어요. 도시 안에서 다시 눌러 주세요",
+};
+export async function claimStamp(tripId: string, lat: number, lng: number, accuracy: number): Promise<ClaimResult> {
+  if (!isUuid(tripId) || ![lat, lng, accuracy].every((n) => typeof n === "number" && Number.isFinite(n)))
+    return { ok: false, code: "bad_location", error: STAMP_ERRORS.bad_location };
+  const sb = await createClient();
+  if (!sb) return { ok: false, code: "server", error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect(`/login?next=/trips/${tripId}`);
+  const { data, error } = await sb.rpc("claim_stamp", { p_trip: tripId, p_lat: lat, p_lng: lng, p_accuracy: accuracy });
+  if (error) {
+    const code = Object.keys(STAMP_ERRORS).find((k) => error.message.includes(k)) ?? "server";
+    return { ok: false, code, error: STAMP_ERRORS[code] ?? "도장을 받지 못했어요. 잠시 뒤 다시 눌러 주세요" };
+  }
+  const r = (Array.isArray(data) ? data[0] : data) as { status: "new" | "again" | "already"; city_name: string; country_code: string; visits: number; verified_by_me: boolean };
+  revalidatePath("/stamps"); revalidatePath("/");
+  return { ok: true, status: r.status, city: r.city_name, country: r.country_code, visits: r.visits, byMe: r.verified_by_me };
+}

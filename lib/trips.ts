@@ -277,3 +277,65 @@ export const loadEntryContext = cache(async (v: Viewer, tripId: string, kind: "d
   const places = kind === "day" ? r.trip.days[dayIndex!].items.map((i) => i.title) : [];
   return { tripId, tripTitle: r.trip.title, start: r.trip.start, days: r.trip.days.length, kind, dayIndex, places, entry };
 });
+
+/* ───────── 도장 (3단계, migration 0012) ───────── */
+export type StampCard = {
+  cityId: number | null; name: string; country: string; earned: boolean;
+  firstDate?: string; visits: number; trips: { id: string; title: string; verifiedBy: string | null }[];
+};
+export type StampsView = { earned: StampCard[]; missing: StampCard[]; cityCount: number; countryCount: number };
+
+const PREVIEW_STAMPS: StampsView = {
+  earned: [
+    { cityId: null, name: "삿포로", country: "JP", earned: true, firstDate: "2026-12-28", visits: 1, trips: [] },
+    { cityId: null, name: "오타루", country: "JP", earned: true, firstDate: "2026-12-29", visits: 1, trips: [] },
+    { cityId: null, name: "교토", country: "JP", earned: true, firstDate: "2025-11-08", visits: 2, trips: [] },
+  ],
+  missing: [{ cityId: null, name: "도쿄", country: "JP", earned: false, visits: 0, trips: [] }],
+  cityCount: 3, countryCount: 1,
+};
+
+export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
+  if (v.kind === "preview") return PREVIEW_STAMPS;
+  if (v.kind !== "user") return { earned: [], missing: [], cityCount: 0, countryCount: 0 };
+  const sb = (await createClient())!;
+  const [{ data: grants }, { data: myCities }] = await Promise.all([
+    sb.from("stamp_grants").select("trip_id, city_id, granted_at, cities(name, country_code)").eq("user_id", v.id).order("granted_at"),
+    sb.from("trip_cities").select("name, country_code, trips!inner(removed_at)").is("trips.removed_at", null),
+  ]);
+  type G = { trip_id: string; city_id: number; granted_at: string; cities: { name: string; country_code: string } | null };
+  const gs = (grants ?? []) as unknown as G[];
+  const tripIds = [...new Set(gs.map((g) => g.trip_id))];
+  const [{ data: trips }, { data: checks }] = tripIds.length
+    ? await Promise.all([
+        sb.from("trips").select("id, title").in("id", tripIds),
+        sb.from("stamp_checkins").select("trip_id, city_id, verified_by").in("trip_id", tripIds),
+      ])
+    : [{ data: [] }, { data: [] }];
+  const verifierIds = [...new Set((checks ?? []).map((c: { verified_by: string | null }) => c.verified_by).filter(Boolean))] as string[];
+  const { data: names } = verifierIds.length ? await sb.from("profiles").select("user_id, display_name").in("user_id", verifierIds) : { data: [] };
+  const nameOf = new Map((names ?? []).map((p: { user_id: string; display_name: string }) => [p.user_id, p.display_name]));
+  const titleOf = new Map((trips ?? []).map((t: { id: string; title: string }) => [t.id, t.title]));
+  const verifier = new Map((checks ?? []).map((c: { trip_id: string; city_id: number; verified_by: string | null }) =>
+    [`${c.trip_id}:${c.city_id}`, c.verified_by === v.id ? "나" : c.verified_by ? nameOf.get(c.verified_by) ?? "함께한 사람" : null]));
+
+  const byCity = new Map<number, StampCard>();
+  for (const g of gs) {
+    if (!g.cities) continue;
+    const s = byCity.get(g.city_id) ?? { cityId: g.city_id, name: g.cities.name, country: g.cities.country_code, earned: true, firstDate: g.granted_at.slice(0, 10), visits: 0, trips: [] };
+    s.visits += 1;
+    s.trips.push({ id: g.trip_id, title: titleOf.get(g.trip_id) ?? "여행", verifiedBy: verifier.get(`${g.trip_id}:${g.city_id}`) ?? null });
+    byCity.set(g.city_id, s);
+  }
+  const earned = [...byCity.values()];
+  const have = new Set(earned.map((s) => `${s.country}:${s.name}`));
+  const { data: catalog } = await sb.from("cities").select("id, name, country_code");
+  const known = new Map((catalog ?? []).map((c: { id: number; name: string; country_code: string }) => [`${c.country_code}:${c.name}`, c.id]));
+  const missing: StampCard[] = [];
+  for (const c of (myCities ?? []) as { name: string; country_code: string | null }[]) {
+    const key = `${c.country_code}:${c.name}`;
+    if (!c.country_code || have.has(key) || !known.has(key) || missing.some((m) => `${m.country}:${m.name}` === key)) continue;
+    missing.push({ cityId: known.get(key)!, name: c.name, country: c.country_code, earned: false, visits: 0, trips: [] });
+  }
+  return { earned, missing, cityCount: earned.length, countryCount: new Set(earned.map((s) => s.country)).size };
+});

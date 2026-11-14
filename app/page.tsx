@@ -8,7 +8,8 @@ import { AppShell, Logo, Avatar, SectionTitle, MainTabs, MockNote, TripRow } fro
 import { GateCta } from "@/components/gate";
 import { getViewer, isIn, initialOf, avatarOf } from "@/lib/viewer";
 import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, placeCount, ddayOf } from "@/lib/mock";
-import { loadTrips, loadTrip } from "@/lib/trips";
+import { loadTrips, loadTrip, loadStamps } from "@/lib/trips";
+import { StampClaim } from "@/components/stamp-claim";
 
 function Header({ loggedIn, initial, avatar }: { loggedIn: boolean; initial: string; avatar: string | null }) {
   return (
@@ -38,6 +39,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
   const full = ongoing ? await loadTrip(viewer, hero.id) : null;
   const todayItems = full && "trip" in full ? full.trip.days[dayNo - 1]?.items ?? [] : [];
   const canEdit = !!full && "role" in full && full.role !== "viewer" && viewer.kind === "user";
+  const stamps = loggedIn ? await loadStamps(viewer) : null;
   const left = hero && !ongoing ? daysBetween(today, hero.start) : 0;
 
   return (
@@ -64,6 +66,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
                 title={hero.title} period={periodText(hero)} stops={hero.cities} pinCount={placeCount(hero)}
                 ready={hero.ready} members={hero.members} />
             </Link>
+            {ongoing && viewer.kind === "user" && <StampClaim tripId={hero.id} inset={false} />}
             {ongoing && (
               <section className="flex flex-col gap-3 pt-2" aria-labelledby="today-title">
                 <div className="flex items-end justify-between">
@@ -98,9 +101,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
             <Link href="/trips" className="press flex flex-1 rounded-card">
               <StatTile label="내 장소" value={String(past.reduce((n, t) => n + placeCount(t), 0))} caption="지금까지 다녀온 곳" tone="point" icon={<Pin size={20} />} />
             </Link>
-            {/* 피그마 01 홈 "모은 도장" : 다녀온 여행의 도시 수 (도장 기능 전까지는 이 숫자로) */}
+            {/* 피그마 01 홈 "모은 도장" : 위치 도장 수 (3단계) */}
             <Link href="/stamps" className="press flex flex-1 rounded-card">
-              <StatTile label="모은 도장" value={String(new Set(past.flatMap((t) => t.cities)).size)} caption="도시를 다녀왔어요" tone="stamp" icon={<span aria-hidden="true" className="size-5 rounded-full border-2 border-dashed border-point-text" />} />
+              <StatTile label="모은 도장" value={String(stamps?.cityCount ?? 0)} caption={stamps?.cityCount ? `나라 ${stamps.countryCount}곳의 도시` : "여행 도시에서 받아요"} tone="stamp" icon={<span aria-hidden="true" className="size-5 rounded-full border-2 border-dashed border-point-text" />} />
             </Link>
           </div>
         )}

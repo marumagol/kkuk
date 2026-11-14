@@ -8,6 +8,7 @@ import { AppShell, BottomDock, Avatar, SectionTitle, MockNote } from "@/componen
 import { GateFab, GateCta } from "@/components/gate";
 import { SortablePlaces } from "@/components/sortable-places";
 import { TripTabs } from "@/components/trip-tabs";
+import { StampClaim } from "@/components/stamp-claim";
 import { getViewer, isIn } from "@/lib/viewer";
 import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
 import { loadTrip } from "@/lib/trips";
@@ -94,6 +95,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
       </div>
 
       {viewer.kind === "user" && <TripTabs tripId={trip.id} active="일정" />}
+      {viewer.kind === "user" && statusOf(trip, todayOf(trip)) === "ongoing" && <StampClaim tripId={trip.id} />}
 
       <nav className="mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]" aria-label="날짜">
         {Array.from({ length: len }).map((_, i) => {

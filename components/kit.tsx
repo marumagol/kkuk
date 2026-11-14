@@ -5,6 +5,7 @@
 */
 import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes } from "react";
 import Link from "next/link";
+import { blobPath, stampArt } from "@/lib/stamp-art";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -233,18 +234,31 @@ export function Sheet({ title, badge, children, footer, inline }: { title: strin
   );
 }
 
-/* ---------- 도장 (여권 도장 모양) ---------- */
-export function Stamp({ name, date, earned = true, tilt = -6, fluid }: { name: string; date?: string; earned?: boolean; tilt?: number; fluid?: boolean }) {
+/* ---------- 도장 (마루님 "삿포로 도장" 기준, 디자인-가이드 2-1) ---------- */
+const BLOB_IN = blobPath(43, 43, 37.75);
+const BLOB_OUT = blobPath(43, 43, 42.5);
+export function StampFace({ name, country, earned = true, size = 86 }: { name: string; country?: string | null; earned?: boolean; size?: number }) {
+  const art = stampArt(country, name);
+  return (
+    <svg viewBox="0 0 86 86" width={size} height={size} aria-hidden="true" className="block"
+      style={{ ["--stamp-hole" as string]: earned ? "#FF5A36" : "var(--color-bg)" }}>
+      <path d={BLOB_OUT} fill="none" stroke={earned ? "#FF5A36" : "var(--color-line-strong)"} strokeWidth={1} strokeDasharray="2 2" />
+      {earned && <path d={BLOB_IN} fill="#FF5A36" />}
+      {art ? (
+        <g color={earned ? "#FFFFFF" : "var(--color-line-strong)"} opacity={earned ? 1 : 0.5} dangerouslySetInnerHTML={{ __html: art }} />
+      ) : earned ? (
+        <text x="43" y="43" textAnchor="middle" dominantBaseline="central" fill="#FFFFFF" fontWeight={800}
+          fontSize={name.length > 4 ? 10 : 12.5} transform="rotate(-6 43 43)">{name}</text>
+      ) : null}
+    </svg>
+  );
+}
+
+export function Stamp({ name, country, date, earned = true, tilt = -6, fluid }: { name: string; country?: string | null; date?: string; earned?: boolean; tilt?: number; fluid?: boolean }) {
   return (
     <div className={cx("flex flex-col items-center gap-1.5 text-center", fluid ? "w-full max-w-[88px]" : "w-[88px]")}>
-      <div
-        style={{ transform: earned ? `rotate(${tilt}deg)` : undefined }}
-        className={cx("flex size-[72px] items-center justify-center rounded-full border-2 border-dashed p-1",
-          earned ? "border-point text-point-text" : "border-line-strong/70 text-ink-sub")}>
-        <div className={cx("flex size-full items-center justify-center rounded-full border text-center text-tiny font-extrabold leading-tight",
-          earned ? "border-point/60" : "border-transparent")}>
-          {earned ? name : ""}
-        </div>
+      <div style={{ transform: earned ? `rotate(${tilt}deg)` : undefined }} className="size-[86px]">
+        <StampFace name={name} country={country} earned={earned} />
       </div>
       <span className={cx("text-sub font-semibold", earned ? "text-ink" : "text-ink-sub")}>{name}</span>
       {date && <span className="text-tiny text-ink-sub">{date}</span>}
