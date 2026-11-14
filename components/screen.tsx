@@ -122,7 +122,7 @@ export type BadgeTone = "hot" | "near" | "far";
 const BADGE: Record<BadgeTone, string> = {
   hot: "bg-[#C23A18] text-white",
   near: "bg-point-soft text-point-text",
-  far: "bg-surface-soft text-ink-sub",
+  far: "bg-surface-soft text-ink", // ink-sub 는 이 바탕에서 4.45 : 1 이라 ink
 };
 
 export function TripRow({ href, title, sub, meta, badge, badgeTone = "near", country, icon }: { href: string; title: string; sub: string; meta: string; badge?: string; badgeTone?: BadgeTone; country?: string; icon?: string }) {

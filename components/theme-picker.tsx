@@ -20,7 +20,7 @@ export function ThemePicker({ initial }: { initial: Theme }) {
     <div role="radiogroup" aria-label="화면 모드" className="grid grid-cols-3 gap-1 rounded-full bg-surface-soft p-1">
       {OPTIONS.map((o) => (
         <button key={o.value} type="button" role="radio" aria-checked={theme === o.value} onClick={() => pick(o.value)}
-          className={`press inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-tiny font-bold ${theme === o.value ? "bg-surface text-ink shadow-sm" : "text-ink-sub"}`}>
+          className={`press relative after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-tiny font-bold ${theme === o.value ? "bg-surface text-ink shadow-sm" : "text-ink"}`}>
           <Icon name={o.icon} size={16} />{o.label}
         </button>
       ))}

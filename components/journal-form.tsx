@@ -89,7 +89,7 @@ export function JournalForm({ ctx }: { ctx: EntryContext }) {
           <div role="radiogroup" className="grid grid-cols-2 gap-1 rounded-full bg-surface-soft p-1">
             {([["members", "함께하는 사람"], ["private", "나만 보기"]] as const).map(([v, label]) => (
               <button key={v} type="button" role="radio" aria-checked={visibility === v} disabled={busy} onClick={() => setVisibility(v)}
-                className={"press h-9 rounded-full text-tiny font-bold " + (visibility === v ? "bg-surface text-ink shadow-sm" : "text-ink-sub")}>{label}</button>
+                className={"press relative after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] h-9 rounded-full text-tiny font-bold " + (visibility === v ? "bg-surface text-ink shadow-sm" : "text-ink")}>{label}</button>
             ))}
           </div>
           <p className="text-tiny text-ink-sub">{visibility === "private" ? "나만 볼 수 있어요" : "이 여행을 함께하는 사람이 볼 수 있어요"}. 링크로 공개하기는 다음 단계에서 열려요</p>
