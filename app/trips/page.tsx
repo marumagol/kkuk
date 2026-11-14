@@ -9,7 +9,8 @@ import { loadTrips } from "@/lib/trips";
 
 export const metadata = { title: "여행" };
 
-export default async function Trips() {
+export default async function Trips({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
+  const { deleted } = await searchParams;
   const viewer = await getViewer();
   const trips = await loadTrips(viewer);
   const next = upcomingOf(trips);
@@ -27,6 +28,7 @@ export default async function Trips() {
         </GateButton>
       </header>
       {viewer.kind === "preview" && <MockNote />}
+      {deleted && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">여행을 삭제했어요</p>}
 
       <div className="flex flex-col gap-6 px-5 pt-5">
         {next.length + past.length === 0 ? (

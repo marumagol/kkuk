@@ -8,7 +8,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Icon, Pin } from "@/components/kit";
 
-type Dialog = { title: string; desc: string; confirm?: () => void } | null;
+type Dialog = { title: string; desc: string; confirm?: () => void; confirmLabel?: string } | null;
 const Ctx = createContext<{ loggedIn: boolean; open: (d: Dialog) => void }>({ loggedIn: false, open: () => {} });
 
 export function GateProvider({ loggedIn, children }: { loggedIn: boolean; children: ReactNode }) {
@@ -21,7 +21,8 @@ export function GateProvider({ loggedIn, children }: { loggedIn: boolean; childr
   );
 }
 
-function AlertDialog({ title, desc, confirm, onClose }: NonNullable<Dialog> & { onClose: () => void }) {
+/* 확인 창 (얼럿). 다른 화면에서도 쓴다 : 날짜 줄이기, 여행 삭제 */
+export function AlertDialog({ title, desc, confirm, confirmLabel = "확인", onClose }: NonNullable<Dialog> & { onClose: () => void }) {
   const okRef = useRef<HTMLButtonElement>(null);
   const back = useRef<Element | null>(null);
   useEffect(() => {
@@ -42,7 +43,7 @@ function AlertDialog({ title, desc, confirm, onClose }: NonNullable<Dialog> & { 
             <button onClick={onClose} className="press h-12 flex-1 rounded-btn border border-line-strong bg-surface text-body font-bold text-ink">취소</button>
           )}
           <button ref={okRef} onClick={() => { onClose(); confirm?.(); }}
-            className="press h-12 flex-1 rounded-btn bg-btn text-body font-bold text-on-btn">확인</button>
+            className="press h-12 flex-1 rounded-btn bg-btn text-body font-bold text-on-btn">{confirmLabel}</button>
         </div>
       </div>
     </div>

@@ -49,11 +49,12 @@ export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {
   return rows.map((r) => ({ ...base(r), places: count.get(r.id) ?? 0 }));
 });
 
-export type TripResult = { trip: Trip } | { missing: "none" | "removed" };
+export type Role = "owner" | "editor" | "viewer";
+export type TripResult = { trip: Trip; role: Role } | { missing: "none" | "removed" };
 
 /* 여행 하나와 일자별 장소 */
 export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult> => {
-  if (v.kind === "preview") { const t = getTrip(id); return t ? { trip: t } : { missing: "none" }; }
+  if (v.kind === "preview") { const t = getTrip(id); return t ? { trip: t, role: "owner" } : { missing: "none" }; }
   if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(id)) return { missing: "none" };
   const sb = (await createClient())!;
   const { data, error } = await sb.from("trips").select(SELECT).eq("id", id).maybeSingle();
@@ -73,5 +74,30 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }
-  return { trip };
+  const { data: me } = await sb.from("trip_members").select("role").eq("trip_id", id).eq("user_id", v.id).is("removed_at", null).maybeSingle();
+  return { trip, role: (me?.role ?? "viewer") as Role };
+});
+
+/* 여행 정보 수정 화면용 : 도시의 나라 코드와 일차별 장소 수까지 */
+export type TripForEdit = {
+  id: string; title: string; start: string; end: string; timeZone: string; role: Role;
+  cities: { name: string; country: string }[];
+  dayCounts: number[]; // 일차별 장소 수 (0 = 1일차)
+};
+export const loadTripForEdit = cache(async (v: Viewer, id: string): Promise<TripForEdit | null> => {
+  if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const r = await loadTrip(v, id);
+  if (!("trip" in r)) return null;
+  const sb = (await createClient())!;
+  const { data: cities } = await sb.from("trip_cities").select("name, country_code, sort_order").eq("trip_id", id).order("sort_order");
+  const t = r.trip;
+  return {
+    id, title: t.title, start: t.start, end: t.end, timeZone: t.timeZone ?? "Asia/Seoul", role: r.role,
+    cities: (cities ?? []).map((c: { name: string; country_code: string | null }, i: number) => ({
+      name: c.name,
+      // 화면의 나라 목록 코드로 되돌림 (하와이는 시간대로 구분, 나라 코드 없음 = 그 밖의 나라)
+      country: !c.country_code ? "ETC" : c.country_code === "US" && i === 0 && t.timeZone === "Pacific/Honolulu" ? "US-HI" : c.country_code,
+    })),
+    dayCounts: t.days.map((d) => d.items.length),
+  };
 });

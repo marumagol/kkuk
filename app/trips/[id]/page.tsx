@@ -10,7 +10,7 @@ import { getViewer, isIn } from "@/lib/viewer";
 import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
 import { loadTrip } from "@/lib/trips";
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const r = await loadTrip(await getViewer(), (await params).id);
@@ -52,7 +52,9 @@ export default async function TripDetail({ params, searchParams }: Props) {
   const len = tripLength(trip);
   const today = todayOf(trip);
   const fallback = statusOf(trip, today) === "ongoing" ? daysBetween(trip.start, today) + 1 : 1;
-  const asked = Number((await searchParams).day);
+  const sp = await searchParams;
+  const asked = Number(sp.day);
+  const canEdit = "role" in r && r.role !== "viewer";
   const day = Number.isInteger(asked) && asked >= 1 && asked <= len ? asked : fallback;
   const plan = trip.days[day - 1] ?? { items: [] };
 
@@ -60,10 +62,16 @@ export default async function TripDetail({ params, searchParams }: Props) {
     <AppShell>
       <div className="flex items-center justify-between px-5 pt-4">
         <BackLink />
-        <span className="flex -space-x-2" aria-label={`함께하는 사람 ${trip.members.length}명`}>
-          {trip.members.map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring />)}
+        <span className="flex items-center gap-2">
+          <span className="flex -space-x-2" aria-label={`함께하는 사람 ${trip.members.length}명`}>
+            {trip.members.map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring />)}
+          </span>
+          {canEdit && viewer.kind === "user" && (
+            <Link href={`/trips/${trip.id}/edit`} className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-sub font-bold text-ink">수정</Link>
+          )}
         </span>
       </div>
+      {sp.saved && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행 정보를 저장했어요</p>}
       {viewer.kind === "preview" && <MockNote />}
       <div className="px-5 pt-3">
         <h1 className="text-title-xl font-extrabold text-ink">{trip.title}</h1>

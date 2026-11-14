@@ -47,7 +47,8 @@ export async function saveName(_prev: NameState, formData: FormData): Promise<Na
 export type NewTrip = { title: string; start: string; end: string; cities: { name: string; country: string }[] };
 export type CreateTripResult = { error: string } | undefined;
 
-export async function createTrip(input: NewTrip): Promise<CreateTripResult> {
+/* 여행 입력 검사 (만들기, 수정 같이). 통과하면 정리된 값, 아니면 오류 문구 */
+function checkTrip(input: NewTrip): { error: string } | { title: string; start: string; end: string; cities: { name: string; country: string }[] } {
   const title = String(input?.title ?? "").trim();
   const cities = (Array.isArray(input?.cities) ? input.cities : [])
     .map((c) => ({ name: String(c?.name ?? "").trim(), country: String(c?.country ?? "") }))
@@ -63,6 +64,13 @@ export async function createTrip(input: NewTrip): Promise<CreateTripResult> {
   if ((Date.parse(end) - Date.parse(start)) / 86400000 + 1 > MAX_TRIP_DAYS) return { error: `여행 기간은 ${MAX_TRIP_DAYS}일까지 정할 수 있어요` };
   if (![...title].length) return { error: "여행 이름을 적어 주세요" };
   if ([...title].length > MAX_TRIP_TITLE) return { error: `여행 이름은 ${MAX_TRIP_TITLE}자까지 쓸 수 있어요` };
+  return { title, start, end, cities };
+}
+
+export async function createTrip(input: NewTrip): Promise<CreateTripResult> {
+  const c = checkTrip(input);
+  if ("error" in c) return c;
+  const { title, start, end, cities } = c;
 
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
@@ -80,4 +88,40 @@ export async function createTrip(input: NewTrip): Promise<CreateTripResult> {
   }
   revalidatePath("/", "layout");
   redirect(`/trips/${data}`);
+}
+
+/* 여행 정보 수정 (S09). 이름, 기간, 도시를 DB 함수 update_trip 으로 한 번에. 시간대는 첫 도시의 나라가 바뀔 때만 다시 정함 */
+export async function updateTrip(id: string, input: NewTrip & { prevFirstCountry?: string }): Promise<CreateTripResult> {
+  const c = checkTrip(input);
+  if ("error" in c) return c;
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect(`/login?next=/trips/${id}/edit`);
+
+  const first = c.cities[0].country;
+  const { error } = await sb.rpc("update_trip", {
+    p_trip: id, p_title: c.title, p_start_date: c.start, p_end_date: c.end,
+    p_time_zone: first === input.prevFirstCountry ? null : countryOf(first)!.tz,
+    p_cities: c.cities.map((x) => ({ name: x.name, country_code: isoOf(x.country) })),
+  });
+  if (error) {
+    if (error.message?.includes("forbidden")) return { error: "이 여행을 고칠 권한이 없어요" };
+    return { error: "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  }
+  revalidatePath("/", "layout");
+  redirect(`/trips/${id}?saved=1`);
+}
+
+/* 여행 삭제 (S10). 행을 지우지 않고 removed_at. 여행 주인만 (DB 트리거가 한 번 더 막음) */
+export async function removeTrip(id: string): Promise<CreateTripResult> {
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 삭제할 수 없어요" };
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect(`/login?next=/trips/${id}/edit`);
+  const { data, error } = await sb.from("trips").update({ removed_at: new Date().toISOString() }).eq("id", id).is("removed_at", null).select("id");
+  if (error?.message?.includes("owner_only")) return { error: "여행 삭제는 여행 주인만 할 수 있어요" };
+  if (error || !data?.length) return { error: "삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  revalidatePath("/", "layout");
+  redirect("/trips?deleted=1");
 }

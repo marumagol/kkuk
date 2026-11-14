@@ -7,20 +7,18 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Field, Icon } from "@/components/kit";
 import { RangeCalendar } from "@/components/range-calendar";
-import { COUNTRIES, countryOf } from "@/lib/countries";
-import { MAX_CITIES, MAX_TRIP_DAYS, MAX_TRIP_TITLE } from "@/lib/rules";
+import { CityEditor, useCityDraft, type City } from "@/components/city-editor";
+import { MAX_TRIP_DAYS, MAX_TRIP_TITLE } from "@/lib/rules";
 import { createTrip } from "@/app/actions";
 import { daysBetween, md, weekday } from "@/lib/mock";
 
-type City = { name: string; country: string };
 const STEPS = ["어디로 가요?", "언제 가요?", "여행 이름을 정해요"];
 
 export function TripCreate({ today }: { today: string }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [cities, setCities] = useState<City[]>([]);
-  const [cityName, setCityName] = useState("");
-  const [country, setCountry] = useState("");
+  const draft = useCityDraft();
   const [start, setStart] = useState<string>();
   const [end, setEnd] = useState<string>();
   const [title, setTitle] = useState("");
@@ -28,27 +26,16 @@ export function TripCreate({ today }: { today: string }) {
   const [error, setError] = useState("");
   const [saving, startSaving] = useTransition();
 
-  const pendingName = cityName.trim();
-  const addCity = () => {
-    if (!pendingName) return setError("도시 이름을 적어 주세요");
-    if (!country) return setError("나라를 골라 주세요");
-    if ([...pendingName].length > 40) return setError("도시 이름은 40자까지 쓸 수 있어요");
-    if (cities.length >= MAX_CITIES) return setError(`도시는 ${MAX_CITIES}개까지 넣을 수 있어요`);
-    if (cities.some((c) => c.name === pendingName)) return setError("이미 넣은 도시예요");
-    setCities([...cities, { name: pendingName, country }]);
-    setCityName(""); setError("");
-  };
-  // 입력칸에 적어 두고 "다음"을 눌러도 도시로 넣어 준다 (빠뜨림 방지)
-  const allCities = pendingName && country && !cities.some((c) => c.name === pendingName) ? [...cities, { name: pendingName, country }] : cities;
   const nights = start && end ? daysBetween(start, end) : 0;
   const titleLen = [...title.trim()].length;
 
   const goNext = () => {
     setError("");
     if (step === 0) {
-      if (pendingName && !country) return setError("나라를 골라 주세요");
+      const { cities: allCities, error: e } = draft.withPending(cities);
+      if (e) return setError(e);
       if (!allCities.length) return setError("도시를 하나 이상 넣어 주세요");
-      setCities(allCities); setCityName("");
+      setCities(allCities); draft.clear();
       if (!titleTouched) setTitle(`${allCities[0].name} 여행`);
       return setStep(1);
     }
@@ -82,38 +69,7 @@ export function TripCreate({ today }: { today: string }) {
         <h1 className="text-title-xl font-extrabold text-ink">{STEPS[step]}</h1>
 
         {step === 0 && (
-          <div className="mt-6 flex flex-col gap-4">
-            {cities.length > 0 && (
-              <ol className="flex flex-wrap gap-2" aria-label="넣은 도시">
-                {cities.map((c, i) => (
-                  <li key={c.name} className="flex h-11 items-center gap-1 rounded-full bg-surface pl-4 pr-1 text-sub font-semibold text-ink">
-                    <span className="text-ink-sub">{i + 1}</span> {c.name}
-                    <span className="text-tiny text-ink-sub">{countryOf(c.country)?.name.replace(/ \(.*\)/, "")}</span>
-                    <button type="button" onClick={() => setCities(cities.filter((x) => x !== c))} aria-label={`${c.name} 빼기`}
-                      className="press flex size-9 items-center justify-center rounded-full text-ink-sub">
-                      <Icon name="x" size={16} />
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            )}
-            <label className="flex flex-col gap-2">
-              <span className="text-sub font-bold text-ink-sub">나라</span>
-              <select value={country} onChange={(e) => { setCountry(e.target.value); setError(""); }}
-                className="h-14 rounded-field border border-line-strong bg-surface px-4 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15">
-                <option value="" disabled>나라를 골라 주세요</option>
-                {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-              </select>
-            </label>
-            <form onSubmit={(e) => { e.preventDefault(); addCity(); }} className="flex items-end gap-2">
-              <div className="min-w-0 flex-1">
-                <Field label="도시" name="city" placeholder="예 : 삿포로" value={cityName} maxLength={40} enterKeyHint="done"
-                  onChange={(e) => { setCityName(e.target.value); setError(""); }} autoFocus />
-              </div>
-              <Button type="submit" variant="secondary" size="lg" disabled={!pendingName}>추가</Button>
-            </form>
-            <p className="text-tiny text-ink-sub">도시를 여러 개 넣을 수 있어요. 넣은 순서대로 여행 경로가 돼요. 여행 시간은 첫 도시의 나라에 맞춰요</p>
-          </div>
+          <div className="mt-6"><CityEditor cities={cities} onChange={setCities} draft={draft} onError={setError} /></div>
         )}
 
         {step === 1 && (
