@@ -35,7 +35,7 @@ export function BottomDock({ children, align = "center" }: { children: ReactNode
   );
 }
 
-/* 로고 : 마루님이 만든 피그마 "꾹 개발 시안" 01 홈의 "로고"(35:123)를 2배 PNG 로 내보낸 것 (주황 도장 + Kkük) */
+/* 로고 : 마루님이 만든 피그마 "꾹 개발 시안" 01 홈의 "로고"(35:123)를 2배 PNG 로 내보낸 것 (주황 도장 + KKüK) */
 export function Logo({ height = 32 }: { height?: number }) {
   // 원본 비율 134 : 58
   // eslint-disable-next-line @next/next/no-img-element
