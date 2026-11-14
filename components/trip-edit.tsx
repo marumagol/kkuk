@@ -21,7 +21,7 @@ type Confirm = { title: string; desc: string; label: string; run: () => void } |
 export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) {
   const [title, setTitle] = useState(trip.title);
   const [cities, setCities] = useState<City[]>(trip.cities);
-  const draft = useCityDraft(trip.cities.at(-1)?.country ?? "");
+  const draft = useCityDraft(trip.cities.at(-1));
   const [start, setStart] = useState<string | undefined>(trip.start);
   const [end, setEnd] = useState<string | undefined>(trip.end);
   const [error, setError] = useState("");

@@ -109,7 +109,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
           <section className="flex flex-col gap-2" aria-label="다른 다가오는 여행">
             <SectionTitle title="다른 다가오는 여행" />
             {next.slice(1).map((t) => (
-              <TripRow key={t.id} country={t.country} href={`/trips/${t.id}`} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
+              <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
             ))}
           </section>
         )}

@@ -9,14 +9,14 @@ import { cache } from "react";
 import type { Category } from "@/components/kit";
 import { createClient } from "@/lib/supabase/server";
 import { TRIPS, getTrip, daysBetween, type Trip, type Item } from "@/lib/mock";
-import { currencyOf, formatMoney } from "@/lib/countries";
+import { currencyOf, formatMoney, iconUrl } from "@/lib/countries";
 import type { Viewer } from "@/lib/viewer";
 
 const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소" };
 
 type Row = {
   id: string; title: string; start_date: string; end_date: string; time_zone: string; removed_at: string | null;
-  trip_cities: { name: string; sort_order: number; country_code: string | null }[];
+  trip_cities: { name: string; sort_order: number; country_code: string | null; country_icon: string | null }[];
   trip_members: { display_name: string; role: string; removed_at: string | null; created_at: string }[];
 };
 
@@ -26,13 +26,14 @@ const members = (r: Row) =>
     .sort((a, b) => (a.role === "owner" ? -1 : b.role === "owner" ? 1 : a.created_at.localeCompare(b.created_at)))
     .map((m, i) => ({ initial: [...m.display_name][0] ?? "?", tone: (i % 2 ? "accent" : "point") as "point" | "accent" }));
 
+const firstCity = (r: Row) => [...r.trip_cities].sort((a, b) => a.sort_order - b.sort_order)[0];
 const base = (r: Row): Trip => ({
-  id: r.id, country: [...r.trip_cities].sort((a, b) => a.sort_order - b.sort_order)[0]?.country_code ?? undefined, title: r.title, start: r.start_date, end: r.end_date, timeZone: r.time_zone,
+  id: r.id, country: firstCity(r)?.country_code ?? undefined, countryIcon: iconUrl(firstCity(r)?.country_icon) ?? undefined, title: r.title, start: r.start_date, end: r.end_date, timeZone: r.time_zone,
   cities: [...r.trip_cities].sort((a, b) => a.sort_order - b.sort_order).map((c) => c.name),
   members: members(r), days: [], undated: [],
 });
 
-const SELECT = "id, title, start_date, end_date, time_zone, removed_at, trip_cities(name, sort_order, country_code), trip_members(display_name, role, removed_at, created_at)";
+const SELECT = "id, title, start_date, end_date, time_zone, removed_at, trip_cities(name, sort_order, country_code, country_icon), trip_members(display_name, role, removed_at, created_at)";
 
 /* 내 여행 목록 (삭제된 여행 빼고) */
 export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {
@@ -88,7 +89,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
 /* 여행 정보 수정 화면용 : 도시의 나라 코드와 일차별 장소 수까지 */
 export type TripForEdit = {
   id: string; title: string; start: string; end: string; timeZone: string; role: Role;
-  cities: { name: string; country: string }[];
+  cities: { name: string; country: string; countryName?: string; icon?: string }[];
   dayCounts: number[]; // 일차별 장소 수 (0 = 1일차)
 };
 export const loadTripForEdit = cache(async (v: Viewer, id: string): Promise<TripForEdit | null> => {
@@ -96,12 +97,12 @@ export const loadTripForEdit = cache(async (v: Viewer, id: string): Promise<Trip
   const r = await loadTrip(v, id);
   if (!("trip" in r)) return null;
   const sb = (await createClient())!;
-  const { data: cities } = await sb.from("trip_cities").select("name, country_code, sort_order").eq("trip_id", id).order("sort_order");
+  const { data: cities } = await sb.from("trip_cities").select("name, country_code, country_name, country_icon, sort_order").eq("trip_id", id).order("sort_order");
   const t = r.trip;
   return {
     id, title: t.title, start: t.start, end: t.end, timeZone: t.timeZone ?? "Asia/Seoul", role: r.role,
-    cities: (cities ?? []).map((c: { name: string; country_code: string | null }, i: number) => ({
-      name: c.name,
+    cities: (cities ?? []).map((c: { name: string; country_code: string | null; country_name: string | null; country_icon: string | null }, i: number) => ({
+      name: c.name, countryName: c.country_name ?? undefined, icon: c.country_icon ?? undefined,
       // 화면의 나라 목록 코드로 되돌림 (하와이는 시간대로 구분, 나라 코드 없음 = 그 밖의 나라)
       country: !c.country_code ? "ETC" : c.country_code === "US" && i === 0 && t.timeZone === "Pacific/Honolulu" ? "US-HI" : c.country_code,
     })),

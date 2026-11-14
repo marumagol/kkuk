@@ -39,7 +39,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
             <section className="flex flex-col gap-2" aria-label="다가오는 여행">
               <SectionTitle title="다가오는 여행" aside={next.length ? `${next.length}개` : undefined} />
               {next.length ? next.map((t) => (
-                <TripRow key={t.id} country={t.country} href={`/trips/${t.id}`} badge={badge(t)} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
+                <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} badge={badge(t)} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
               )) : <p className="rounded-pin bg-surface px-4 py-4 text-sub text-ink-sub">다가오는 여행이 없어요</p>}
             </section>
 
@@ -50,7 +50,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
                 <div key={y} className="flex flex-col gap-2">
                   <h3 className="pt-1 text-sub font-bold text-ink-sub">{y}년</h3>
                   {past.filter((t) => yearOf(t.start) === y).map((t) => (
-                    <TripRow key={t.id} country={t.country} href={`/trips/${t.id}`} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
+                    <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
                   ))}
                 </div>
               ))}

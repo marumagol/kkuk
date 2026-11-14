@@ -6,6 +6,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Icon, Pin, Button, TabBar } from "@/components/kit";
+import { flagOf } from "@/lib/countries";
 import { PlusTab } from "@/components/gate";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
@@ -114,16 +115,14 @@ export function MockNote() {
 }
 
 /* 여행 목록 한 줄 (여행 탭, 홈의 "다른 여행") */
-/* 국기 그림은 public/flags (country-flag-icons, MIT). 있는 나라만, 없으면 핀 */
-const FLAGS = new Set("KR JP TW HK MO CN MN TH VN PH SG MY ID LA KH IN AE TR GU MP US CA AU NZ GB FR IT ES PT DE CH AT CZ NL GR".split(" "));
-
-export function TripRow({ href, title, sub, meta, badge, country }: { href: string; title: string; sub: string; meta: string; badge?: string; country?: string }) {
-  const flag = country && FLAGS.has(country.slice(0, 2)) ? country.slice(0, 2) : null;
+/* 여행 줄 왼쪽 그림 : 올린 아이콘 > 국기 > 핀 */
+export function TripRow({ href, title, sub, meta, badge, country, icon }: { href: string; title: string; sub: string; meta: string; badge?: string; country?: string; icon?: string }) {
+  const flag = icon || flagOf(country);
   return (
     <Link href={href} className="press flex min-h-[76px] items-center gap-3 rounded-pin bg-surface px-4 py-3">
       {flag ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={`/flags/${flag}.svg`} alt="" width={44} height={44} className="size-11 flex-none rounded-full object-cover ring-1 ring-line" />
+        <img src={flag} alt="" width={44} height={44} className="size-11 flex-none rounded-full object-cover ring-1 ring-line" />
       ) : (
         <span className="flex size-11 flex-none items-center justify-center rounded-full bg-point-soft"><Pin size={22} /></span>
       )}

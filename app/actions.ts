@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
-import { countryOf, isoOf, decimalsOf } from "@/lib/countries";
+import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
 import { MAX_TRIP_DAYS, MAX_CITIES, MAX_TRIP_TITLE, MAX_PLACE_TITLE, MAX_PLACE_ADDRESS, MAX_PLACE_MEMO } from "@/lib/rules";
 
 /* 로그아웃 → 둘러보기 (홈) */
@@ -44,14 +44,24 @@ export async function saveName(_prev: NameState, formData: FormData): Promise<Na
 }
 
 /* 여행 만들기 (S06). 여행 + 여행 주인 + 도시를 DB 함수 create_trip 으로 한 번에 저장 */
-export type NewTrip = { title: string; start: string; end: string; cities: { name: string; country: string }[] };
+/* 도시 : country 는 나라 목록 코드. 직접 입력한 나라는 country "ETC" + countryName (+ 올린 아이콘 icon) */
+export type TripCity = { name: string; country: string; countryName?: string; icon?: string };
+export type NewTrip = { title: string; start: string; end: string; cities: TripCity[] };
 export type CreateTripResult = { error: string } | undefined;
 
 /* 여행 입력 검사 (만들기, 수정 같이). 통과하면 정리된 값, 아니면 오류 문구 */
-function checkTrip(input: NewTrip): { error: string } | { title: string; start: string; end: string; cities: { name: string; country: string }[] } {
+function checkTrip(input: NewTrip): { error: string } | { title: string; start: string; end: string; cities: TripCity[] } {
   const title = String(input?.title ?? "").trim();
   const cities = (Array.isArray(input?.cities) ? input.cities : [])
-    .map((c) => ({ name: String(c?.name ?? "").trim(), country: String(c?.country ?? "") }))
+    .map((c) => {
+      const country = String(c?.country ?? "");
+      const custom = country === "ETC";
+      return {
+        name: String(c?.name ?? "").trim(), country,
+        countryName: custom ? String(c?.countryName ?? "").trim() || undefined : undefined,
+        icon: custom && c?.icon ? String(c.icon) : undefined,
+      };
+    })
     .filter((c) => c.name);
   const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s + "T00:00:00Z"));
   const { start, end } = input ?? {};
@@ -60,11 +70,21 @@ function checkTrip(input: NewTrip): { error: string } | { title: string; start: 
   if (cities.length > MAX_CITIES) return { error: `도시는 ${MAX_CITIES}개까지 넣을 수 있어요` };
   if (cities.some((c) => [...c.name].length > 40)) return { error: "도시 이름은 40자까지 쓸 수 있어요" };
   if (cities.some((c) => !countryOf(c.country))) return { error: "도시마다 나라를 골라 주세요" };
+  if (cities.some((c) => c.countryName && [...c.countryName].length > MAX_COUNTRY_NAME)) return { error: `나라 이름은 ${MAX_COUNTRY_NAME}자까지 쓸 수 있어요` };
+  if (cities.some((c) => c.icon && !ICON_PATH.test(c.icon))) return { error: "아이콘을 다시 올려 주세요" };
   if (!isDate(start) || !isDate(end) || end < start) return { error: "여행 기간을 다시 골라 주세요" };
   if ((Date.parse(end) - Date.parse(start)) / 86400000 + 1 > MAX_TRIP_DAYS) return { error: `여행 기간은 ${MAX_TRIP_DAYS}일까지 정할 수 있어요` };
   if (![...title].length) return { error: "여행 이름을 적어 주세요" };
   if ([...title].length > MAX_TRIP_TITLE) return { error: `여행 이름은 ${MAX_TRIP_TITLE}자까지 쓸 수 있어요` };
   return { title, start, end, cities };
+}
+
+/* 직접 입력한 나라 이름과 아이콘은 여행 저장 뒤 도시 줄에 따로 적는다 (DB 함수는 그대로 두기 위해). 실패해도 여행은 저장됨 */
+async function saveCustomCountries(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, tripId: string, uid: string, cities: TripCity[]) {
+  await Promise.all(cities.map((c, i) => c.countryName || c.icon
+    ? sb.from("trip_cities").update({ country_name: c.countryName ?? null, country_icon: c.icon?.startsWith(uid + "/") ? c.icon : null })
+        .eq("trip_id", tripId).eq("sort_order", i)
+    : null));
 }
 
 export async function createTrip(input: NewTrip): Promise<CreateTripResult> {
@@ -86,6 +106,7 @@ export async function createTrip(input: NewTrip): Promise<CreateTripResult> {
     if (error?.message?.includes("profile_required")) redirect("/welcome?next=/trips/new");
     return { error: "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   }
+  await saveCustomCountries(sb, String(data), auth.user.id, cities);
   revalidatePath("/", "layout");
   redirect(`/trips/${data}`);
 }
@@ -109,6 +130,7 @@ export async function updateTrip(id: string, input: NewTrip & { prevFirstCountry
     if (error.message?.includes("forbidden")) return { error: "이 여행을 고칠 권한이 없어요" };
     return { error: "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   }
+  await saveCustomCountries(sb, id, auth.user.id, c.cities);
   revalidatePath("/", "layout");
   redirect(`/trips/${id}?saved=1`);
 }

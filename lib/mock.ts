@@ -11,6 +11,7 @@ export type Trip = {
   ready?: number; // 준비 % (2단계 기능, 지금은 가짜)
   timeZone?: string; // 여행 시간대 (DB 여행). 없으면 한국 시간
   country?: string; // 첫 도시의 나라 코드 (목록 국기). ETC 나 없으면 핀
+  countryIcon?: string; // 첫 도시에 직접 입력한 나라의 올린 아이콘 주소
   places?: number;   // 목록에서 쓰는 장소 수 (DB 여행은 days 를 다 읽지 않고 개수만)
   days: { title?: string; items: Item[] }[]; // 일차별 (0 = 1일차)
   undated: Item[];
