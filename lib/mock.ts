@@ -92,3 +92,11 @@ export const upcomingOf = (list: Trip[]) => list.filter((t) => statusOf(t, today
 export const pastOf = (list: Trip[]) => list.filter((t) => statusOf(t, todayOf(t)) === "past").sort((a, b) => b.start.localeCompare(a.start));
 export const upcomingTrips = (today = todayKST()) => TRIPS.filter((t) => statusOf(t, today) !== "past").sort((a, b) => a.start.localeCompare(b.start));
 export const pastTrips = (today = todayKST()) => TRIPS.filter((t) => statusOf(t, today) === "past").sort((a, b) => b.start.localeCompare(a.start));
+
+/* 디데이 배지 (여행 목록, 홈 다른 다가오는 여행). 색 : 여행 중과 D-7 이내 hot, D-30 이내 near, 그보다 멀면 far */
+export function ddayOf(t: Trip): { label: string; tone: "hot" | "near" | "far" } {
+  const today = todayOf(t);
+  if (statusOf(t, today) === "ongoing") return { label: "여행 중", tone: "hot" };
+  const left = daysBetween(today, t.start);
+  return { label: left === 0 ? "D-DAY" : `D-${left}`, tone: left <= 7 ? "hot" : left <= 30 ? "near" : "far" };
+}

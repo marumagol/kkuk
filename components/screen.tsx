@@ -43,7 +43,9 @@ export function Logo({ height = 32 }: { height?: number }) {
   return <img src="/logo.png" alt={BRAND} width={Math.round((height * 180) / 58)} height={height} className="block" />;
 }
 
-export function Avatar({ initial, tone = "point", size = 40, ring }: { initial: string; tone?: "point" | "accent"; size?: number; ring?: boolean }) {
+export function Avatar({ initial, tone = "point", size = 40, ring, src }: { initial: string; tone?: "point" | "accent"; size?: number; ring?: boolean; src?: string | null }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  if (src) return <img src={src} alt="" width={size} height={size} style={{ width: size, height: size }} className={cx("flex-none rounded-full object-cover", ring && "border-2 border-bg")} />;
   return (
     <span style={{ width: size, height: size }}
       className={cx("flex flex-none items-center justify-center rounded-full font-bold",

@@ -6,16 +6,16 @@ import Link from "next/link";
 import { EmptyState, StatTile, TicketCard, Pin, PinCard } from "@/components/kit";
 import { AppShell, Logo, Avatar, SectionTitle, MainTabs, MockNote, TripRow } from "@/components/screen";
 import { GateCta } from "@/components/gate";
-import { getViewer, isIn, initialOf } from "@/lib/viewer";
-import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, placeCount } from "@/lib/mock";
+import { getViewer, isIn, initialOf, avatarOf } from "@/lib/viewer";
+import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, placeCount, ddayOf } from "@/lib/mock";
 import { loadTrips, loadTrip } from "@/lib/trips";
 
-function Header({ loggedIn, initial }: { loggedIn: boolean; initial: string }) {
+function Header({ loggedIn, initial, avatar }: { loggedIn: boolean; initial: string; avatar: string | null }) {
   return (
     <header className="flex items-center justify-between px-5 pb-2 pt-4">
       <Link href="/" aria-label="홈" className="flex h-11 items-center"><Logo /></Link>
       {loggedIn ? (
-        <Link href="/me" aria-label="설정" className="flex size-11 items-center justify-center"><Avatar initial={initial} /></Link>
+        <Link href="/me" aria-label="설정" className="flex size-11 items-center justify-center"><Avatar initial={initial} src={avatar} /></Link>
       ) : (
         <Link href="/login" className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-sub font-bold text-ink">로그인</Link>
       )}
@@ -42,7 +42,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
 
   return (
     <AppShell>
-      <Header loggedIn={loggedIn} initial={initialOf(viewer)} />
+      <Header loggedIn={loggedIn} initial={initialOf(viewer)} avatar={avatarOf(viewer)} />
       {viewer.kind === "preview" && <MockNote />}
       {bye && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">탈퇴했어요. 그동안 KKuK 를 써 주셔서 고마워요</p>}
       <div className="flex flex-col gap-4 px-5 pt-4">
@@ -109,7 +109,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
           <section className="flex flex-col gap-2" aria-label="다른 다가오는 여행">
             <SectionTitle title="다른 다가오는 여행" />
             {next.slice(1).map((t) => (
-              <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
+              <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} badge={ddayOf(t).label} badgeTone={ddayOf(t).tone} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
             ))}
           </section>
         )}

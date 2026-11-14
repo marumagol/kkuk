@@ -6,6 +6,7 @@ import { getViewer, initialOf } from "@/lib/viewer";
 import { signOut } from "@/app/actions";
 import pkg from "@/package.json";
 import { cookies } from "next/headers";
+import { AvatarEditor } from "@/components/avatar-editor";
 import { ThemePicker, type Theme } from "@/components/theme-picker";
 
 export const metadata = { title: "설정" };
@@ -37,7 +38,7 @@ export default async function Me() {
           </section>
         ) : (
           <section className="flex items-center gap-3 rounded-card bg-surface p-5">
-            <Avatar initial={initialOf(v)} size={48} />
+            {v.kind === "user" ? <AvatarEditor initial={initialOf(v)} src={v.avatar} userId={v.id} /> : <Avatar initial={initialOf(v)} size={48} />}
             <div className="min-w-0 flex-1">
               <p className="truncate text-body font-bold text-ink">{v.kind === "user" ? v.name : "미리보기 계정"}</p>
               {v.kind === "user" ? (

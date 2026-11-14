@@ -6,6 +6,7 @@ import { supabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
 import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
+import { AVATAR_PATH } from "@/lib/storage";
 import { MAX_TRIP_DAYS, MAX_CITIES, MAX_TRIP_TITLE, MAX_PLACE_TITLE, MAX_PLACE_ADDRESS, MAX_PLACE_MEMO, MAX_PLACE_PHOTOS } from "@/lib/rules";
 
 /* 로그아웃 → 둘러보기 (홈) */
@@ -253,4 +254,19 @@ export async function withdraw(): Promise<CreateTripResult> {
   await sb.auth.signOut({ scope: "local" }).catch(() => {});
   revalidatePath("/", "layout");
   redirect("/?bye=1");
+}
+
+/* 프로필 사진 바꾸기 (설정). 그림은 브라우저가 avatars/<내 id>/ 에 올리고, 여기서는 위치만 저장. null = 빼기 */
+export async function saveAvatar(path: string | null): Promise<CreateTripResult> {
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect("/login?next=/me");
+  if (path && (!AVATAR_PATH.test(path) || !path.startsWith(auth.user.id + "/"))) return { error: "사진을 다시 올려 주세요" };
+  const { data: prev } = await sb.from("profiles").select("avatar_url").eq("user_id", auth.user.id).maybeSingle();
+  const { error } = await sb.from("profiles").update({ avatar_url: path }).eq("user_id", auth.user.id);
+  if (error) return { error: "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  // 예전 사진 파일은 지운다 (실패해도 화면에는 영향 없음)
+  if (prev?.avatar_url && prev.avatar_url !== path && AVATAR_PATH.test(prev.avatar_url)) await sb.storage.from("avatars").remove([prev.avatar_url]);
+  revalidatePath("/", "layout");
 }

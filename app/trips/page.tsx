@@ -1,11 +1,11 @@
 /* S05 여행 목록 : 다가오는 여행 / 다녀온 여행 탭 (?tab=past, 2026-11-14 마루님) */
 import Link from "next/link";
 import { EmptyState } from "@/components/kit";
-import { AppShell, MainTabs, MockNote, TripRow, type BadgeTone } from "@/components/screen";
+import { AppShell, MainTabs, MockNote, TripRow } from "@/components/screen";
 import { GateButton, GateCta } from "@/components/gate";
 import { Icon } from "@/components/kit";
 import { getViewer } from "@/lib/viewer";
-import { upcomingOf, pastOf, statusOf, todayOf, periodText, placeCount, daysBetween, yearOf, type Trip } from "@/lib/mock";
+import { upcomingOf, pastOf, periodText, placeCount, yearOf, ddayOf } from "@/lib/mock";
 import { loadTrips } from "@/lib/trips";
 
 export const metadata = { title: "여행" };
@@ -18,12 +18,6 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
   const past = pastOf(trips);
   const showPast = tab === "past";
   const years = [...new Set(past.map((t) => yearOf(t.start)))];
-  const badge = (t: Trip) => (statusOf(t, todayOf(t)) === "ongoing" ? "여행 중" : `D-${daysBetween(todayOf(t), t.start)}`);
-  const tone = (t: Trip): BadgeTone => {
-    if (statusOf(t, todayOf(t)) === "ongoing") return "hot";
-    const left = daysBetween(todayOf(t), t.start);
-    return left <= 7 ? "hot" : left <= 30 ? "near" : "far";
-  };
 
   return (
     <AppShell>
@@ -57,7 +51,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
             {!showPast ? (
               <section className="flex flex-col gap-2" aria-label="다가오는 여행">
                 {next.length ? next.map((t) => (
-                  <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} badge={badge(t)} badgeTone={tone(t)} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
+                  <TripRow key={t.id} country={t.country} icon={t.countryIcon} href={`/trips/${t.id}`} badge={ddayOf(t).label} badgeTone={ddayOf(t).tone} title={t.title} sub={periodText(t)} meta={`${t.cities.join(", ")} · 장소 ${placeCount(t)}개`} />
                 )) : <EmptyState title="다가오는 여행이 없어요" desc="도시와 날짜만 정하면 바로 시작할 수 있어요" action={<GateCta href="/trips/new">여행 만들기</GateCta>} />}
               </section>
             ) : (
