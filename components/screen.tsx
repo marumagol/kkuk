@@ -35,13 +35,11 @@ export function BottomDock({ children, align = "center" }: { children: ReactNode
   );
 }
 
-export function Logo() {
-  return (
-    <span className="inline-flex items-center gap-1.5" aria-label={BRAND}>
-      <Pin size={24} />
-      <span className="text-title-lg font-extrabold tracking-tight text-ink">{BRAND}</span>
-    </span>
-  );
+/* 로고 : 마루님이 만든 피그마 "꾹 개발 시안" 01 홈의 "로고"(35:123)를 2배 PNG 로 내보낸 것 (주황 도장 + Kkük) */
+export function Logo({ height = 32 }: { height?: number }) {
+  // 원본 비율 134 : 58
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/logo.png" alt={BRAND} width={Math.round((height * 134) / 58)} height={height} className="block" />;
 }
 
 export function Avatar({ initial, tone = "point", size = 40, ring }: { initial: string; tone?: "point" | "accent"; size?: number; ring?: boolean }) {
