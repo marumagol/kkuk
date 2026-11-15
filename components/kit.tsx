@@ -370,10 +370,12 @@ export function SkeletonPinCard() {
 /* ---------- 하단 탭 (떠 있는 알약) ---------- */
 /* 2026-11-14 : "지도" 탭을 "도장" 으로 (마루님 결정. 지도는 4단계라 아직 없음) */
 /* 하단 탭 5개 : 홈/여행/일기/도장/설정. 가운데 + 는 뺐음 (2026-11-14 마루님) */
-export function TabBar({ active = "홈" }: { active?: "홈" | "여행" | "일기" | "도장" | "설정" }) {
-  const tabs: { name: "홈" | "여행" | "일기" | "도장" | "설정"; icon: IconName; href: string }[] = [
+/* 2026-11-15 마루님 : 도장은 여행 탭 안으로 합침 (아래 탭 4칸). 도장 화면에서는 여행 탭이 켜진다 */
+export function TabBar({ active: asked = "홈" }: { active?: "홈" | "여행" | "일기" | "도장" | "설정" }) {
+  const active = asked === "도장" ? "여행" : asked;
+  const tabs: { name: "홈" | "여행" | "일기" | "설정"; icon: IconName; href: string }[] = [
     { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" }, { name: "일기", icon: "book", href: "/diary" },
-    { name: "도장", icon: "stamp", href: "/stamps" }, { name: "설정", icon: "gear", href: "/me" },
+    { name: "설정", icon: "gear", href: "/me" },
   ];
   const item = (t: (typeof tabs)[number]) => (
     <Link key={t.name} href={t.href} aria-label={t.name} aria-current={active === t.name ? "page" : undefined}

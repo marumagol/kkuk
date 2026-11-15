@@ -9,7 +9,7 @@ import { GateButton, GateCta } from "@/components/gate";
 import { Icon } from "@/components/kit";
 import { getViewer } from "@/lib/viewer";
 import { upcomingOf, pastOf, periodText, placeCount, yearOf, ddayOf } from "@/lib/mock";
-import { loadTrips, loadMapTrips } from "@/lib/trips";
+import { loadTrips, loadMapTrips, loadStamps } from "@/lib/trips";
 import { WorldTrips } from "@/components/world-trips";
 
 export const metadata = { title: "여행" };
@@ -24,7 +24,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
   const years = [...new Set(past.map((t) => yearOf(t.start)))];
 
   const asMap = view !== "list" && next.length + past.length > 0;
-  const map = asMap ? await loadMapTrips(viewer, trips) : [];
+  const [map, stamps] = asMap ? await Promise.all([loadMapTrips(viewer, trips), loadStamps(viewer)]) : [[], null];
   const toggle = (
     <div className="flex items-center gap-1.5">
       <nav aria-label="보기 방식" className="flex rounded-full bg-surface p-1">
@@ -55,7 +55,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
             {toggle}
           </header>
           {viewer.kind === "preview" && <MockNote />}
-          <WorldTrips trips={map.map((m) => ({ ...m, row: rowOf(trips.find((t) => t.id === m.id)!) }))} />
+          <WorldTrips stamps={stamps ? { earned: stamps.earned.map((x) => ({ name: x.name, country: x.country })), total: stamps.earned.length + stamps.missing.length } : undefined} trips={map.map((m) => ({ ...m, row: rowOf(trips.find((t) => t.id === m.id)!) }))} />
           <div className="flex-1 bg-surface pb-32" />
         </div>
         <MainTabs active="여행" />

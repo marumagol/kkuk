@@ -14,7 +14,7 @@ import { feature } from "topojson-client";
 import type { Topology } from "topojson-specification";
 import type { FeatureCollection } from "geojson";
 import { TripRow } from "@/components/screen";
-import { Icon } from "@/components/kit";
+import { Icon, Stamp } from "@/components/kit";
 import { countryNameOf, COUNTRY_CENTER } from "@/lib/countries";
 import type { MapTrip } from "@/lib/trips";
 
@@ -25,7 +25,7 @@ let landCache: Promise<FeatureCollection> | null = null;
 const loadLand = () => (landCache ??= fetch("/geo/land-50m.json").then((r) => r.json()).then((t: Topology) => feature(t, t.objects.land) as unknown as FeatureCollection)
   .catch((e) => { landCache = null; throw e; }));
 
-export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
+export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { earned: { name: string; country: string }[]; total: number } }) {
   const router = useRouter();
   const [land, setLand] = useState<FeatureCollection | null>(null);
   const [failed, setFailed] = useState(false);
@@ -149,6 +149,19 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
             </div>
           ))}
         </dl>
+        {stamps && (
+          <div className="border-b border-line pb-5">
+            <Link href="/stamps" className="press flex items-center justify-between gap-2">
+              <h2 className="text-body font-bold text-ink">모은 도장</h2>
+              <span className="flex items-center gap-0.5 text-sub font-semibold text-ink-sub">{stamps.earned.length} / {stamps.total}<Icon name="right" size={16} /></span>
+            </Link>
+            {stamps.earned.length > 0 ? (
+              <Link href="/stamps" aria-label="도장 모두 보기" className="-mx-5 mt-3 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+                {stamps.earned.map((x) => <div key={`${x.country}:${x.name}`} className="flex-none"><Stamp name={x.name} country={x.country} tilt={([...x.name].reduce((a, c) => a + c.charCodeAt(0), 0) % 17) - 8} /></div>)}
+              </Link>
+            ) : <p className="mt-2 text-sub text-ink-sub">여행 중에 그 도시에 있으면 도장이 찍혀요</p>}
+          </div>
+        )}
         <div className="flex items-center gap-3 text-tiny text-ink-sub">
           <span className="flex items-center gap-1"><span className="size-2.5 rounded-full bg-point" />다녀온 여행</span>
           <span className="flex items-center gap-1"><span className="size-2.5 rounded-full bg-deep" />다가오는 여행</span>
