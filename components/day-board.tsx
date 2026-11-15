@@ -116,6 +116,21 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     if (next.some((c, i) => c.length !== list[i].length || c.some((x, j) => x !== list[i][j]))) setCols(next);
   };
 
+  /*
+    끄는 동안의 움직임과 놓기는 창(window)에서 받는다
+    (다른 날로 넘어가면 카드가 다른 목록으로 옮겨 그려져 손잡이 버튼이 새로 생기므로, 버튼에서 받으면 놓기를 놓친다. 2026-11-15 버그)
+  */
+  useEffect(() => {
+    if (!dragId) return;
+    const id = dragId;
+    const move = (e: PointerEvent) => { lastY.current = e.clientY; place(id, e.clientY); };
+    const drop = () => { setDragId(null); void save(id); };
+    addEventListener("pointermove", move);
+    addEventListener("pointerup", drop);
+    addEventListener("pointercancel", drop);
+    return () => { removeEventListener("pointermove", move); removeEventListener("pointerup", drop); removeEventListener("pointercancel", drop); };
+  }, [dragId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* 끄는 동안 화면 위/아래 끝 근처면 저절로 스크롤 */
   useEffect(() => {
     if (!dragId) return;
@@ -167,10 +182,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
             <button type="button" data-grip aria-label={`${it.title} 옮기기. 위아래 화살표로 순서와 날짜를 바꿔요`}
               className="press mt-2 flex size-11 flex-none cursor-grab touch-none items-center justify-center rounded-full text-ink-sub active:cursor-grabbing"
               onKeyDown={(e) => onKey(e, it.id!)}
-              onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); }}
-              onPointerMove={(e) => { if (dragId === it.id) { lastY.current = e.clientY; place(it.id!, e.clientY); } }}
-              onPointerUp={() => { if (dragId) { const id = dragId; setDragId(null); void save(id); } }}
-              onPointerCancel={() => { if (dragId) { setDragId(null); setCols(before.current); } }}>
+              onPointerDown={(e) => { e.preventDefault(); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); }}>
               <Icon name="grip" size={22} />
             </button>
           )}
