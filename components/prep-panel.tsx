@@ -27,12 +27,15 @@ export function PrepPanel({ view }: { view: PrepView }) {
         <Icon name="right" size={20} className="text-ink-sub" />
       </Link>
       {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
-      <List title="챙길 것" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 여권, 충전기" />
       <List title="예약" kind="reservation" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 숙소, 렌터카" />
+      <List title="챙길 것" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 여권, 충전기" />
       {!canEdit && <p className="text-tiny text-ink-sub">보기만 권한이라 준비 목록을 고칠 수 없어요</p>}
     </div>
   );
 }
+
+/* 어두운 카드 위 분류 색 (바탕 #2D3139 와 4.5 : 1 이상) */
+const CAT_BAR: Record<string, string> = { "식사": "#FF8466", "쇼핑": "#B4A5FF", "이동": "#6FD3A8", "관광": "#FFD479", "숙소": "#8EC5FF" };
 
 type RunFn = (fn: () => Promise<{ error?: string } | undefined | void>) => void;
 
@@ -44,32 +47,51 @@ function Budget({ view, canEdit, busy, run }: { view: PrepView; canEdit: boolean
   const total = view.budget?.total ?? 0;
   const left = total - view.spent;
   const pct = total ? Math.min(100, Math.round((view.spent / total) * 100)) : 0;
-  return (
-    <section className="flex flex-col gap-3 rounded-card bg-surface p-5" aria-labelledby="budget-title">
-      <div className="flex items-center justify-between">
-        <h2 id="budget-title" className="text-body font-bold text-ink">예산</h2>
-        {canEdit && !edit && <button type="button" onClick={() => setEdit(true)} className="press h-9 px-1 text-tiny font-semibold text-ink-sub underline underline-offset-2">{view.budget ? "고치기" : "정하기"}</button>}
-      </div>
-      {edit ? (
-        <div className="flex items-end gap-2">
-          <div className="min-w-0 flex-1">
-            <Field label={`전체 예산 (${cur})`} name="budget" inputMode={d ? "decimal" : "numeric"} value={amount} placeholder="0"
-              onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ""))} disabled={busy} />
-          </div>
-          <Button type="button" size="lg" disabled={busy || !amount} onClick={() => run(async () => { const r = await saveBudget(view.tripId, cur, amount); if (!r?.error) setEdit(false); return r; })}>저장</Button>
+  const editBtn = canEdit && (
+    <button type="button" onClick={() => setEdit(true)} className="press inline-flex h-8 items-center rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">{view.budget ? "예산 고치기" : "예산 정하기"}</button>
+  );
+  if (edit) return (
+    <section className="flex flex-col gap-3 rounded-card bg-surface p-5" aria-label="예산 고치기">
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <Field label={`전체 예산 (${cur})`} name="budget" inputMode={d ? "decimal" : "numeric"} value={amount} placeholder="0"
+            onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ""))} disabled={busy} />
         </div>
-      ) : view.budget ? (
-        <>
-          <p className="text-title-lg font-extrabold text-ink">남은 예산 {formatMoney(left, cur)}</p>
-          <div className="h-2 overflow-hidden rounded-full bg-surface-soft" role="img" aria-label={`예산의 ${pct}% 사용`}>
-            <div className={"h-full rounded-full " + (left < 0 ? "bg-[#C23A18]" : "bg-btn")} style={{ width: `${pct}%` }} />
-          </div>
-          <p className="text-tiny text-ink-sub">전체 {formatMoney(total, cur)} · 장소 예상 비용 합계 {formatMoney(view.spent, cur)}{left < 0 ? " · 예산을 넘었어요" : ""}</p>
-        </>
+        <Button type="button" size="lg" disabled={busy || !amount} onClick={() => run(async () => { const r = await saveBudget(view.tripId, cur, amount); if (!r?.error) setEdit(false); return r; })}>저장</Button>
+      </div>
+      <button type="button" onClick={() => setEdit(false)} className="press h-9 self-start px-1 text-tiny font-semibold text-ink-sub underline underline-offset-2">닫기</button>
+    </section>
+  );
+  /* 어두운 남은 예산 카드 (피그마 06 준비). 도장처럼 테마를 따라가지 않는 카드라 막대 색은 여기서 정한다 */
+  return (
+    <section className="flex flex-col gap-3 rounded-deep bg-deep p-5 text-on-deep" aria-labelledby="budget-title">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="budget-title" className="text-sub font-semibold text-on-deep-sub">{view.budget ? (left < 0 ? "예산을 넘었어요" : "남은 예산") : "예상 비용"}</h2>
+        {editBtn}
+      </div>
+      <p className="flex flex-wrap items-baseline gap-x-2">
+        <span className="text-number font-extrabold tabular-nums">{formatMoney(view.budget ? left : view.spent, cur)}</span>
+        {view.budget && <span className="text-sub text-on-deep-sub">/ {formatMoney(total, cur)}</span>}
+      </p>
+      <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-deep-soft" role="img"
+        aria-label={view.budget ? `예산의 ${pct}% 사용` : "분류별 예상 비용"}>
+        {view.byCategory.map((c) => (
+          <span key={c.category} className="h-full" style={{ width: `${(c.amount / Math.max(total, view.spent, 1)) * 100}%`, background: CAT_BAR[c.category] }} />
+        ))}
+      </div>
+      {view.byCategory.length > 0 ? (
+        <ul className="flex flex-wrap gap-x-4 gap-y-1">
+          {view.byCategory.map((c) => (
+            <li key={c.category} className="flex items-center gap-1.5 text-tiny font-semibold" style={{ color: CAT_BAR[c.category] }}>
+              <span aria-hidden className="size-2 rounded-full" style={{ background: CAT_BAR[c.category] }} />
+              {c.category} <span className="tabular-nums">{formatMoney(c.amount, cur)}</span>
+            </li>
+          ))}
+        </ul>
       ) : (
-        <p className="text-sub text-ink-sub">예산을 정하면 장소 예상 비용과 비교해서 남은 금액을 보여 줘요</p>
+        <p className="text-tiny text-on-deep-sub">장소에 예상 비용을 적으면 분류별로 여기에 모여요</p>
       )}
-      <p className="text-tiny text-ink-sub">{cur} 로 적은 예상 비용만 더해요</p>
+      <p className="text-tiny text-on-deep-sub">{cur} 로 적은 장소 예상 비용만 더해요</p>
     </section>
   );
 }
@@ -86,7 +108,9 @@ function List({ title, kind, view, canEdit, busy, run, placeholder }: {
     <section className="flex flex-col gap-2" aria-label={title}>
       <div className="flex items-end justify-between">
         <h2 className="text-title font-bold text-ink">{title}</h2>
-        {items.length > 0 && <span className="text-sub text-ink-sub">{done}/{items.length}</span>}
+        {items.length > 0 && (items.length - done > 0
+          ? <span className="text-sub font-bold text-point-text">{items.length - done}개 남음</span>
+          : <span className="text-sub text-ink-sub">모두 끝냈어요</span>)}
       </div>
       {items.length > 0 && (
         <ul className="divide-y divide-line rounded-card bg-surface">
@@ -114,6 +138,7 @@ function List({ title, kind, view, canEdit, busy, run, placeholder }: {
 }
 
 function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn }) {
+  const name = view.people.find((p) => p.userId === it.assignee)?.name;
   return (
     <li className="flex min-h-14 items-center gap-3 px-4 py-2">
       <button type="button" role="checkbox" aria-checked={it.done} aria-label={`${it.title} ${it.done ? "끝냄" : "안 끝냄"}`} disabled={!canEdit || busy}
@@ -123,18 +148,19 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
       </button>
       <div className="min-w-0 flex-1">
         <p className={"truncate text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</p>
-        {it.due && <p className="text-tiny text-ink-sub">{md(it.due)}</p>}
       </div>
+      {it.due && <span className={"flex-none rounded-full px-2.5 py-1 text-tiny font-semibold " + (it.done ? "bg-surface-soft text-ink" : "bg-warn-soft text-warn-text")}>{md(it.due)}</span>}
       {canEdit ? (
-        <label className="flex-none">
+        <label className={"relative flex size-8 flex-none items-center justify-center rounded-full text-tiny font-bold " + (name ? "bg-accent-soft text-accent-text" : "border border-dashed border-line-strong text-ink-sub")}>
+          <span aria-hidden>{name ? [...name][0] : "+"}</span>
           <span className="sr-only">{it.title} 담당자</span>
           <select value={it.assignee ?? ""} disabled={busy} onChange={(e) => run(() => updatePrepItem(view.tripId, it.id, { assignee: e.target.value || null }))}
-            className="h-9 max-w-28 rounded-field border border-line bg-surface px-2 text-tiny text-ink">
+            className="absolute inset-0 size-full cursor-pointer opacity-0">
             <option value="">담당 없음</option>
             {view.people.map((p) => <option key={p.userId} value={p.userId}>{p.name}</option>)}
           </select>
         </label>
-      ) : it.assignee ? <span className="flex-none text-tiny text-ink-sub">{view.people.find((p) => p.userId === it.assignee)?.name}</span> : null}
+      ) : name ? <span title={name} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span> : null}
       {canEdit && (
         <button type="button" aria-label={`${it.title} 지우기`} disabled={busy} onClick={() => run(() => updatePrepItem(view.tripId, it.id, { remove: true }))}
           className="press flex size-9 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="x" size={16} /></button>

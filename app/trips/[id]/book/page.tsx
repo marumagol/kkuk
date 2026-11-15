@@ -8,7 +8,8 @@ import { notFound, redirect } from "next/navigation";
 import { Icon, Stamp } from "@/components/kit";
 import { PrintButton } from "@/components/print-button";
 import { getViewer } from "@/lib/viewer";
-import { loadTrip, loadTripBook } from "@/lib/trips";
+import { loadTrip, loadTripBook, loadTripSummary } from "@/lib/trips";
+import { TripSummaryRow, PhotoStack } from "@/components/trip-summary";
 import { addDays, md, weekday, tripLength, type Item } from "@/lib/mock";
 
 export const metadata = { title: "여행 한 권", robots: { index: false } };
@@ -17,7 +18,7 @@ export const metadata = { title: "여행 한 권", robots: { index: false } };
 
 function Place({ n, it }: { n: number; it: Item }) {
   return (
-    <li className="flex gap-3 break-inside-avoid py-2">
+    <li className="flex gap-3 break-inside-avoid border-t border-line py-3 first:border-t-0">
       <span className="w-5 flex-none pt-0.5 text-right text-tiny font-bold text-ink-sub">{n}</span>
       <div className="min-w-0 flex-1">
         <p className="text-body font-bold text-ink">{it.title}</p>
@@ -39,6 +40,15 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
   const len = tripLength(trip);
   const dayEntries = (d: number) => book.entries.filter((e) => e.kind === "day" && e.dayIndex === d);
   const recaps = book.entries.filter((e) => e.kind === "recap");
+  const summary = await loadTripSummary(viewer, trip);
+  // 장소도 일기도 없는 날은 이어지는 것끼리 한 줄로 묶는다 ("2일차 ~ 9일차")
+  const blocks: ({ kind: "day"; d: number } | { kind: "empty"; from: number; to: number })[] = [];
+  trip.days.forEach((day, d) => {
+    if (day.items.length || dayEntries(d).length) return void blocks.push({ kind: "day", d });
+    const last = blocks[blocks.length - 1];
+    if (last?.kind === "empty" && last.to === d - 1) last.to = d; else blocks.push({ kind: "empty", from: d, to: d });
+  });
+  const dayLabel = (d: number) => `${md(addDays(trip.start, d))} (${weekday(addDays(trip.start, d))})`;
 
   return (
     <main className="mx-auto w-full max-w-[720px] px-5 pb-16 pt-4 print:max-w-none print:px-0 print:pt-0">
@@ -53,50 +63,57 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
         <PrintButton />
       </div>
 
-      {/* 표지 */}
-      <section className="mt-8 flex min-h-[40vh] flex-col justify-end rounded-card bg-surface p-6 print:mt-0 print:min-h-[90vh] print:break-after-page print:rounded-none print:bg-transparent">
-        <p className="text-sub font-semibold text-point-text">{trip.cities.join(", ")}</p>
-        <h2 className="mt-1 text-[32px] font-extrabold leading-tight text-ink">{trip.title}</h2>
-        <p className="mt-2 text-body text-ink-sub">{md(trip.start)} ~ {md(trip.end)}, {len}일</p>
+      {/* 표지 : 제목 + 어두운 요약 숫자 */}
+      <section className="mt-6 flex flex-col gap-4 print:mt-0 print:min-h-[90vh] print:justify-end print:break-after-page">
+        <div>
+          <p className="text-sub font-bold text-point-text">{trip.cities.join(", ")}</p>
+          <h2 className="mt-1 text-[32px] font-extrabold leading-tight text-ink">{trip.title}</h2>
+          <p className="mt-1 text-body text-ink-sub">{md(trip.start)} ~ {md(trip.end)}, {len}일</p>
+        </div>
+        <TripSummaryRow s={summary} />
       </section>
 
-      {/* 일차별 : 장소 + 그날 일기 */}
-      {trip.days.map((day, d) => (
-        <section key={d} className="mt-8 break-inside-avoid-page print:mt-0 print:break-before-page">
-          <h3 className="border-b border-line pb-2 text-title font-extrabold text-ink">
-            {d + 1}일차 <span className="text-sub font-semibold text-ink-sub">{md(addDays(trip.start, d))} ({weekday(addDays(trip.start, d))})</span>
-          </h3>
-          {day.items.length ? (
-            <ol className="mt-2">{day.items.map((it, i) => <Place key={it.id ?? i} n={i + 1} it={it} />)}</ol>
-          ) : <p className="mt-3 text-sub text-ink-sub">이날은 정한 장소가 없어요</p>}
-          {dayEntries(d).map((e) => (
-            <article key={e.id} className="mt-4 break-inside-avoid rounded-card bg-surface p-4 print:border print:border-line print:bg-transparent">
-              <p className="text-tiny font-semibold text-ink-sub">{e.author}의 일기</p>
-              {e.title && <h4 className="mt-1 text-body font-bold text-ink">{e.title}</h4>}
-              {e.body && <p className="mt-1 whitespace-pre-line text-sub text-ink">{e.body}</p>}
-              {e.photos.length > 0 && (
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {e.photos.slice(0, 6).map((p) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={p.path} src={p.url} alt="" className="aspect-square w-full rounded-field object-cover" />
-                  ))}
-                </div>
-              )}
-            </article>
-          ))}
-        </section>
-      ))}
+      {/* 일차별 카드 : 사진 묶음 + 그날 장소 + 그날 일기 */}
+      <div className="mt-6 flex flex-col gap-3 print:mt-0">
+        {blocks.map((b) => {
+          if (b.kind === "empty") return (
+            <p key={`e${b.from}`} className="flex flex-wrap items-baseline gap-x-2 rounded-card border border-dashed border-line-strong/60 px-5 py-3.5 print:hidden">
+              <span className="text-body font-bold text-ink">{b.from === b.to ? `${b.from + 1}일차` : `${b.from + 1}일차 ~ ${b.to + 1}일차`}</span>
+              <span className="text-sub text-ink-sub">{b.from === b.to ? dayLabel(b.from) : `${md(addDays(trip.start, b.from))} ~ ${md(addDays(trip.start, b.to))}`} · 아직 남긴 기록이 없어요</span>
+            </p>
+          );
+          const d = b.d, day = trip.days[d], entries = dayEntries(d);
+          const photos = [...entries.flatMap((e) => e.photos.map((p) => p.url)), ...day.items.flatMap((it) => (it.photos ?? []).map((p) => p.url))].filter(Boolean);
+          return (
+            <section key={d} className="flex flex-col gap-3 rounded-card bg-surface p-4 break-inside-avoid-page print:break-before-page print:bg-transparent print:p-0">
+              <PhotoStack urls={photos} label={day.items[0]?.title} />
+              <div className="px-1">
+                <p className="text-sub font-bold text-point-text">{d + 1}일차 · {dayLabel(d)}</p>
+                {day.title && <h3 className="text-title font-extrabold text-ink">{day.title}</h3>}
+              </div>
+              {entries.map((e) => (
+                <article key={e.id} className="break-inside-avoid px-1">
+                  {e.title && <h4 className="text-title font-extrabold text-ink">{e.title}</h4>}
+                  {e.body && <p className="mt-1 whitespace-pre-line text-body text-ink">{e.body}</p>}
+                  <p className="mt-1 text-tiny text-ink-sub">{e.author}의 일기</p>
+                </article>
+              ))}
+              {day.items.length > 0 && <ol className="rounded-field bg-bg px-3 print:bg-transparent">{day.items.map((it, i) => <Place key={it.id ?? i} n={i + 1} it={it} />)}</ol>}
+            </section>
+          );
+        })}
+      </div>
 
       {trip.undated.length > 0 && (
         <section className="mt-8 print:mt-0 print:break-before-page">
-          <h3 className="border-b border-line pb-2 text-title font-extrabold text-ink">날짜 미정</h3>
+          <h3 className="text-title font-extrabold text-ink">날짜 미정</h3>
           <ol className="mt-2">{trip.undated.map((it, i) => <Place key={it.id ?? i} n={i + 1} it={it} />)}</ol>
         </section>
       )}
 
       {recaps.length > 0 && (
         <section className="mt-8 print:mt-0 print:break-before-page">
-          <h3 className="border-b border-line pb-2 text-title font-extrabold text-ink">여행 회고</h3>
+          <h3 className="text-title font-extrabold text-ink">여행 회고</h3>
           {recaps.map((e) => (
             <article key={e.id} className="mt-4 break-inside-avoid">
               <p className="text-tiny font-semibold text-ink-sub">{e.author}</p>
@@ -109,7 +126,7 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
 
       {book.stamps.length > 0 && (
         <section className="mt-8 break-inside-avoid print:mt-0 print:break-before-page">
-          <h3 className="border-b border-line pb-2 text-title font-extrabold text-ink">이 여행에서 받은 도장</h3>
+          <h3 className="text-title font-extrabold text-ink">이 여행에서 받은 도장</h3>
           <div className="mt-4 grid grid-cols-3 gap-4">
             {book.stamps.map((s) => <Stamp key={s.name + s.date} name={s.name} country={s.country} date={md(s.date)} fluid />)}
           </div>

@@ -204,6 +204,7 @@ export type PrepView = {
   tripId: string; tripTitle: string; start: string; end: string; role: Role; currency: string;
   items: PrepItem[]; budget: { currency: string; total: number } | null;
   spent: number; // 예산 통화로 적은 장소 예상 비용 합 (최소 단위)
+  byCategory: { category: Category; amount: number }[]; // 분류별 예상 비용 (많은 순)
   people: { userId: string; name: string }[];
 };
 export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepView | null> => {
@@ -219,14 +220,21 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
     loadMembers(v, tripId),
   ]);
   const currency = budget?.currency ?? currencyOf(city?.country_code);
-  const { data: costs } = await sb.from("itinerary_items").select("estimated_cost").eq("trip_id", tripId).is("removed_at", null).eq("cost_currency", currency);
-  const spent = (costs ?? []).reduce((n: number, c: { estimated_cost: number | null }) => n + (c.estimated_cost ?? 0), 0);
+  const { data: costs } = await sb.from("itinerary_items").select("category, estimated_cost").eq("trip_id", tripId).is("removed_at", null).eq("cost_currency", currency);
+  const byCat = new Map<Category, number>();
+  for (const c of (costs ?? []) as { category: string; estimated_cost: number | null }[]) {
+    if (!c.estimated_cost) continue;
+    const k = CATEGORY[c.category] ?? "관광";
+    byCat.set(k, (byCat.get(k) ?? 0) + c.estimated_cost);
+  }
+  const byCategory = [...byCat].map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
+  const spent = byCategory.reduce((n, c) => n + c.amount, 0);
   return {
     tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency,
     items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null }[])
       .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at })),
     budget: budget ? { currency: budget.currency, total: Number(budget.total) } : null,
-    spent,
+    spent, byCategory,
     people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name }] : [])),
   };
 });

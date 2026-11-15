@@ -7,7 +7,7 @@ import { TripTabs } from "@/components/trip-tabs";
 import { PrepPanel } from "@/components/prep-panel";
 import { getViewer } from "@/lib/viewer";
 import { loadPrep } from "@/lib/trips";
-import { md } from "@/lib/mock";
+import { md, todayKST, daysBetween } from "@/lib/mock";
 
 export const metadata = { title: "준비" };
 
@@ -18,6 +18,11 @@ export default async function Prep({ params }: { params: Promise<{ id: string }>
   if (viewer.kind === "preview") redirect(`/trips/${id}`);
   const view = await loadPrep(viewer, id);
   if (!view) notFound();
+  const today = todayKST();
+  const left = daysBetween(today, view.start);
+  const done = view.items.filter((x) => x.done).length;
+  const when = left > 0 ? `출발까지 ${left}일` : today <= view.end ? "여행 중" : `${md(view.start)} ~ ${md(view.end)}`;
+  const ready = view.items.length ? ` · 준비 ${Math.round((done / view.items.length) * 100)}%` : "";
   return (
     <AppShell>
       <div className="px-5 pt-4">
@@ -25,7 +30,7 @@ export default async function Prep({ params }: { params: Promise<{ id: string }>
       </div>
       <div className="px-5 pt-3">
         <h1 className="text-title-xl font-extrabold text-ink">{view.tripTitle}</h1>
-        <p className="mt-1 text-sub text-ink-sub">{md(view.start)} ~ {md(view.end)}</p>
+        <p className="mt-1 text-sub text-ink-sub">{when}{ready}</p>
       </div>
       <TripTabs tripId={id} active="준비" />
       <PrepPanel view={view} />
