@@ -174,7 +174,7 @@ export type PlaceInput = {
   place?: { id: string; lat: number; lng: number } | null; // 장소 검색으로 고른 구글 장소 (4단계). null 이면 연결 끊기, 없으면 그대로
   details?: Record<string, string>; // 분류별 맞춤 칸 (0030). 고른 분류의 칸만 저장
 };
-const CATEGORIES = ["transport", "food", "sight", "shopping", "stay"];
+const CATEGORIES = ["transport", "food", "sight", "shopping", "stay", "memo"]; // memo = 일정 사이 메모 (0031)
 const placeCols = (pl: PlaceInput["place"]) => {
   if (pl === undefined) return {};
   const ok = pl && /^[A-Za-z0-9_-]{10,255}$/.test(String(pl.id)) && Number.isFinite(pl.lat) && Number.isFinite(pl.lng)
@@ -223,10 +223,12 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
     const { data } = await q.order("sort_order", { ascending: false }).limit(1).maybeSingle();
     return (data?.sort_order ?? -1) + 1;
   };
+  // 메모는 장소가 아니라 주소, 비용, 사진, 지도 위치를 비운다
+  const isMemo = input.category === "memo";
   const row = {
-    title, address: address || null, memo: memo || null, category: input.category, start_time: time || null,
-    estimated_cost: cost, cost_currency: cost == null ? null : currency, day_index: day, photos, details: extra,
-    ...placeCols(input?.place),
+    title, address: isMemo ? null : address || null, memo: memo || null, category: input.category, start_time: time || null,
+    estimated_cost: isMemo ? null : cost, cost_currency: isMemo || cost == null ? null : currency, day_index: day, photos: isMemo ? [] : photos, details: extra,
+    ...placeCols(isMemo ? null : input?.place),
   };
 
   if (placeId) {

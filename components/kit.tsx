@@ -121,13 +121,14 @@ export function FloatingPinButton() {
 }
 
 /* ---------- 칩 ---------- */
-export type Category = "이동" | "식사" | "관광" | "쇼핑" | "숙소";
+export type Category = "이동" | "식사" | "관광" | "쇼핑" | "숙소" | "메모";
 const CAT: Record<Category, string> = {
   이동: "bg-surface-soft text-ink",
   식사: "bg-warn-soft text-warn-text",
   관광: "bg-ok-soft text-ok-text",
   쇼핑: "bg-point-soft text-point-text",
   숙소: "bg-accent-soft text-accent-text",
+  메모: "border border-line-strong/50 bg-surface text-ink-sub",
 };
 export function Chip({ children, tone = "soft", selected, size = "sm" }: {
   children: ReactNode; tone?: "soft" | "surface" | "point" | "accent" | "warn" | "ok" | "deep"; selected?: boolean; size?: "sm" | "md";
@@ -193,7 +194,7 @@ export function PinCard({ index, time, category, title, desc, detail, editedBy, 
           <div className="min-w-0 flex-1">
             <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>
             {detail && <p className="mt-1 line-clamp-2 text-tiny font-semibold text-ink">{detail}</p>}
-            {desc && <p className="mt-0.5 line-clamp-1 text-tiny text-ink-sub">{desc}</p>}
+            {desc && <p className={category === "메모" ? "mt-1 line-clamp-4 whitespace-pre-line text-sub text-ink-sub" : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}>{desc}</p>}
           </div>
           {photo && (
             <span className="relative mt-1.5 flex-none">

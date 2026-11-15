@@ -21,15 +21,16 @@ import { fieldsOf, MODES, type Details } from "@/lib/place-fields";
 
 const CATS = [
   { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
-  { code: "stay", label: "숙소" }, { code: "transport", label: "이동" },
+  { code: "stay", label: "숙소" }, { code: "transport", label: "이동" }, { code: "memo", label: "메모" },
 ];
 const CUR_NAME: Record<string, string> = { KRW: "원", JPY: "엔", USD: "달러", EUR: "유로", TWD: "대만 달러", CNY: "위안", THB: "바트", VND: "동", HKD: "홍콩 달러", GBP: "파운드" };
 
-export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null }) {
+export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceContext; day: number | null; memo?: boolean }) {
   const p = ctx.place;
   const startCur = p?.cost_currency ?? ctx.currency;
   const [title, setTitle] = useState(p?.title ?? "");
-  const [category, setCategory] = useState(p?.category ?? "sight");
+  const [category, setCategory] = useState(p?.category ?? (startMemo ? "memo" : "sight"));
+  const isMemo = category === "memo";
   const [time, setTime] = useState(p?.start_time?.slice(0, 5) ?? "");
   const [address, setAddress] = useState(p?.address ?? "");
   const [currency, setCurrency] = useState(startCur);
@@ -76,9 +77,9 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
 
   const save = () => {
     setError("");
-    if (!titleLen) return setError("장소 이름을 적어 주세요");
+    if (!titleLen) return setError(isMemo ? "메모 제목을 적어 주세요" : "장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: photos.map((x) => x.path), details: extra, ...(linked !== undefined ? { place: linked } : {}) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: extra, ...(linked !== undefined ? { place: linked } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -90,14 +91,14 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
   return (
     <>
       <div className="flex flex-1 flex-col gap-6 px-5 pt-6">
-        <Field label="장소 이름" name="title" placeholder="예 : 오타루 운하" value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
+        <Field label={isMemo ? "메모 제목" : "장소 이름"} name="title" placeholder={isMemo ? "예 : 체크아웃 전에 짐 맡기기" : "예 : 오타루 운하"} value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
           onChange={(e) => { setTitle(e.target.value); setError(""); }} autoFocus={!p}
           error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
-        {ctx.searchable && !isLinked && (
+        {ctx.searchable && !isLinked && !isMemo && (
           <PlaceSuggest query={title} kind="place" bias={ctx.bias} disabled={busy}
             onPick={(d: Picked) => { setTitle(d.name.slice(0, MAX_PLACE_TITLE)); if (d.address) setAddress(d.address.slice(0, 200)); setLinked({ id: d.id, lat: d.lat, lng: d.lng }); }} />
         )}
-        {isLinked && (
+        {isLinked && !isMemo && (
           <div className="-mt-4 flex items-center gap-2 text-tiny text-ink-sub">
             <Icon name="map" size={14} />지도에 위치가 연결된 장소예요
             <button type="button" onClick={() => setLinked(null)} disabled={busy} className="press ml-auto h-9 px-2 font-semibold text-ink underline underline-offset-2">연결 끊기</button>
@@ -159,7 +160,7 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
           <Field label="시간 (선택)" name="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} />
         </div>
 
-        <div className="flex items-end gap-2">
+        {!isMemo && <div className="flex items-end gap-2">
           <div className="min-w-0 flex-1">
             <Field label="예상 비용 (선택)" name="cost" inputMode={decimalsOf(currency) ? "decimal" : "numeric"} placeholder="0" value={cost}
               onChange={(e) => { setCost(e.target.value.replace(/[^\d.,]/g, "")); setError(""); }} disabled={busy} />
@@ -171,19 +172,19 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
               {currencies.map((c) => <option key={c} value={c}>{CUR_NAME[c] ?? c}</option>)}
             </select>
           </label>
-        </div>
+        </div>}
 
-        <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
-          onChange={(e) => setAddress(e.target.value)} disabled={busy} />
+        {!isMemo && <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
+          onChange={(e) => setAddress(e.target.value)} disabled={busy} />}
 
         <label className="flex flex-col gap-2">
-          <span className="text-sub font-bold text-ink-sub">메모 (선택)</span>
+          <span className="text-sub font-bold text-ink-sub">{isMemo ? "내용 (선택)" : "메모 (선택)"}</span>
           <textarea value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={MAX_PLACE_MEMO} rows={4} disabled={busy}
-            placeholder="가는 방법, 챙길 것 등"
+            placeholder={isMemo ? "그날 기억할 것, 할 일 등" : "가는 방법, 챙길 것 등"}
             className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
         </label>
 
-        <div className="flex flex-col gap-2">
+        {!isMemo && <div className="flex flex-col gap-2">
           <span className="text-sub font-bold text-ink-sub">사진 (선택, {photos.length}/{MAX_PLACE_PHOTOS})</span>
           <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
             {photos.map((ph, i) => (
@@ -209,19 +210,19 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
             onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ""; void addPhotos(fs); }} />
           <p className="text-tiny text-ink-sub">함께하는 사람만 볼 수 있어요. 올릴 때 크기를 줄여요</p>
-        </div>
+        </div>}
 
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
 
         {p && (
           <div className="border-t border-line pt-6">
-            <Button type="button" variant="secondary" full onClick={() => setConfirm(true)} disabled={busy}>장소 삭제</Button>
+            <Button type="button" variant="secondary" full onClick={() => setConfirm(true)} disabled={busy}>{isMemo ? "메모 삭제" : "장소 삭제"}</Button>
           </div>
         )}
       </div>
 
       <div className="sticky bottom-0 mt-6 bg-bg px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
-        <Button full onClick={save} disabled={busy || !titleLen || uploading > 0}>{busy ? "저장하는 중" : uploading ? "사진 올리는 중" : p ? "저장" : "장소 추가"}</Button>
+        <Button full onClick={save} disabled={busy || !titleLen || uploading > 0}>{busy ? "저장하는 중" : uploading ? "사진 올리는 중" : p ? "저장" : isMemo ? "메모 추가" : "장소 추가"}</Button>
       </div>
 
       {confirm && <AlertDialog title="장소를 삭제할까요?" desc={`"${p?.title}"이(가) 일정에서 사라져요`} confirmLabel="삭제"

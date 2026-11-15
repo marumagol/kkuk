@@ -15,7 +15,7 @@ import { placesEnabled, details } from "@/lib/places";
 import { detailLine } from "@/lib/place-fields";
 import type { Viewer } from "@/lib/viewer";
 
-const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소" };
+const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소", memo: "메모" };
 
 type Row = {
   id: string; title: string; start_date: string; end_date: string; time_zone: string; removed_at: string | null;
@@ -107,7 +107,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   const photos = await photoUrls(sb, ((rows ?? []) as PlaceRow[]).flatMap((it) => it.photos ?? []));
   for (const it of (rows ?? []) as PlaceRow[]) {
     const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
-    const desc = [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
+    const desc = it.category === "memo" ? it.memo ?? "" : [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
     const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);

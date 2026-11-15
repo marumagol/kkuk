@@ -7,9 +7,10 @@ import { loadPlaceContext } from "@/lib/trips";
 
 export const metadata = { title: "장소 추가" };
 
-export default async function NewPlace({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string }> }) {
+export default async function NewPlace({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; kind?: string }> }) {
   const { id } = await params;
-  const { day } = await searchParams;
+  const { day, kind } = await searchParams;
+  const memo = kind === "memo";
   const v = await getViewer();
   if (v.kind === "guest") redirect(`/login?next=/trips/${id}`);
   const ctx = await loadPlaceContext(v, id);
@@ -17,8 +18,8 @@ export default async function NewPlace({ params, searchParams }: { params: Promi
   const n = Number(day);
   const start = day === "none" ? null : Number.isInteger(n) && n >= 1 && n <= ctx.days ? n - 1 : 0;
   return (
-    <PlaceShell tripId={id} title="장소 추가" back={`/trips/${id}${start == null ? "" : `?day=${start + 1}`}`}>
-      <PlaceForm ctx={ctx} day={start} />
+    <PlaceShell tripId={id} title={memo ? "메모 추가" : "장소 추가"} back={`/trips/${id}${start == null ? "" : `?day=${start + 1}`}`}>
+      <PlaceForm ctx={ctx} day={start} memo={memo} />
     </PlaceShell>
   );
 }

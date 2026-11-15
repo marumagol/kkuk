@@ -3,6 +3,7 @@
   여행 일정 한 화면 (2026-11-15 여행 메뉴 개편)
   - 모든 날짜가 위에서 아래로 이어진다. 위 날짜 탭을 누르면 그 날로 스크롤, 스크롤하면 지금 보는 날이 탭에 표시
   - 손잡이(점 6개)를 끌어서 같은 날 안 순서를 바꾸거나 다른 날(날짜 미정 포함)로 옮긴다. 화면 끝에 가까이 끌면 저절로 스크롤
+  - 날마다 아래 [+ 장소] [메모] 로 그 날에 바로 추가 (메모는 장소가 아닌 글, 2026-11-15)
   - 키보드 : 손잡이에 초점을 두고 위/아래 화살표. 그 날 맨 위/아래에서 더 누르면 앞/뒤 날로 넘어간다
   - 저장에 실패하면 원래 자리로 되돌리고 안내
 */
@@ -181,11 +182,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const empty = (c: number) => (
     <div className={"flex min-h-16 items-center justify-between gap-2 rounded-pin border-2 border-dashed px-4 py-3 " + (dragId ? "border-point bg-point-soft" : "border-line")}>
       <span className="text-sub text-ink-sub">{dragId ? "여기에 놓으면 이 날로 옮겨요" : c === U ? "날짜를 못 정한 장소를 여기로 옮길 수 있어요" : "아직 장소가 없어요"}</span>
-      {canAdd && !dragId && c !== U && (
-        <Link href={`/trips/${tripId}/places/new?day=${c + 1}`} className="press inline-flex h-9 flex-none items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-          <Icon name="plus" size={14} />장소
-        </Link>
-      )}
     </div>
   );
 
@@ -237,6 +233,16 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                 </div>
               </div>
               {cols[c].length ? list(c) : empty(c)}
+              {canAdd && !dragId && user && (
+                <div className="-mt-1 flex gap-1.5 pl-10">
+                  <Link href={`/trips/${tripId}/places/new?day=${c + 1}`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                    <Icon name="plus" size={14} />장소
+                  </Link>
+                  <Link href={`/trips/${tripId}/places/new?day=${c + 1}&kind=memo`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                    <Icon name="pencil" size={14} />메모
+                  </Link>
+                </div>
+              )}
             </section>
           );
         })}
