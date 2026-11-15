@@ -8,6 +8,7 @@ import pkg from "@/package.json";
 import { cookies } from "next/headers";
 import { AvatarEditor } from "@/components/avatar-editor";
 import { ThemePicker, type Theme } from "@/components/theme-picker";
+import { PushToggle } from "@/components/push-toggle";
 
 export const metadata = { title: "설정" };
 
@@ -57,6 +58,10 @@ export default async function Me() {
           <h2 id="theme-title" className="text-body font-bold text-ink">화면 모드</h2>
           <ThemePicker initial={theme} />
         </section>
+
+        {v.kind === "user" && (
+          <section className="rounded-card bg-surface p-4"><PushToggle /></section>
+        )}
 
         <ul className="divide-y divide-line rounded-card bg-surface">
           {v.kind === "user" && <LinkRow href="/me/trash" label="최근 삭제한 여행" />}

@@ -54,3 +54,19 @@ self.addEventListener("fetch", (e) => {
     }
   })());
 });
+
+/* 휴대폰 푸시 (5단계 7번) : push 함수가 보낸 알림을 띄우고, 누르면 알림 화면으로 */
+self.addEventListener("push", (e) => {
+  let d = { title: "꾹", body: "새 알림이 있어요", url: "/notifications" };
+  try { d = { ...d, ...e.data.json() }; } catch {}
+  e.waitUntil(self.registration.showNotification(d.title, { body: d.body, icon: "/icon.png", badge: "/icon.png", data: { url: d.url }, tag: "kkuk" }));
+});
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/notifications";
+  e.waitUntil((async () => {
+    const list = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const c of list) if (new URL(c.url).origin === location.origin) { await c.focus(); return c.navigate(url); }
+    return self.clients.openWindow(url);
+  })());
+});
