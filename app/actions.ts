@@ -153,6 +153,18 @@ export async function removeTrip(id: string): Promise<CreateTripResult> {
   redirect("/trips?deleted=1");
 }
 
+/* 삭제한 여행 되살리기 (5단계 3번). 여행 주인만, 30일 안에만 (DB 함수 restore_trip) */
+export async function restoreTrip(id: string): Promise<{ error?: string }> {
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { error } = await sb.rpc("restore_trip", { p_trip: id });
+  if (error?.message?.includes("too_old")) return { error: "지운 지 30일이 지나 되살릴 수 없어요" };
+  if (error?.message?.includes("owner_only")) return { error: "여행 주인만 되살릴 수 있어요" };
+  if (error && !error.message?.includes("not_removed")) return { error: "되살리지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  revalidatePath("/", "layout");
+  redirect(`/trips/${id}?restored=1`);
+}
+
 /* ---------- 장소 (S08) : 추가, 수정, 삭제. 권한은 DB 규칙(RLS)이 막는다 ---------- */
 export type PlaceInput = {
   title: string; address: string; category: string; time: string; cost: string; currency: string; memo: string;

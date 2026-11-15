@@ -30,7 +30,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
       </header>
       {viewer.kind === "preview" && <MockNote />}
       {left && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">여행에서 나왔어요</p>}
-      {deleted && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">여행을 삭제했어요</p>}
+      {deleted && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">여행을 삭제했어요. 30일 안에는 설정 &gt; 최근 삭제한 여행에서 되살릴 수 있어요</p>}
 
       <div className="flex flex-col gap-6 px-5 pt-5">
         {next.length + past.length === 0 ? (

@@ -14,7 +14,7 @@ import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripL
 import { loadTrip, loadTripSummary } from "@/lib/trips";
 import { TripSummaryRow } from "@/components/trip-summary";
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; removed?: string; undated?: string; joined?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; restored?: string; removed?: string; undated?: string; joined?: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const r = await loadTrip(await getViewer(), (await params).id);
@@ -80,6 +80,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
       </div>
       {sp.removed && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">삭제했어요</p>}
       {sp.joined && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행에 함께하게 됐어요</p>}
+      {sp.restored && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행을 되살렸어요</p>}
       {sp.saved && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행 정보를 저장했어요</p>}
       {viewer.kind === "preview" && <MockNote />}
       <div className="flex items-start gap-2 px-5 pt-3">

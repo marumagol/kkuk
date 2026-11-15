@@ -467,3 +467,20 @@ export const loadNotices = cache(async (v: Viewer): Promise<Notice[]> => {
   type R = { id: number; trip_id: string; kind: Notice["kind"]; actor_name: string; ref_id: string | null; detail: string | null; count: number; created_at: string; read_at: string | null; trips: { title: string } | null };
   return ((data ?? []) as unknown as R[]).map((r) => ({ id: r.id, tripId: r.trip_id, tripTitle: r.trips?.title ?? "여행", kind: r.kind, actor: r.actor_name, refId: r.ref_id, detail: r.detail, count: r.count, at: r.created_at, read: !!r.read_at }));
 });
+
+/* 최근 삭제한 여행 (5단계 3번) : 내가 주인이고 30일 안에 지운 여행. 되살리기는 restore_trip (0019) */
+export type RemovedTrip = { id: string; title: string; start: string; end: string; cities: string[]; removedAt: string; daysLeft: number };
+export async function loadRemovedTrips(v: Viewer): Promise<RemovedTrip[]> {
+  if (v.kind !== "user") return [];
+  const sb = (await createClient())!;
+  const since = new Date(Date.now() - 30 * 86400000).toISOString();
+  const { data } = await sb.from("trips").select(SELECT).gte("removed_at", since).order("removed_at", { ascending: false });
+  return ((data ?? []) as unknown as Row[])
+    .filter((r) => r.trip_members.some((m) => m.user_id === v.id && m.role === "owner" && !m.removed_at))
+    .map((r) => ({
+      id: r.id, title: r.title, start: r.start_date, end: r.end_date,
+      cities: [...r.trip_cities].sort((a, b) => a.sort_order - b.sort_order).map((c) => c.name),
+      removedAt: r.removed_at!,
+      daysLeft: Math.max(1, Math.ceil((new Date(r.removed_at!).getTime() + 30 * 86400000 - Date.now()) / 86400000)),
+    }));
+}

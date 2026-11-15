@@ -59,6 +59,7 @@ export default async function Me() {
         </section>
 
         <ul className="divide-y divide-line rounded-card bg-surface">
+          {v.kind === "user" && <LinkRow href="/me/trash" label="최근 삭제한 여행" />}
           <LinkRow href="/terms" label="이용약관" />
           <LinkRow href="/privacy" label="개인정보 처리방침" />
           <li>
