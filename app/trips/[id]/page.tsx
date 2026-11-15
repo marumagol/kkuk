@@ -3,6 +3,7 @@
   준비/기록 탭은 2단계 (1단계는 숨김). 장소 추가는 로그인 문지기를 거친다
 */
 import Link from "next/link";
+import { after } from "next/server";
 import { CategoryChip, EmptyState, Icon } from "@/components/kit";
 import { AppShell, BottomDock, Avatar, SectionTitle, MockNote } from "@/components/screen";
 import { GateFab, GateCta } from "@/components/gate";
@@ -11,7 +12,7 @@ import { TripTabs } from "@/components/trip-tabs";
 import { StampClaim } from "@/components/stamp-claim";
 import { getViewer, isIn } from "@/lib/viewer";
 import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
-import { loadTrip, loadTripSummary } from "@/lib/trips";
+import { loadTrip, loadTripSummary, tripOpenLogger } from "@/lib/trips";
 import { TripSummaryRow } from "@/components/trip-summary";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; restored?: string; removed?: string; undated?: string; joined?: string }> };
@@ -43,7 +44,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
         <div className="px-5 pt-6">
           <div role="alert" className="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-8 text-center">
             <h1 className="text-title font-bold text-ink">{removed ? "삭제된 여행이에요" : "볼 수 없는 여행이에요"}</h1>
-            <p className="text-sub text-ink-sub">{removed ? "여행 주인이 이 여행을 삭제했어요" : loggedIn ? "지워졌거나 함께하는 사람에서 빠진 여행일 수 있어요" : "로그인하면 내 여행을 볼 수 있어요"}</p>
+            <p className="text-sub text-ink-sub">{removed ? "여행 주인이 이 여행을 삭제했어요. 여행 주인은 30일 안에 설정 > 최근 삭제한 여행에서 되살릴 수 있어요" : loggedIn ? "지워졌거나 함께하는 사람에서 빠진 여행일 수 있어요" : "로그인하면 내 여행을 볼 수 있어요"}</p>
             <Link href={loggedIn ? "/trips" : "/login"} className="press inline-flex h-11 items-center rounded-btn border border-line-strong bg-surface px-4 text-sub font-bold text-ink">
               {loggedIn ? "여행 목록으로" : "로그인"}
             </Link>
@@ -53,6 +54,8 @@ export default async function TripDetail({ params, searchParams }: Props) {
     );
   }
 
+  const logOpen = await tripOpenLogger(viewer, trip.id);
+  if (logOpen) after(logOpen); // 화면을 다 보낸 뒤에 기록
   const len = tripLength(trip);
   const today = todayOf(trip);
   const fallback = statusOf(trip, today) === "ongoing" ? daysBetween(trip.start, today) + 1 : 1;

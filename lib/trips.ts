@@ -484,3 +484,12 @@ export async function loadRemovedTrips(v: Viewer): Promise<RemovedTrip[]> {
       daysLeft: Math.max(1, Math.ceil((new Date(r.removed_at!).getTime() + 30 * 86400000 - Date.now()) / 86400000)),
     }));
 }
+
+/* 여행 열기 기록 (5단계 5번, 지표용). 하루 한 줄만 남고, 실패해도 화면에는 영향 없음.
+   화면을 다 보낸 뒤(after) 부르도록 로그인 연결을 먼저 만들어 함수로 돌려준다 */
+export async function tripOpenLogger(v: Viewer, tripId: string): Promise<(() => Promise<void>) | null> {
+  if (v.kind !== "user") return null;
+  const sb = await createClient();
+  if (!sb) return null;
+  return async () => { try { await sb.rpc("log_trip_open", { p_trip: tripId }); } catch { /* 무시 */ } };
+}
