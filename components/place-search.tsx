@@ -32,7 +32,7 @@ export function PlaceSuggest({ query, kind, bias, onPick, disabled }: {
   }, [query, kind, bias, disabled]);
 
   if (limited && !list.length) return <p role="status" className="-mt-4 text-tiny text-ink-sub">오늘 장소 검색 횟수를 다 썼어요. 이름과 주소는 직접 입력해 주세요</p>;
-  if (none && !list.length) return <p role="status" className="-mt-4 rounded-field bg-surface-soft px-3 py-2.5 text-tiny text-ink">검색 결과가 없어요. 적은 이름 그대로 저장할 수 있어요. 주소는 아래에 직접 적어 주세요</p>;
+  if (none && !list.length) return <p role="status" className="-mt-4 rounded-field bg-surface-soft px-3 py-2.5 text-tiny text-ink">{kind === "place" ? "검색 결과가 없어요. 적은 이름 그대로 저장할 수 있어요. 주소는 아래에 직접 적어 주세요" : "검색 결과가 없어요. 적은 이름 그대로 넣을 수 있어요"}</p>;
   if (!list.length) return null;
   const direct = () => { skip.current = query.trim(); session.current = ""; setList([]); setNone(false); };
   const pick = async (s: Sug) => {
