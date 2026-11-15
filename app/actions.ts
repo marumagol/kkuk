@@ -419,6 +419,34 @@ export async function saveBudget(tripId: string, currency: string, amount: strin
   revalidatePath(`/trips/${tripId}/prep`);
 }
 
+/* ───────── 경비 (6단계 3번, migration 0026) : 주인과 편집 가능만 (RLS + 트리거가 함께하는 사람인지 검사) ───────── */
+export type ExpenseInput = { title: string; amount: string; currency: string; paidBy: string; splitWith: string[] };
+export async function saveExpense(tripId: string, id: string | null, input: ExpenseInput): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || (id && !isUuid(id))) return PREP_FAIL;
+  const title = String(input.title ?? "").trim();
+  if (!title || [...title].length > 60) return { error: "내용은 1~60자로 적어 주세요" };
+  if (!/^[A-Z]{3}$/.test(input.currency)) return PREP_FAIL;
+  const d = decimalsOf(input.currency);
+  const text = String(input.amount ?? "").replace(/,/g, "").trim();
+  if (!new RegExp(`^\\d{1,12}${d ? `(\\.\\d{1,${d}})?` : ""}$`).test(text) || Number(text) <= 0) return { error: "금액을 숫자로 적어 주세요" };
+  if (!isUuid(input.paidBy) || !input.splitWith.length || !input.splitWith.every(isUuid)) return { error: "낸 사람과 나눌 사람을 골라 주세요" };
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const row = { title, amount: Math.round(Number(text) * 10 ** d), currency: input.currency, paid_by: input.paidBy, split_with: input.splitWith };
+  const { error } = id
+    ? await c.sb.from("trip_expenses").update(row).eq("trip_id", tripId).eq("id", id)
+    : await c.sb.from("trip_expenses").insert({ trip_id: tripId, ...row });
+  if (error?.message?.includes("not_member")) return { error: "함께하는 사람만 고를 수 있어요" };
+  if (error) return PREP_FAIL;
+  revalidatePath(`/trips/${tripId}/expenses`);
+}
+export async function removeExpense(tripId: string, id: string): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !isUuid(id)) return PREP_FAIL;
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const { data, error } = await c.sb.from("trip_expenses").update({ removed_at: new Date().toISOString() }).eq("trip_id", tripId).eq("id", id).select("id");
+  if (error || !data?.length) return PREP_FAIL;
+  revalidatePath(`/trips/${tripId}/expenses`);
+}
+
 /* ───────── 여행일기 (2단계) : 내 일기만 쓰고 고친다 (RLS) ───────── */
 export type EntryInput = { kind: "day" | "recap"; day: number | null; title: string; body: string; visibility: string; photos: string[] };
 export async function saveEntry(tripId: string, input: EntryInput): Promise<CreateTripResult> {

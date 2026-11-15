@@ -1,5 +1,6 @@
 "use client";
 /* 준비 탭 내용 : 예산 카드, 챙길 것, 예약. 저장은 app/actions.ts (RLS 가 권한 검사) */
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Button, Field, Icon } from "@/components/kit";
 import { addPrepItem, updatePrepItem, saveBudget } from "@/app/actions";
@@ -21,6 +22,10 @@ export function PrepPanel({ view }: { view: PrepView }) {
   return (
     <div className="flex flex-col gap-6 px-5 pt-5">
       <Budget view={view} canEdit={canEdit} busy={busy} run={run} />
+      <Link href={`/trips/${view.tripId}/expenses`} className="press flex min-h-14 items-center justify-between gap-3 rounded-card bg-surface px-5 py-3">
+        <span><span className="block text-body font-bold text-ink">경비와 정산</span><span className="block text-tiny text-ink-sub">누가 얼마 냈는지 적고 나눠 보내기</span></span>
+        <Icon name="right" size={20} className="text-ink-sub" />
+      </Link>
       {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
       <List title="챙길 것" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 여권, 충전기" />
       <List title="예약" kind="reservation" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 숙소, 렌터카" />

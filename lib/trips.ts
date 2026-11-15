@@ -558,3 +558,34 @@ export const loadTripBook = cache(async (v: Viewer, tripId: string): Promise<Tri
   const stamps = ((grants ?? []) as unknown as G[]).filter((g) => g.cities).map((g) => ({ name: g.cities!.name, country: g.cities!.country_code, date: g.granted_at.slice(0, 10) }));
   return { entries, stamps };
 });
+
+/* 경비와 정산 (6단계 3번, migration 0026) */
+export type Expense = { id: string; title: string; amount: number; currency: string; paidBy: string; splitWith: string[]; spentOn: string | null };
+export type ExpensesView = {
+  tripId: string; tripTitle: string; start: string; end: string; role: Role; currency: string; me: string;
+  expenses: Expense[];
+  people: { userId: string; name: string; active: boolean }[]; // 나간 사람도 이름은 남김
+};
+export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<ExpensesView | null> => {
+  if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
+  const r = await loadTrip(v, tripId);
+  if (!("trip" in r)) return null;
+  const sb = (await createClient())!;
+  const [{ data: rows }, { data: members }, { data: city }] = await Promise.all([
+    sb.from("trip_expenses").select("id, title, amount, currency, paid_by, split_with, spent_on").eq("trip_id", tripId).is("removed_at", null).order("created_at", { ascending: false }),
+    sb.from("trip_members").select("user_id, display_name, removed_at, created_at").eq("trip_id", tripId).order("created_at"),
+    sb.from("trip_cities").select("country_code").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle(),
+  ]);
+  const people = new Map<string, { userId: string; name: string; active: boolean }>();
+  for (const m of (members ?? []) as { user_id: string | null; display_name: string; removed_at: string | null }[]) {
+    if (!m.user_id) continue;
+    const prev = people.get(m.user_id);
+    if (!prev || !m.removed_at) people.set(m.user_id, { userId: m.user_id, name: m.display_name, active: !m.removed_at });
+  }
+  return {
+    tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency: currencyOf(city?.country_code), me: v.id,
+    expenses: ((rows ?? []) as { id: string; title: string; amount: number; currency: string; paid_by: string; split_with: string[]; spent_on: string | null }[])
+      .map((e) => ({ id: e.id, title: e.title, amount: Number(e.amount), currency: e.currency, paidBy: e.paid_by, splitWith: e.split_with, spentOn: e.spent_on })),
+    people: [...people.values()],
+  };
+});
