@@ -1,4 +1,4 @@
-/* 일부 일정만 공유 (4단계 7) : 고른 일차만 보이는 링크 만들기와 끊기. 편집 가능 이상만 */
+/* 일정 공유 : 여행 전체(기본) 또는 고른 일차 링크 만들기와 끊기. 편집 가능 이상만 */
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/kit";

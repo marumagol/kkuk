@@ -426,15 +426,15 @@ export const loadMyPlaces = cache(async (v: Viewer): Promise<MyPlacesView> => {
 });
 
 /* ───────── 일부 일정만 공유 (4단계 7, migration 0015) ───────── */
-export type DayShare = { token: string; days: number[]; createdAt: string };
+export type DayShare = { token: string; days: number[] | null; createdAt: string };
 export const loadDayShares = cache(async (v: Viewer, tripId: string): Promise<DayShare[]> => {
   if (v.kind !== "user") return [];
   const sb = (await createClient())!;
   const { data } = await sb.from("trip_shares").select("token, days, created_at").eq("trip_id", tripId).is("revoked_at", null).order("created_at", { ascending: false });
-  return ((data ?? []) as { token: string; days: number[]; created_at: string }[]).map((s) => ({ token: s.token, days: s.days, createdAt: s.created_at }));
+  return ((data ?? []) as { token: string; days: number[] | null; created_at: string }[]).map((s) => ({ token: s.token, days: s.days, createdAt: s.created_at }));
 });
-export type SharedItem = { day_index: number; title: string; category: string; start_time: string | null; address: string | null; lat: number | null; lng: number | null };
-export type PublicShare = { title: string; start_date: string; end_date: string; days: number[]; items: (Omit<SharedItem, "category"> & { category: Category })[] };
+export type SharedItem = { day_index: number | null; title: string; category: string; start_time: string | null; address: string | null; lat: number | null; lng: number | null };
+export type PublicShare = { title: string; start_date: string; end_date: string; whole?: boolean; days: number[]; items: (Omit<SharedItem, "category"> & { category: Category })[] };
 export const loadPublicShare = cache(async (token: string): Promise<PublicShare | null> => {
   if (!/^[0-9a-f]{32}$/.test(token)) return null;
   const sb = await createClient();

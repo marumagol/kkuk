@@ -512,8 +512,10 @@ const SHARE_ERRORS: Record<string, string> = {
   trip_removed: "삭제된 여행이에요",
   forbidden: "편집 가능 권한이 있어야 공유할 수 있어요",
 };
-export async function makeDayShare(tripId: string, days: number[]): Promise<{ error?: string; token?: string }> {
-  if (!isUuid(tripId) || !Array.isArray(days) || !days.length || days.some((d) => !Number.isInteger(d) || d < 0 || d > 59)) return { error: SHARE_ERRORS.days_invalid };
+/* days 가 null 이면 여행 전체 링크 (0018) */
+export async function makeDayShare(tripId: string, days: number[] | null): Promise<{ error?: string; token?: string }> {
+  if (!isUuid(tripId)) return { error: "다시 시도해 주세요" };
+  if (days !== null && (!Array.isArray(days) || !days.length || days.some((d) => !Number.isInteger(d) || d < 0 || d > 59))) return { error: SHARE_ERRORS.days_invalid };
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
   const { data, error } = await sb.rpc("create_trip_share", { p_trip: tripId, p_days: days });

@@ -1,4 +1,4 @@
-/* 일부 일정 공유 링크 (4단계 7) : 로그인 없이 고른 날만 보기. 검색에는 나오지 않게 */
+/* 일정 공유 링크 : 로그인 없이 여행 전체 또는 고른 날만 보기 (0018). 검색에는 나오지 않게 */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const s = await loadPublicShare((await params).token);
   if (!s) return { title: "일정", robots: { index: false, follow: false } };
   const title = `${s.title} 일정`;
-  const description = s.days.map((d) => `${d + 1}일차 ${md(addDays(s.start_date, d))}`).join(", ");
+  const description = s.whole ? `${md(s.start_date)} ~ ${md(s.end_date)} 여행 일정` : s.days.map((d) => `${d + 1}일차 ${md(addDays(s.start_date, d))}`).join(", ");
   return { title, description, robots: { index: false, follow: false }, openGraph: { title, description, siteName: "KKuK", images: [{ url: "/icon-512.png", width: 512, height: 512 }] } };
 }
 
@@ -28,7 +28,7 @@ export default async function SharedDays({ params }: Props) {
       </div>
       <header className="px-5 pt-3">
         <h1 className="text-title-xl font-extrabold text-ink">{s.title}</h1>
-        <p className="mt-1 text-sub text-ink-sub">{md(s.start_date)} ~ {md(s.end_date)} 중 {s.days.length}일 공유</p>
+        <p className="mt-1 text-sub text-ink-sub">{md(s.start_date)} ~ {md(s.end_date)}{s.whole ? "" : ` 중 ${s.days.length}일 공유`}</p>
       </header>
       <div className="flex flex-col gap-6 px-5 pb-10 pt-5">
         {s.days.map((d) => {
@@ -56,6 +56,22 @@ export default async function SharedDays({ params }: Props) {
             </section>
           );
         })}
+        {s.whole && s.items.some((i) => i.day_index == null) && (
+          <section aria-label="날짜 미정" className="flex flex-col gap-3">
+            <h2 className="text-body font-bold text-ink">날짜 미정</h2>
+            <ol className="flex flex-col gap-2">
+              {s.items.filter((i) => i.day_index == null).map((i, n) => (
+                <li key={n} className="flex items-start gap-3 rounded-card bg-surface px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-body font-semibold text-ink">{i.title}</p>
+                    {i.address && <p className="mt-0.5 truncate text-tiny text-ink-sub">{i.address}</p>}
+                  </div>
+                  <CategoryChip category={i.category} />
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
         <Link href="/" className="press flex h-12 items-center justify-center rounded-full bg-btn text-body font-bold text-on-btn">KKuK 로 내 여행 계획하기</Link>
       </div>
     </AppShell>
