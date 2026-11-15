@@ -147,6 +147,7 @@ export const loadTripForEdit = cache(async (v: Viewer, id: string): Promise<Trip
 export type PlaceContext = {
   tripId: string; tripTitle: string; start: string; days: number; role: Role; currency: string; place?: PlaceRow; photos?: { path: string; url: string }[];
   searchable: boolean; bias: { lat: number; lng: number } | null; // 장소 검색 (4단계) : 키가 있을 때만, 첫 도시 근처를 먼저
+  reserved: boolean; // 준비 탭 예약에 들어가 있는지 (0032)
 };
 export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?: string): Promise<PlaceContext | null> => {
   if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
@@ -171,7 +172,8 @@ export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?
   }
   const t = r.trip;
   const photos = placeId ? [...t.days.flatMap((d) => d.items), ...t.undated].find((it) => it.id === placeId)?.photos : undefined;
-  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos, searchable: placesEnabled(), bias };
+  const { data: rsv } = placeId ? await sb.from("checklist_items").select("id").eq("trip_id", tripId).eq("item_id", placeId).is("removed_at", null).maybeSingle() : { data: null };
+  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos, searchable: placesEnabled(), bias, reserved: !!rsv };
 });
 
 /* 함께하는 사람 화면 (2단계) : 목록, 내 권한, (주인이면) 살아 있는 초대 링크 */
@@ -201,7 +203,7 @@ export const loadMembers = cache(async (v: Viewer, tripId: string): Promise<Memb
 });
 
 /* 준비 탭 (2단계 6~7) : 챙길 것, 예약, 예산 */
-export type PrepItem = { id: string; kind: "item" | "reservation"; title: string; due: string | null; assignee: string | null; done: boolean };
+export type PrepItem = { id: string; kind: "item" | "reservation"; title: string; due: string | null; assignee: string | null; done: boolean; itemId: string | null /* 장소에서 온 예약 (0032) */ };
 export type PrepView = {
   tripId: string; tripTitle: string; start: string; end: string; role: Role; currency: string;
   items: PrepItem[]; budget: { currency: string; total: number } | null;
@@ -215,7 +217,7 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
   if (!("trip" in r)) return null;
   const sb = (await createClient())!;
   const [{ data: rows }, { data: budget }, { data: city }, mv] = await Promise.all([
-    sb.from("checklist_items").select("id, kind, title, due_date, assignee_id, done_at, sort_order, created_at")
+    sb.from("checklist_items").select("id, kind, title, due_date, assignee_id, done_at, sort_order, created_at, item_id")
       .eq("trip_id", tripId).is("removed_at", null).order("sort_order").order("created_at"),
     sb.from("trip_budgets").select("currency, total").eq("trip_id", tripId).maybeSingle(),
     sb.from("trip_cities").select("country_code").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle(),
@@ -233,8 +235,8 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
   const spent = byCategory.reduce((n, c) => n + c.amount, 0);
   return {
     tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency,
-    items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null }[])
-      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at })),
+    items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null; item_id: string | null }[])
+      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at, itemId: x.item_id })),
     budget: budget ? { currency: budget.currency, total: Number(budget.total) } : null,
     spent, byCategory,
     people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name }] : [])),

@@ -38,6 +38,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const [memo, setMemo] = useState(p?.memo ?? "");
   // 분류별 맞춤 칸 (편명, 예약번호 등). 분류를 바꿔도 적은 값은 남겨 두고, 저장할 때 고른 분류의 칸만 보낸다
   const [extra, setExtra] = useState<Details>(p?.details ?? {});
+  const [reserve, setReserve] = useState(ctx.reserved);
   const fields = fieldsOf(category, extra.mode);
   // 장소 검색으로 고른 구글 장소. undefined = 건드리지 않음, null = 연결 끊음
   const [linked, setLinked] = useState<{ id: string; lat: number; lng: number } | null | undefined>(undefined);
@@ -79,7 +80,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     setError("");
     if (!titleLen) return setError(isMemo ? "메모 제목을 적어 주세요" : "장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: extra, ...(linked !== undefined ? { place: linked } : {}) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: extra, reserve, ...(linked !== undefined ? { place: linked } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -118,6 +119,15 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           </div>
         </fieldset>
 
+        {!isMemo && (
+          <label className="-mt-2 flex min-h-12 cursor-pointer items-center gap-3 rounded-field bg-surface px-4 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30">
+            <input type="checkbox" checked={reserve} onChange={(e) => setReserve(e.target.checked)} disabled={busy} className="size-5 accent-[var(--btn)]" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-body font-semibold text-ink">예약 필요</span>
+              <span className="block text-tiny text-ink-sub">체크하면 준비 탭 예약 목록에 들어가요</span>
+            </span>
+          </label>
+        )}
         {category === "transport" && (
           <fieldset className="-mt-2 flex flex-col gap-2">
             <legend className="mb-2 text-sub font-bold text-ink-sub">이동 수단 (선택)</legend>

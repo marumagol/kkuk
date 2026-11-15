@@ -173,6 +173,7 @@ export type PlaceInput = {
   photos?: string[]; // 저장소 place-photos 안 위치 (<여행 id>/<그림 id>.jpg), 순서대로 최대 5장
   place?: { id: string; lat: number; lng: number } | null; // 장소 검색으로 고른 구글 장소 (4단계). null 이면 연결 끊기, 없으면 그대로
   details?: Record<string, string>; // 분류별 맞춤 칸 (0030). 고른 분류의 칸만 저장
+  reserve?: boolean; // 예약 필요 → 준비 탭 예약 목록에 (0032). 없으면 그대로
 };
 const CATEGORIES = ["transport", "food", "sight", "shopping", "stay", "memo"]; // memo = 일정 사이 메모 (0031)
 const placeCols = (pl: PlaceInput["place"]) => {
@@ -237,12 +238,34 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
     const patch = prev.day_index === day ? row : { ...row, sort_order: await lastOrder() };
     const { data, error } = await sb.from("itinerary_items").update(patch).eq("trip_id", tripId).eq("id", placeId).select("id");
     if (error || !data?.length) return { error: "저장하지 못했어요. 고칠 권한이 없거나 잠시 문제가 생겼어요" };
-  } else {
-    const { error } = await sb.from("itinerary_items").insert({ ...row, trip_id: tripId, sort_order: await lastOrder(), created_by: auth.user.id });
-    if (error) return { error: "저장하지 못했어요. 고칠 권한이 없거나 잠시 문제가 생겼어요" };
   }
+  let savedId = placeId;
+  if (!placeId) {
+    const { data, error } = await sb.from("itinerary_items").insert({ ...row, trip_id: tripId, sort_order: await lastOrder(), created_by: auth.user.id }).select("id").single();
+    if (error || !data) return { error: "저장하지 못했어요. 고칠 권한이 없거나 잠시 문제가 생겼어요" };
+    savedId = data.id as string;
+  }
+  if (input?.reserve !== undefined && savedId) await syncReservation(sb, auth.user.id, tripId, savedId, !isMemo && !!input.reserve, title, day);
   revalidatePath("/", "layout");
   redirect(`/trips/${tripId}?${day == null ? "undated=1#undated" : `day=${day + 1}`}`);
+}
+
+/* 장소의 "예약 필요" 를 준비 탭 예약과 맞춘다 (0032). 켜면 만들거나 이름, 날짜를 맞추고, 끄면 예약에서 뺀다 */
+async function syncReservation(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, uid: string, tripId: string, itemId: string, on: boolean, title: string, day: number | null) {
+  const { data: cur } = await sb.from("checklist_items").select("id").eq("trip_id", tripId).eq("item_id", itemId).is("removed_at", null).maybeSingle();
+  if (!on) {
+    if (cur) await sb.from("checklist_items").update({ removed_at: new Date().toISOString() }).eq("id", cur.id);
+    return;
+  }
+  let due: string | null = null;
+  if (day != null) {
+    const { data: t } = await sb.from("trips").select("start_date").eq("id", tripId).maybeSingle();
+    if (t?.start_date) { const d = new Date(`${t.start_date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + day); due = d.toISOString().slice(0, 10); }
+  }
+  const name = [...title].slice(0, 80).join("").trim();
+  if (cur) { await sb.from("checklist_items").update({ due_date: due }).eq("id", cur.id); return; } // 이름은 준비 탭에서 고쳤을 수 있어 날짜만 맞춘다
+  const { data: last } = await sb.from("checklist_items").select("sort_order").eq("trip_id", tripId).eq("kind", "reservation").is("removed_at", null).order("sort_order", { ascending: false }).limit(1).maybeSingle();
+  await sb.from("checklist_items").insert({ trip_id: tripId, kind: "reservation", title: name, due_date: due, item_id: itemId, sort_order: (last?.sort_order ?? -1) + 1, created_by: uid });
 }
 
 export async function removePlace(tripId: string, placeId: string, day: number | null): Promise<CreateTripResult> {
@@ -253,6 +276,7 @@ export async function removePlace(tripId: string, placeId: string, day: number |
   const { data, error } = await sb.from("itinerary_items").update({ removed_at: new Date().toISOString() })
     .eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).select("id");
   if (error || !data?.length) return { error: "삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  await sb.from("checklist_items").update({ removed_at: new Date().toISOString() }).eq("trip_id", tripId).eq("item_id", placeId).is("removed_at", null);
   revalidatePath("/", "layout");
   redirect(`/trips/${tripId}?removed=1${day == null ? "&undated=1#undated" : `&day=${day + 1}`}`);
 }
@@ -416,14 +440,20 @@ export async function addPrepItem(tripId: string, kind: string, title: string, d
   if (error) return PREP_FAIL;
   revalidatePath(`/trips/${tripId}/prep`);
 }
-export async function updatePrepItem(tripId: string, id: string, patch: { done?: boolean; assignee?: string | null; remove?: boolean }): Promise<CreateTripResult> {
+export async function updatePrepItem(tripId: string, id: string, patch: { done?: boolean; assignee?: string | null; remove?: boolean; title?: string; due?: string | null }): Promise<CreateTripResult> {
   if (!isUuid(tripId) || !isUuid(id)) return PREP_FAIL;
+  const t = patch.title === undefined ? undefined : String(patch.title).trim();
+  if (t !== undefined && ![...t].length) return { error: "내용을 적어 주세요" };
+  if (t !== undefined && [...t].length > 80) return { error: "80자까지 쓸 수 있어요" };
+  if (patch.due && !/^\d{4}-\d{2}-\d{2}$/.test(patch.due)) return { error: "날짜를 다시 골라 주세요" };
   if (patch.assignee && !isUuid(patch.assignee)) return PREP_FAIL;
   const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
   const row: Record<string, unknown> = {};
   if (patch.done !== undefined) row.done_at = patch.done ? new Date().toISOString() : null;
   if (patch.assignee !== undefined) row.assignee_id = patch.assignee;
   if (patch.remove) row.removed_at = new Date().toISOString();
+  if (t !== undefined) row.title = t;
+  if (patch.due !== undefined) row.due_date = patch.due || null;
   const { data, error } = await c.sb.from("checklist_items").update(row).eq("trip_id", tripId).eq("id", id).select("id");
   if (error || !data?.length) return PREP_FAIL;
   revalidatePath(`/trips/${tripId}/prep`);

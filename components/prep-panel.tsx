@@ -139,6 +139,26 @@ function List({ title, kind, view, canEdit, busy, run, placeholder }: {
 
 function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn }) {
   const name = view.people.find((p) => p.userId === it.assignee)?.name;
+  const [edit, setEdit] = useState(false);
+  const [title, setTitle] = useState(it.title);
+  const [due, setDue] = useState(it.due ?? "");
+  const save = () => run(async () => {
+    const r = await updatePrepItem(view.tripId, it.id, { title, ...(it.kind === "reservation" ? { due: due || null } : {}) });
+    if (!r?.error) setEdit(false);
+    return r;
+  });
+  if (edit) return (
+    <li className="flex flex-col gap-2 px-4 py-3">
+      <Field label="고치기" name={`edit-${it.id}`} value={title} maxLength={80} disabled={busy} autoFocus
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && title.trim()) { e.preventDefault(); save(); } if (e.key === "Escape") setEdit(false); }} />
+      {it.kind === "reservation" && <Field label="날짜 (선택)" name={`edit-due-${it.id}`} type="date" value={due} onChange={(e) => setDue(e.target.value)} disabled={busy} />}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="secondary" disabled={busy} onClick={() => { setEdit(false); setTitle(it.title); setDue(it.due ?? ""); }}>취소</Button>
+        <Button type="button" disabled={busy || !title.trim()} onClick={save}>저장</Button>
+      </div>
+    </li>
+  );
   return (
     <li className="flex min-h-14 items-center gap-3 px-4 py-2">
       <button type="button" role="checkbox" aria-checked={it.done} aria-label={`${it.title} ${it.done ? "끝냄" : "안 끝냄"}`} disabled={!canEdit || busy}
@@ -147,7 +167,11 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
         <Icon name="check" size={14} strokeWidth={2.5} />
       </button>
       <div className="min-w-0 flex-1">
-        <p className={"truncate text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</p>
+        {canEdit ? (
+          <button type="button" onClick={() => setEdit(true)} disabled={busy} aria-label={`${it.title} 고치기`}
+            className={"block w-full truncate text-left text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</button>
+        ) : <p className={"truncate text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</p>}
+        {it.itemId && <Link href={`/trips/${view.tripId}/places/${it.itemId}`} className="inline-flex items-center gap-0.5 text-tiny text-ink-sub underline underline-offset-2"><Icon name="pin" size={12} />일정 장소</Link>}
       </div>
       {it.due && <span className={"flex-none rounded-full px-2.5 py-1 text-tiny font-semibold " + (it.done ? "bg-surface-soft text-ink" : "bg-warn-soft text-warn-text")}>{md(it.due)}</span>}
       {canEdit ? (
@@ -161,6 +185,10 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
           </select>
         </label>
       ) : name ? <span title={name} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span> : null}
+      {canEdit && (
+        <button type="button" aria-label={`${it.title} 고치기`} disabled={busy} onClick={() => setEdit(true)}
+          className="press flex size-9 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="pencil" size={16} /></button>
+      )}
       {canEdit && (
         <button type="button" aria-label={`${it.title} 지우기`} disabled={busy} onClick={() => run(() => updatePrepItem(view.tripId, it.id, { remove: true }))}
           className="press flex size-9 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="x" size={16} /></button>
