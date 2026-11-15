@@ -15,6 +15,7 @@ export function PlaceSuggest({ query, kind, bias, onPick, disabled }: {
 }) {
   const [list, setList] = useState<Sug[]>([]);
   const [busy, setBusy] = useState(false);
+  const [limited, setLimited] = useState(false);
   const session = useRef<string>("");
   const skip = useRef<string>(""); // 고른 직후의 이름으로는 다시 찾지 않음
 
@@ -24,11 +25,12 @@ export function PlaceSuggest({ query, kind, bias, onPick, disabled }: {
     if (!session.current) session.current = crypto.randomUUID();
     let alive = true;
     const t = setTimeout(async () => {
-      try { const r = await findPlaces(q, session.current, kind, bias ?? null); if (alive) setList(r); } catch { if (alive) setList([]); }
+      try { const r = await findPlaces(q, session.current, kind, bias ?? null); if (!alive) return; if (Array.isArray(r)) { setList(r); setLimited(false); } else { setList([]); setLimited(true); } } catch { if (alive) setList([]); }
     }, 300);
     return () => { alive = false; clearTimeout(t); };
   }, [query, kind, bias, disabled]);
 
+  if (limited && !list.length) return <p role="status" className="-mt-4 text-tiny text-ink-sub">오늘 장소 검색 횟수를 다 썼어요. 이름과 주소는 직접 입력해 주세요</p>;
   if (!list.length) return null;
   const pick = async (s: Sug) => {
     setBusy(true);

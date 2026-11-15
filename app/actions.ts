@@ -481,19 +481,27 @@ export async function claimStamp(tripId: string, lat: number, lng: number, accur
 }
 
 /* ───────── 장소 검색 (4단계 2~3) : 로그인한 사람만. 키는 서버에서만 쓴다 ───────── */
-export async function findPlaces(input: string, session: string, kind: "place" | "city", bias?: { lat: number; lng: number } | null): Promise<Suggestion[]> {
+/* 구글 호출 전 하루 상한 검사 (migration 0017). 상한을 넘거나 검사를 못 하면 구글을 부르지 않는다 */
+async function underPlaceQuota(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, kind: "autocomplete" | "details"): Promise<boolean> {
+  const { data, error } = await sb.rpc("take_place_quota", { p_kind: kind });
+  return !error && data === true;
+}
+export type FindResult = Suggestion[] | { limited: true };
+export async function findPlaces(input: string, session: string, kind: "place" | "city", bias?: { lat: number; lng: number } | null): Promise<FindResult> {
   const q = String(input ?? "").trim().slice(0, 80);
   if ([...q].length < 2 || !/^[0-9a-f-]{36}$/i.test(session)) return [];
   const sb = await createClient();
   const { data: auth } = sb ? await sb.auth.getUser() : { data: { user: null } };
-  if (!auth.user) return [];
+  if (!auth.user || !sb) return [];
+  if (!(await underPlaceQuota(sb, "autocomplete"))) return { limited: true };
   const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null;
   return autocomplete(q, session, kind === "city" ? "city" : "place", b);
 }
 export async function pickPlace(id: string, session: string): Promise<PlaceDetail | null> {
   const sb = await createClient();
   const { data: auth } = sb ? await sb.auth.getUser() : { data: { user: null } };
-  if (!auth.user) return null;
+  if (!auth.user || !sb) return null;
+  if (!(await underPlaceQuota(sb, "details"))) return null;
   return details(String(id), /^[0-9a-f-]{36}$/i.test(session) ? session : undefined);
 }
 
