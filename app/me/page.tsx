@@ -11,11 +11,13 @@ import { ThemePicker, type Theme } from "@/components/theme-picker";
 
 export const metadata = { title: "설정" };
 
-function Row({ label, aside }: { label: string; aside?: string }) {
+function LinkRow({ href, label }: { href: string; label: string }) {
   return (
-    <li className="flex min-h-14 items-center justify-between gap-3 px-4">
-      <span className="text-body text-ink">{label}</span>
-      {aside && <span className="text-sub text-ink-sub">{aside}</span>}
+    <li>
+      <Link href={href} className="press flex min-h-14 items-center justify-between gap-3 px-4">
+        <span className="text-body text-ink">{label}</span>
+        <Icon name="right" size={18} className="text-ink-sub" />
+      </Link>
     </li>
   );
 }
@@ -57,8 +59,8 @@ export default async function Me() {
         </section>
 
         <ul className="divide-y divide-line rounded-card bg-surface">
-          <Row label="이용약관" aside="준비 중" />
-          <Row label="개인정보 처리방침" aside="준비 중" />
+          <LinkRow href="/terms" label="이용약관" />
+          <LinkRow href="/privacy" label="개인정보 처리방침" />
           <li>
             <Link href="/me/updates" className="press flex min-h-14 items-center justify-between gap-3 px-4">
               <span className="text-body text-ink">업데이트 내역</span>

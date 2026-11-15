@@ -27,6 +27,10 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
         <div className="mt-8">
           <LoginForm next={next} configured={configured} />
         </div>
+        <p className="mt-4 text-tiny text-ink-sub">
+          시작하면 <Link href="/terms" className="font-semibold underline underline-offset-2">이용약관</Link>과{" "}
+          <Link href="/privacy" className="font-semibold underline underline-offset-2">개인정보 처리방침</Link>에 동의하는 것으로 봐요
+        </p>
 
         {!configured && (
           <section className="mt-8 flex flex-col gap-3 rounded-card bg-surface p-5">
