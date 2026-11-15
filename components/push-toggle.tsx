@@ -92,8 +92,54 @@ export function PushToggle() {
           </button>
         )}
       </div>
+      {on && <KindPrefs />}
       {note[state] && <p className="text-tiny text-ink-sub">{note[state]}</p>}
       {error && <p role="alert" className="text-tiny font-semibold text-point-text">{error}</p>}
     </div>
+  );
+}
+
+/* 종류별 끄기 (6단계 4번, migration 0027). 앱 안 알림은 그대로 쌓이고 휴대폰 알림만 거른다 */
+const KINDS: { label: string; kinds: string[] }[] = [
+  { label: "함께하는 사람 참여", kinds: ["joined"] },
+  { label: "장소 고침", kinds: ["items"] },
+  { label: "새 일기", kinds: ["journal"] },
+  { label: "댓글과 답글", kinds: ["comment", "reply"] },
+  { label: "도장", kinds: ["stamp"] },
+];
+function KindPrefs() {
+  const [off, setOff] = useState<string[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const sb = createClient();
+    sb?.from("push_prefs").select("off_kinds").maybeSingle().then(({ data }) => setOff((data?.off_kinds as string[] | undefined) ?? []));
+  }, []);
+  if (!off) return null;
+  const flip = async (kinds: string[]) => {
+    const isOff = kinds.every((k) => off.includes(k));
+    const next = isOff ? off.filter((k) => !kinds.includes(k)) : [...new Set([...off, ...kinds])];
+    const prev = off;
+    setOff(next); setFailed(false);
+    const { error } = await createClient()!.from("push_prefs").upsert({ off_kinds: next, updated_at: new Date().toISOString() });
+    if (error) { setOff(prev); setFailed(true); }
+  };
+  return (
+    <ul className="mt-1 divide-y divide-line border-t border-line">
+      {KINDS.map((g) => {
+        const enabled = !g.kinds.every((k) => off.includes(k));
+        return (
+          <li key={g.label} className="flex min-h-12 items-center justify-between gap-3">
+            <span className="text-sub text-ink">{g.label}</span>
+            <button type="button" role="switch" aria-checked={enabled} aria-label={`${g.label} 알림`} onClick={() => flip(g.kinds)}
+              className="press flex h-11 w-16 flex-none items-center justify-center">
+              <span className={`relative h-7 w-12 rounded-full transition-colors ${enabled ? "bg-point" : "bg-line-strong"}`}>
+                <span className={`absolute top-1 size-5 rounded-full bg-white transition-all ${enabled ? "left-6" : "left-1"}`} />
+              </span>
+            </button>
+          </li>
+        );
+      })}
+      {failed && <li role="alert" className="py-2 text-tiny font-semibold text-point-text">바꾸지 못했어요. 잠시 뒤 다시 시도해 주세요</li>}
+    </ul>
   );
 }
