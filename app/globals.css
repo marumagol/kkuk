@@ -49,6 +49,10 @@
 
   --kakao: #FEE500;
 
+  /* 세계 지도 (여행 메뉴 지도, 2026-11-15) */
+  --sea: #D8E6EC;
+  --land: #F3EFE6;
+
   /* 시트 뒤 어둡게 */
   --scrim: rgb(23 24 28 / 0.5);
 
@@ -74,6 +78,8 @@
     --point: #FF5A36;
     --point-text: #FF8466;
     --point-soft: #3A241D;
+    --sea: #1F2A31;
+    --land: #2E3138;
     --accent: #8C75FF;
     --accent-text: #B4A5FF;
     --accent-soft: #29243F;
@@ -104,6 +110,8 @@
   --point: #FF5A36;
   --point-text: #FF8466;
   --point-soft: #3A241D;
+  --sea: #1F2A31;
+  --land: #2E3138;
   --accent: #8C75FF;
   --accent-text: #B4A5FF;
   --accent-soft: #29243F;
@@ -122,6 +130,8 @@
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-sea: var(--sea);
+  --color-land: var(--land);
   --color-surface-soft: var(--surface-soft);
   --color-ink: var(--ink);
   --color-ink-sub: var(--ink-sub);

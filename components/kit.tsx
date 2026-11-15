@@ -12,7 +12,7 @@ const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).jo
 /* ---------- 아이콘 (선 1.75, 둥근 끝) ---------- */
 type IconName =
   | "plus" | "bell" | "home" | "cal" | "map" | "user" | "arrow" | "camera"
-  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin";
+  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin" | "share" | "list" | "globe";
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
   bell: <><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7z" /><path d="M10 19a2 2 0 0 0 4 0" /></>,
@@ -40,6 +40,9 @@ const PATHS: Record<IconName, ReactNode> = {
   refresh: <><path d="M20 12a8 8 0 1 1-2.3-5.6" /><path d="M20 4v4h-4" /></>,
   image: <><rect x="4" y="5" width="16" height="14" rx="2.5" /><circle cx="9" cy="10" r="1.5" /><path d="M20 16l-5-5-7 8" /></>,
   alert: <><circle cx="12" cy="12" r="8" /><path d="M12 8v5M12 16h.01" /></>,
+  share: <><path d="M12 15V4" /><path d="m7.5 8.5 4.5-4.5 4.5 4.5" /><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" /></>,
+  list: <><path d="M9 6h11M9 12h11M9 18h11" /><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" /></>,
+  globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" /></>,
   link: <><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1" /><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" /></>,
   heart: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />,
   chat: <path d="M20 11.5a7.5 7.5 0 0 1-11.2 6.5L4 19.5l1.4-4.3A7.5 7.5 0 1 1 20 11.5z" />,
@@ -165,8 +168,8 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, time, category, title, desc, editedBy, last, href, photo, photoCount }: {
-  index: number; time?: string; category: Category; title: string; desc?: string; editedBy?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
+export function PinCard({ index, time, category, title, desc, detail, editedBy, last, href, photo, photoCount }: {
+  index: number; time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
 }) {
   const Box = ({ children }: { children: ReactNode }) => href
     ? <Link href={href} className="press mb-3 block min-w-0 flex-1 rounded-pin bg-surface px-4 py-3.5">{children}</Link>
@@ -174,7 +177,8 @@ export function PinCard({ index, time, category, title, desc, editedBy, last, hr
   return (
     <div className="flex gap-3">
       <div className="flex w-7 flex-none flex-col items-center gap-1 pt-3.5">
-        <span className="flex size-7 items-center justify-center rounded-full bg-btn text-tiny font-bold text-on-btn">{index}</span>
+        {index > 0 ? <span className="flex size-7 items-center justify-center rounded-full bg-btn text-tiny font-bold text-on-btn">{index}</span>
+          : <span className="mt-2 size-3 rounded-full border-2 border-line-strong bg-surface" />}
         {!last && <span className="w-0 flex-1 border-l-2 border-dashed border-line-strong/60" />}
       </div>
       <Box>
@@ -188,6 +192,7 @@ export function PinCard({ index, time, category, title, desc, editedBy, last, hr
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>
+            {detail && <p className="mt-1 line-clamp-2 text-tiny font-semibold text-ink">{detail}</p>}
             {desc && <p className="mt-0.5 line-clamp-1 text-tiny text-ink-sub">{desc}</p>}
           </div>
           {photo && (

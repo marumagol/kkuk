@@ -1,20 +1,18 @@
 /*
-  S07 여행 상세 : 일자별 일정. ?day=2 처럼 일차를 고른다
-  준비/기록 탭은 2단계 (1단계는 숨김). 장소 추가는 로그인 문지기를 거친다
+  S07 여행 상세 : 모든 날의 일정이 이어서 보인다 (2026-11-15 여행 메뉴 개편). ?day=2 면 그 날로 스크롤
+  날짜 탭, 끌어서 날짜 옮기기는 components/day-board.tsx. 장소 추가는 로그인 문지기를 거친다
 */
 import Link from "next/link";
 import { after } from "next/server";
-import { CategoryChip, EmptyState, Icon } from "@/components/kit";
-import { AppShell, BottomDock, Avatar, SectionTitle, MockNote } from "@/components/screen";
-import { GateFab, GateCta } from "@/components/gate";
-import { SortablePlaces } from "@/components/sortable-places";
+import { Icon } from "@/components/kit";
+import { AppShell, MockNote } from "@/components/screen";
+import { DayBoard } from "@/components/day-board";
 import { LiveRefresh } from "@/components/live-refresh";
-import { TripTabs } from "@/components/trip-tabs";
+import { TripTabs, TripHeader } from "@/components/trip-tabs";
 import { StampClaim } from "@/components/stamp-claim";
 import { getViewer, isIn } from "@/lib/viewer";
-import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
-import { loadTrip, loadTripSummary, tripOpenLogger, coordsRefiller } from "@/lib/trips";
-import { TripSummaryRow } from "@/components/trip-summary";
+import { placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
+import { loadTrip, tripOpenLogger, coordsRefiller } from "@/lib/trips";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; restored?: string; removed?: string; undated?: string; joined?: string }> };
 
@@ -61,125 +59,33 @@ export default async function TripDetail({ params, searchParams }: Props) {
   if (refill) after(refill);
   const len = tripLength(trip);
   const today = todayOf(trip);
-  const fallback = statusOf(trip, today) === "ongoing" ? daysBetween(trip.start, today) + 1 : 1;
+  const ongoing = statusOf(trip, today) === "ongoing";
+  const fallback = ongoing ? daysBetween(trip.start, today) + 1 : 1;
   const sp = await searchParams;
   const asked = Number(sp.day);
   const canEdit = "role" in r && r.role !== "viewer";
+  const owner = "role" in r && r.role === "owner";
   // 실제 저장은 로그인(DB)일 때만. 미리보기는 버튼만 보이고 "곧 열려요"
   const editable = canEdit && viewer.kind === "user";
-  const day = Number.isInteger(asked) && asked >= 1 && asked <= len ? asked : fallback;
-  const plan = trip.days[day - 1] ?? { items: [] };
-  const addHref = viewer.kind === "user" ? `/trips/${trip.id}/places/new?day=${day}` : undefined;
+  const valid = Number.isInteger(asked) && asked >= 1 && asked <= len;
+  const day = valid ? asked : fallback;
 
   return (
     <AppShell>
-      <div className="flex items-center justify-between px-5 pt-4">
-        <BackLink />
-        {/* 함께하는 사람 : 누르면 목록과 초대 (2단계) */}
-        <Link href={viewer.kind === "user" ? `/trips/${trip.id}/members` : "#"} aria-label={`함께하는 사람 ${trip.members.length}명${canEdit && "role" in r && r.role === "owner" ? ", 초대하기" : ""}`}
-          className="press flex h-11 items-center gap-1 rounded-full bg-surface pl-1.5 pr-3">
-          <span className="flex -space-x-2">
-            {trip.members.slice(0, 4).map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={32} ring src={m.avatar} />)}
-          </span>
-          {"role" in r && r.role === "owner" && viewer.kind === "user" ? <Icon name="plus" size={16} className="text-ink-sub" /> : <span className="text-tiny font-bold text-ink-sub">{trip.members.length}</span>}
-        </Link>
-      </div>
+      <TripHeader trip={trip} meId={viewer.kind === "user" ? viewer.id : undefined} user={viewer.kind === "user"} owner={owner} editable={editable} />
       {sp.removed && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">삭제했어요</p>}
       {sp.joined && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행에 함께하게 됐어요</p>}
       {sp.restored && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행을 되살렸어요</p>}
       {sp.saved && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행 정보를 저장했어요</p>}
       {viewer.kind === "preview" && <MockNote />}
-      <div className="flex items-start gap-2 px-5 pt-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-title-xl font-extrabold text-ink">{trip.title}</h1>
-          <p className="mt-1 text-sub text-ink-sub">{md(trip.start)} ~ {md(trip.end)}, 장소 {placeCount(trip)}개</p>
-        </div>
-        {/* 일부 일정 공유 (4단계 7) + 여행 정보 수정 : 제목 옆 (주인, 편집 가능) */}
-        {editable && viewer.kind === "user" && (
-          <Link href={`/trips/${trip.id}/share`} aria-label="일정 공유" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
-            <Icon name="link" size={20} />
-          </Link>
-        )}
-        {viewer.kind === "user" && (
-          <Link href={`/trips/${trip.id}/book`} aria-label="여행 한 권 (인쇄, PDF)" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
-            <Icon name="book" size={20} />
-          </Link>
-        )}
-        {editable && (
-          <Link href={`/trips/${trip.id}/edit`} aria-label="여행 정보 수정" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
-            <Icon name="pencil" size={20} />
-          </Link>
-        )}
-      </div>
-
-      {statusOf(trip, todayOf(trip)) === "past" && <TripSummaryRow s={await loadTripSummary(viewer, trip)} className="mx-5 mt-3" />}
       {viewer.kind === "user" && <TripTabs tripId={trip.id} active="일정" />}
       {viewer.kind === "user" && <LiveRefresh tripId={trip.id} />}
-      {viewer.kind === "user" && statusOf(trip, todayOf(trip)) === "ongoing" && <StampClaim tripId={trip.id} />}
+      {viewer.kind === "user" && ongoing && <StampClaim tripId={trip.id} />}
+      <p className="px-5 pt-3 text-tiny text-ink-sub">장소 {placeCount(trip)}개{editable && placeCount(trip) > 1 ? " · 오른쪽 손잡이를 끌어 순서와 날짜를 바꿀 수 있어요" : ""}</p>
 
-      <nav className="mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]" aria-label="날짜">
-        {Array.from({ length: len }).map((_, i) => {
-          const d = addDays(trip.start, i);
-          const on = i + 1 === day;
-          return (
-            <Link key={d} href={`/trips/${trip.id}?day=${i + 1}`} replace scroll={false}
-              aria-current={on ? "page" : undefined} aria-label={`${i + 1}일차, ${md(d)} ${weekday(d)}요일`}
-              className={"press flex h-[60px] w-[52px] flex-none flex-col items-center justify-center rounded-field " + (on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
-              <span className={"text-tiny " + (on ? "" : "text-ink-sub")}>{weekday(d)}</span>
-              <span className="text-title font-bold">{Number(d.slice(8))}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      <section className="flex flex-col gap-3 px-5 pt-5" aria-label={`${day}일차 일정`}>
-        <div className="relative">
-          <div className="absolute right-0 top-0 flex gap-1.5">
-            <Link href={`/trips/${trip.id}/map?day=${day}`} className="press inline-flex h-11 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-              <Icon name="map" size={16} />지도
-            </Link>
-            {viewer.kind === "user" && (
-              <Link href={`/trips/${trip.id}/diary?day=${day}`} className="press inline-flex h-11 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                <Icon name="book" size={16} />이 날 일기
-              </Link>
-            )}
-          </div>
-          <span className="text-sub font-bold text-point-text">{day}일차</span>
-          <h2 className="text-title-lg font-extrabold text-ink">{plan.title ?? `${md(addDays(trip.start, day - 1))} (${weekday(addDays(trip.start, day - 1))})`}</h2>
-        </div>
-        {plan.items.length ? (
-          <SortablePlaces key={day} tripId={trip.id} items={plan.items} editable={editable} />
-        ) : (
-          <EmptyState title="이 날은 아직 장소가 없어요" desc="가고 싶은 곳을 하나씩 추가해 보세요"
-            action={canEdit ? <GateCta icon="plus" href={addHref}>장소 추가</GateCta> : undefined} />
-        )}
-      </section>
-
-      {trip.undated.length > 0 && (
-        <section id="undated" className="flex scroll-mt-4 flex-col gap-3 px-5 pt-6" aria-label="날짜 미정">
-          <SectionTitle title="날짜 미정" aside={`${trip.undated.length}곳`} />
-          <ul className="flex flex-col gap-2">
-            {trip.undated.map((u) => (
-              <li key={u.id ?? u.title}>
-                {editable && u.id ? (
-                  <Link href={`/trips/${trip.id}/places/${u.id}`} className="press flex min-h-14 items-center gap-3 rounded-pin bg-surface px-4">
-                    <CategoryChip category={u.category} />
-                    <span className="min-w-0 flex-1 truncate text-body font-semibold text-ink">{u.title}</span>
-                    <Icon name="right" size={18} className="flex-none text-ink-sub" />
-                  </Link>
-                ) : (
-                  <div className="flex min-h-14 items-center gap-3 rounded-pin bg-surface px-4">
-                    <CategoryChip category={u.category} />
-                    <span className="min-w-0 flex-1 truncate text-body font-semibold text-ink">{u.title}</span>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {plan.items.length > 0 && canEdit && <BottomDock align="end"><GateFab href={addHref} /></BottomDock>}
+      <DayBoard tripId={trip.id} start={trip.start} days={trip.days.slice(0, len)} undated={trip.undated}
+        editable={editable} canAdd={canEdit} user={viewer.kind === "user"} initialDay={day}
+        jump={(valid && asked > 1) || (!valid && ongoing && day > 1)} jumpUndated={!!sp.undated} />
     </AppShell>
   );
 }

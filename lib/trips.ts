@@ -12,6 +12,7 @@ import { TRIPS, getTrip, daysBetween, type Trip, type Item } from "@/lib/mock";
 import { currencyOf, formatMoney, iconUrl } from "@/lib/countries";
 import { avatarUrl } from "@/lib/storage";
 import { placesEnabled, details } from "@/lib/places";
+import { detailLine } from "@/lib/place-fields";
 import type { Viewer } from "@/lib/viewer";
 
 const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소" };
@@ -26,7 +27,7 @@ const members = (r: Row) =>
   r.trip_members
     .filter((m) => !m.removed_at)
     .sort((a, b) => (a.role === "owner" ? -1 : b.role === "owner" ? 1 : a.created_at.localeCompare(b.created_at)))
-    .map((m, i) => ({ initial: [...m.display_name][0] ?? "?", tone: (i % 2 ? "accent" : "point") as "point" | "accent", userId: m.user_id ?? undefined }));
+    .map((m, i) => ({ initial: [...m.display_name][0] ?? "?", name: m.display_name, tone: (i % 2 ? "accent" : "point") as "point" | "accent", userId: m.user_id ?? undefined }));
 
 /* 함께하는 사람 얼굴 사진 (0010 부터 서로 볼 수 있음). 실패하면 글자 그대로 */
 async function faces(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, ids: string[]): Promise<Map<string, string>> {
@@ -67,6 +68,7 @@ export type PlaceRow = {
   id: string; day_index: number | null; sort_order: number; title: string; address: string | null; category: string;
   start_time: string | null; estimated_cost: number | null; cost_currency: string | null; memo: string | null; photos: string[]; updated_by?: string | null; updated_at?: string;
   google_place_id?: string | null; lat?: number | null; lng?: number | null;
+  details?: Record<string, string> | null; /* 분류별 맞춤 칸 (0030) */
 };
 
 /* 장소 사진 (비공개 저장소) : 1시간짜리 주소로 바꿔서 보여 준다 */
@@ -91,7 +93,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   if (r.removed_at) return { missing: "removed" };
 
   const { data: rows } = await sb.from("itinerary_items")
-    .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos, updated_by, updated_at, lat, lng")
+    .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos, updated_by, updated_at, lat, lng, details")
     .eq("trip_id", id).is("removed_at", null).order("sort_order");
   // 누가 고쳤는지 : 다른 사람이 24시간 안에 고친 장소에 이름 (2단계)
   const names = new Map(r.trip_members.filter((m) => m.user_id).map((m) => [m.user_id!, m.display_name]));
@@ -106,7 +108,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   for (const it of (rows ?? []) as PlaceRow[]) {
     const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
     const desc = [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
-    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
+    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }
@@ -622,4 +624,40 @@ export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<Exp
       .map((e) => ({ id: e.id, title: e.title, amount: Number(e.amount), currency: e.currency, paidBy: e.paid_by, splitWith: e.split_with, spentOn: e.spent_on })),
     people: [...people.values()],
   };
+});
+
+/* ───────── 여행 지도 (2026-11-15 여행 메뉴 개편) : 여행마다 도시 핀. 좌표는 도시 검색 좌표 → 인기 도시 목록 → 나라 대표 좌표 순 ───────── */
+export type MapCity = { name: string; country: string | null; countryName: string; lat: number; lng: number };
+export type MapTrip = { id: string; title: string; start: string; end: string; status: "upcoming" | "ongoing" | "past"; cities: MapCity[]; allCities: number; countries: string[] };
+const PREVIEW_COORDS: Record<string, [number, number]> = {
+  삿포로: [43.06, 141.35], 오타루: [43.19, 141.0], 노보리베츠: [42.41, 141.1], 비에이: [43.59, 142.47],
+  후쿠오카: [33.59, 130.4], 다자이후: [33.51, 130.53], 교토: [35.01, 135.77], 타이베이: [25.03, 121.57],
+};
+export const loadMapTrips = cache(async (v: Viewer, trips: Trip[]): Promise<MapTrip[]> => {
+  const { COUNTRY_CENTER, countryNameOf } = await import("@/lib/countries");
+  const statusOfTrip = (t: Trip) => { const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); return today < t.start ? "upcoming" : today > t.end ? "past" : "ongoing"; };
+  if (v.kind === "preview") {
+    return trips.map((t) => ({
+      id: t.id, title: t.title, start: t.start, end: t.end, status: statusOfTrip(t), allCities: t.cities.length, countries: [t.country ?? "JP"],
+      cities: t.cities.flatMap((n) => PREVIEW_COORDS[n] ? [{ name: n, country: t.country ?? "JP", countryName: countryNameOf(t.country) ?? "", lat: PREVIEW_COORDS[n][0], lng: PREVIEW_COORDS[n][1] }] : []),
+    }));
+  }
+  if (v.kind !== "user" || !trips.length) return [];
+  const sb = (await createClient())!;
+  const { data } = await sb.from("trip_cities").select("*").in("trip_id", trips.map((t) => t.id)).order("sort_order");
+  type C = { trip_id: string; name: string; country_code: string | null; country_name: string | null; lat: number | null; lng: number | null };
+  const rows = (data ?? []) as C[];
+  const need = [...new Set(rows.filter((c) => c.lat == null && c.country_code).map((c) => c.name))];
+  const { data: cat } = need.length ? await sb.from("cities").select("name, country_code, lat, lng").in("name", need) : { data: [] };
+  const catOf = new Map(((cat ?? []) as { name: string; country_code: string; lat: number; lng: number }[]).map((c) => [`${c.country_code}:${c.name}`, [c.lat, c.lng] as [number, number]]));
+  return trips.map((t) => {
+    const cs = rows.filter((c) => c.trip_id === t.id);
+    const cities: MapCity[] = [];
+    for (const c of cs) {
+      const at: [number, number] | undefined = c.lat != null && c.lng != null ? [c.lat, c.lng] : catOf.get(`${c.country_code}:${c.name}`) ?? (c.country_code ? COUNTRY_CENTER[c.country_code] : undefined);
+      if (at) cities.push({ name: c.name, country: c.country_code, countryName: c.country_name ?? countryNameOf(c.country_code) ?? "", lat: at[0], lng: at[1] });
+    }
+    return { id: t.id, title: t.title, start: t.start, end: t.end, status: statusOfTrip(t), cities, allCities: cs.length,
+      countries: [...new Set(cs.map((c) => (c.country_code === "ETC" ? c.country_name ?? "ETC" : c.country_code ?? "")).filter(Boolean))] };
+  });
 });

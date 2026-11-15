@@ -17,6 +17,7 @@ import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
 import { PlaceSuggest, type Picked } from "@/components/place-search";
+import { fieldsOf, MODES, type Details } from "@/lib/place-fields";
 
 const CATS = [
   { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
@@ -34,6 +35,9 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
   const [currency, setCurrency] = useState(startCur);
   const [cost, setCost] = useState(p?.estimated_cost != null ? String(p.estimated_cost / 10 ** decimalsOf(startCur)) : "");
   const [memo, setMemo] = useState(p?.memo ?? "");
+  // 분류별 맞춤 칸 (편명, 예약번호 등). 분류를 바꿔도 적은 값은 남겨 두고, 저장할 때 고른 분류의 칸만 보낸다
+  const [extra, setExtra] = useState<Details>(p?.details ?? {});
+  const fields = fieldsOf(category, extra.mode);
   // 장소 검색으로 고른 구글 장소. undefined = 건드리지 않음, null = 연결 끊음
   const [linked, setLinked] = useState<{ id: string; lat: number; lng: number } | null | undefined>(undefined);
   const isLinked = linked === undefined ? !!p?.google_place_id : !!linked;
@@ -74,7 +78,7 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
     setError("");
     if (!titleLen) return setError("장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: photos.map((x) => x.path), ...(linked !== undefined ? { place: linked } : {}) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: photos.map((x) => x.path), details: extra, ...(linked !== undefined ? { place: linked } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -113,6 +117,33 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
           </div>
         </fieldset>
 
+        {category === "transport" && (
+          <fieldset className="-mt-2 flex flex-col gap-2">
+            <legend className="mb-2 text-sub font-bold text-ink-sub">이동 수단 (선택)</legend>
+            <div className="flex flex-wrap gap-2">
+              {MODES.map((m) => (
+                <button key={m.code} type="button" aria-pressed={extra.mode === m.code} disabled={busy}
+                  onClick={() => setExtra((x) => ({ ...x, mode: x.mode === m.code ? "" : m.code }))}
+                  className={"press inline-flex h-10 items-center rounded-full px-3.5 text-sub font-semibold " + (extra.mode === m.code ? "bg-point-soft text-point-text ring-1 ring-point" : "bg-surface text-ink")}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
+        {fields.length > 0 && (
+          <div className="-mt-2 grid grid-cols-2 gap-3 rounded-card bg-surface-soft p-4">
+            {fields.map((f) => (
+              <label key={f.key} className={"flex min-w-0 flex-col gap-1.5 " + (f.half ? "" : "col-span-2")}>
+                <span className="text-tiny font-bold text-ink-sub">{f.label}</span>
+                <input type={f.type ?? "text"} value={extra[f.key] ?? ""} placeholder={f.placeholder} maxLength={f.max ?? 60} disabled={busy}
+                  onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [f.key]: v })); setError(""); }}
+                  className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+              </label>
+            ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <label className="flex min-w-0 flex-col gap-2">
             <span className="text-sub font-bold text-ink-sub">날짜</span>
@@ -148,7 +179,7 @@ export function PlaceForm({ ctx, day }: { ctx: PlaceContext; day: number | null 
         <label className="flex flex-col gap-2">
           <span className="text-sub font-bold text-ink-sub">메모 (선택)</span>
           <textarea value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={MAX_PLACE_MEMO} rows={4} disabled={busy}
-            placeholder="예약 번호, 가는 방법 등"
+            placeholder="가는 방법, 챙길 것 등"
             className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
         </label>
 

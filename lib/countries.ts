@@ -124,3 +124,14 @@ export const iconUrl = (path?: string | null) => {
   return path && base && ICON_PATH.test(path) ? `${base}/storage/v1/object/public/country-icons/${path}` : null;
 };
 export const MAX_COUNTRY_NAME = 20;
+
+/* 나라 대표 좌표 (여행 지도 핀, 2026-11-15). 도시 좌표를 모를 때만 쓴다. 대개 수도나 많이 가는 도시 */
+export const COUNTRY_CENTER: Record<string, [number, number]> = {
+  KR: [37.57, 126.98], JP: [35.68, 139.69], TW: [25.03, 121.57], HK: [22.32, 114.17], MO: [22.2, 113.55], CN: [39.9, 116.4],
+  MN: [47.92, 106.92], TH: [13.76, 100.5], VN: [16.05, 108.2], PH: [14.6, 120.98], SG: [1.35, 103.82], MY: [3.14, 101.69],
+  ID: [-8.65, 115.22], LA: [17.97, 102.63], KH: [13.36, 103.86], IN: [28.61, 77.21], AE: [25.2, 55.27], TR: [41.01, 28.98],
+  GU: [13.44, 144.79], MP: [15.18, 145.75], US: [34.05, -118.24], CA: [49.28, -123.12], AU: [-33.87, 151.21], NZ: [-36.85, 174.76],
+  GB: [51.51, -0.13], FR: [48.86, 2.35], IT: [41.9, 12.5], ES: [41.39, 2.17], PT: [38.72, -9.14], DE: [52.52, 13.4],
+  CH: [47.38, 8.54], AT: [48.21, 16.37], CZ: [50.08, 14.44], NL: [52.37, 4.9], GR: [37.98, 23.73],
+};
+export const countryNameOf = (code?: string | null) => COUNTRIES.find((c) => c.code === code)?.name;

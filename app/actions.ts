@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
 import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
 import { AVATAR_PATH } from "@/lib/storage";
+import { cleanDetails } from "@/lib/place-fields";
 import { autocomplete, details, type Suggestion, type PlaceDetail } from "@/lib/places";
 import { MAX_TRIP_DAYS, MAX_CITIES, MAX_TRIP_TITLE, MAX_PLACE_TITLE, MAX_PLACE_ADDRESS, MAX_PLACE_MEMO, MAX_PLACE_PHOTOS } from "@/lib/rules";
 
@@ -171,6 +172,7 @@ export type PlaceInput = {
   day: number | null; // 0 = 1일차, null = 날짜 미정
   photos?: string[]; // 저장소 place-photos 안 위치 (<여행 id>/<그림 id>.jpg), 순서대로 최대 5장
   place?: { id: string; lat: number; lng: number } | null; // 장소 검색으로 고른 구글 장소 (4단계). null 이면 연결 끊기, 없으면 그대로
+  details?: Record<string, string>; // 분류별 맞춤 칸 (0030). 고른 분류의 칸만 저장
 };
 const CATEGORIES = ["transport", "food", "sight", "shopping", "stay"];
 const placeCols = (pl: PlaceInput["place"]) => {
@@ -200,6 +202,8 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   const photos = (Array.isArray(input?.photos) ? input.photos : []).map(String);
   if (photos.length > MAX_PLACE_PHOTOS) return { error: `사진은 ${MAX_PLACE_PHOTOS}장까지 올릴 수 있어요` };
   if (photos.some((x) => !new RegExp(`^${tripId}/[0-9a-f-]{36}\\.(jpg|png|webp)$`).test(x))) return { error: "사진을 다시 올려 주세요" };
+  const extra = cleanDetails(input.category, input?.details);
+  if (!extra) return { error: "맞춤 칸(편명, 예약번호, 시간)을 다시 확인해 주세요" };
   let cost: number | null = null;
   if (costText) {
     const d = decimalsOf(currency);
@@ -221,7 +225,7 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   };
   const row = {
     title, address: address || null, memo: memo || null, category: input.category, start_time: time || null,
-    estimated_cost: cost, cost_currency: cost == null ? null : currency, day_index: day, photos,
+    estimated_cost: cost, cost_currency: cost == null ? null : currency, day_index: day, photos, details: extra,
     ...placeCols(input?.place),
   };
 
@@ -261,6 +265,20 @@ export async function reorderPlaces(tripId: string, ids: string[]): Promise<Crea
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
   const { error } = await sb.rpc("reorder_items", { p_trip: tripId, p_ids: ids });
   if (error) return { error: error.message?.includes("forbidden") ? "이 여행을 고칠 권한이 없어요" : "순서를 저장하지 못했어요. 원래 자리로 돌려놨어요" };
+  revalidatePath(`/trips/${tripId}`);
+}
+
+/* 날짜를 넘어 끌어서 옮기기 (여행 메뉴 개편, migration 0030). 옮길 날(null = 날짜 미정)과 그 날의 새 순서 */
+export async function moveItem(tripId: string, itemId: string, day: number | null, ids: string[]): Promise<CreateTripResult> {
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (!uuid.test(tripId) || !uuid.test(itemId) || !Array.isArray(ids) || !ids.length || ids.length > 500 || !ids.every((x) => uuid.test(String(x))) || !ids.includes(itemId)
+    || (day != null && (!Number.isInteger(day) || day < 0 || day >= MAX_TRIP_DAYS))) {
+    return { error: "옮기지 못했어요" };
+  }
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
+  const { error } = await sb.rpc("move_item", { p_trip: tripId, p_item: itemId, p_day: day, p_ids: ids });
+  if (error) return { error: error.message?.includes("forbidden") ? "이 여행을 고칠 권한이 없어요" : "옮기지 못했어요. 원래 자리로 돌려놨어요" };
   revalidatePath(`/trips/${tripId}`);
 }
 
