@@ -1,6 +1,6 @@
 /*
   화면 틀 조각 (홈, 일정, 도감에서 같이 쓴다)
-  - 앱 폭은 430px. PC(1280px)에서도 가운데 한 줄로 보인다 (디자인 가이드 8장)
+  - 앱 폭은 최대 560px (2026-11-15 마루님 : PC 에서 430 은 좁음). PC 에서도 가운데 한 줄로 보인다
   - 색 값은 직접 쓰지 않고 globals.css 토큰만 쓴다
 */
 import type { ReactNode } from "react";
@@ -19,7 +19,7 @@ export const readState = (v: string | string[] | undefined): ScreenState =>
 
 export function AppShell({ children, bottomGap = true }: { children: ReactNode; bottomGap?: boolean }) {
   return (
-    <main className={cx("mx-auto flex min-h-dvh w-full max-w-[430px] flex-col", bottomGap && "pb-32")}>
+    <main className={cx("mx-auto flex min-h-dvh w-full max-w-[560px] flex-col", bottomGap && "pb-32")}>
       {children}
     </main>
   );
@@ -28,7 +28,7 @@ export function AppShell({ children, bottomGap = true }: { children: ReactNode; 
 /* 화면 아래에 떠 있는 것 (탭바, 장소 추가 버튼). PC 에서도 앱 폭 안에 머문다 */
 export function BottomDock({ children, align = "center" }: { children: ReactNode; align?: "center" | "end" }) {
   return (
-    <div className={cx("pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-[430px] px-5 pb-[max(20px,env(safe-area-inset-bottom))]",
+    <div className={cx("pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-[560px] px-5 pb-[max(20px,env(safe-area-inset-bottom))]",
       align === "center" ? "justify-center" : "justify-end")}>
       <div className="pointer-events-auto">{children}</div>
     </div>

@@ -15,7 +15,7 @@ export function NetworkBanner() {
   }, []);
   if (!offline) return null;
   return (
-    <div className="fixed inset-x-0 top-0 z-40 mx-auto w-full max-w-[430px] px-5 pt-[max(12px,env(safe-area-inset-top))]">
+    <div className="fixed inset-x-0 top-0 z-40 mx-auto w-full max-w-[560px] px-5 pt-[max(12px,env(safe-area-inset-top))]">
       <OfflineBar />
     </div>
   );

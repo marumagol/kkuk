@@ -74,7 +74,7 @@ export function EntryComments({ entryId, list, entryMine }: { entryId: string; l
         )) : <p className="text-sub text-ink-sub">첫 댓글을 남겨 보세요</p>}
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-[430px] border-t border-line bg-surface px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-2.5">
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-[560px] border-t border-line bg-surface px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-2.5">
         {to && (
           <div className="flex items-center gap-2 pb-1.5">
             <p className="min-w-0 flex-1 truncate text-sub font-semibold text-ink-sub">{to.mine ? "내 댓글" : `${to.author}님`}에게 답글 남기는 중</p>
