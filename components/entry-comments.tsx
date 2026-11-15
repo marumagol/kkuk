@@ -86,7 +86,7 @@ export function EntryComments({ entryId, list, entryMine }: { entryId: string; l
           <label className="sr-only" htmlFor="comment-box">{to ? "답글 쓰기" : "댓글 쓰기"}</label>
           <textarea id="comment-box" ref={box} value={text} onChange={(e) => setText(e.target.value)} maxLength={500} rows={1}
             placeholder={to ? "답글 달기" : "댓글 달기"}
-            className="max-h-32 min-h-12 flex-1 resize-none rounded-[24px] border border-line bg-bg px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink" />
+            className="max-h-32 min-h-12 flex-1 resize-none overflow-y-auto rounded-[24px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border border-line bg-bg px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink" />
           <button type="button" onClick={send} disabled={busy || !text.trim()} aria-label={to ? "답글 올리기" : "댓글 올리기"}
             className="press flex size-12 flex-none items-center justify-center rounded-full bg-btn text-on-btn disabled:opacity-40"><Icon name="up" size={20} /></button>
         </div>
