@@ -5,7 +5,7 @@
 */
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Icon, Pin, Button, TabBar } from "@/components/kit";
+import { Icon, Pin, Button } from "@/components/kit";
 import { flagOf } from "@/lib/countries";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
@@ -28,7 +28,8 @@ export function AppShell({ children, bottomGap = true }: { children: ReactNode; 
 /* 화면 아래에 떠 있는 것 (탭바, 장소 추가 버튼). PC 에서도 앱 폭 안에 머문다 */
 export function BottomDock({ children, align = "center" }: { children: ReactNode; align?: "center" | "end" }) {
   return (
-    <div className={cx("pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-[560px] px-5 pb-[max(20px,env(safe-area-inset-bottom))]",
+    <div className={cx("pointer-events-none fixed inset-x-0 z-20 mx-auto flex w-full max-w-[560px] px-5",
+      align === "end" ? "bottom-[88px] pb-[env(safe-area-inset-bottom)]" : "bottom-0 pb-[max(20px,env(safe-area-inset-bottom))]",
       align === "center" ? "justify-center" : "justify-end")}>
       <div className="pointer-events-auto">{children}</div>
     </div>
@@ -102,8 +103,9 @@ export function PhotoThumb({ size = 48 }: { size?: number }) {
 }
 
 /* 하단 탭 (홈, 여행, 도장, 마이 화면에서). + 는 로그인 문지기를 거친다 */
-export function MainTabs({ active }: { active: "홈" | "여행" | "일기" | "도장" | "설정" }) {
-  return <BottomDock><TabBar active={active} /></BottomDock>;
+/* 아래 탭바는 이제 app/layout.tsx 의 GlobalTabs 가 모든 화면에 그린다 (2026-11-15). 예전 자리 표시용으로만 남김 */
+export function MainTabs(_: { active: "홈" | "여행" | "일기" | "도장" | "설정" }) { // eslint-disable-line @typescript-eslint/no-unused-vars
+  return null;
 }
 
 /* 미리보기(Supabase 연결 전)에서 가짜 여행이 보인다는 표시 */

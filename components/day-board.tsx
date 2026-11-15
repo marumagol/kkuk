@@ -319,7 +319,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           </section>
         )}
       </div>
-      <div role="status" aria-live="polite" className={msg ? "pointer-events-none fixed inset-x-0 bottom-24 z-30 mx-auto flex w-full max-w-[560px] justify-center px-5" : "sr-only"}>
+      <div role="status" aria-live="polite" className={msg ? "pointer-events-none fixed inset-x-0 bottom-[156px] z-30 mx-auto flex w-full max-w-[560px] justify-center px-5" : "sr-only"}>
         {msg && (
           <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-deep py-2 pl-4 pr-2 text-tiny font-semibold text-on-deep shadow-float">
             <span className="min-w-0">{msg}</span>

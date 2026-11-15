@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { GateProvider } from "@/components/gate";
+import { GlobalTabs } from "@/components/global-tabs";
 import { NetworkBanner } from "@/components/network-banner";
 import { SwRegister } from "@/components/sw-register";
 import { headers, cookies } from "next/headers";
@@ -47,7 +48,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const theme = (await cookies()).get("kkuk-theme")?.value;
   return (
     <html lang="ko" className={paperlogy.variable} data-theme={theme === "light" || theme === "dark" ? theme : undefined}>
-      <body><GateProvider loggedIn={isIn(v)}><NetworkBanner /><SwRegister />{children}</GateProvider></body>
+      <body><GateProvider loggedIn={isIn(v)}><NetworkBanner /><SwRegister />{children}<GlobalTabs /></GateProvider></body>
     </html>
   );
 }
