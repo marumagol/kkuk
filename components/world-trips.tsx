@@ -1,7 +1,7 @@
 "use client";
 /*
   여행 지도 (2026-11-15 여행 메뉴 개편, 참고 이미지 "내 핀 지도")
-  - 세계 지도(바다 + 땅) 위에 여행 도시 핀. 다녀온 여행은 주황, 다가오는 여행은 짙은 회색. 한 여행의 도시들은 점선으로 잇는다
+  - 세계 지도(바다 + 땅) 위에 여행 도시 핀. 다녀온 여행은 주황, 다가오는 여행은 짙은 회색. 핀은 나라 단위 (같은 나라 여행은 한 핀에 숫자로)
   - 핀(또는 이름표)을 누르면 그 여행으로. 같은 도시에 여행이 여럿이면 아래에 고르는 목록
   - 위 칩 : 전체 / 해마다 / 나라별로 걸러 보기. 지도는 고른 핀이 다 보이게 저절로 맞춘다
   - 땅 모양은 Natural Earth 50m (public/geo/land-50m.json, world-atlas). 구글 지도 키 없이 그린다
@@ -15,7 +15,7 @@ import type { Topology } from "topojson-specification";
 import type { FeatureCollection } from "geojson";
 import { TripRow } from "@/components/screen";
 import { Icon } from "@/components/kit";
-import { countryNameOf } from "@/lib/countries";
+import { countryNameOf, COUNTRY_CENTER } from "@/lib/countries";
 import type { MapTrip } from "@/lib/trips";
 
 export type WorldTrip = MapTrip & { row: { title: string; sub: string; meta: string; badge?: string; badgeTone?: "hot" | "near" | "far"; country?: string; icon?: string } };
@@ -37,12 +37,13 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
   const countries = useMemo(() => [...new Set(trips.flatMap((t) => t.countries))], [trips]);
   const shown = trips.filter((t) => filter === "all" || (filter.startsWith("y:") ? t.start.startsWith(filter.slice(2)) : t.countries.includes(filter.slice(2))));
 
-  /* 같은 도시는 핀 하나로 */
+  /* 핀은 나라 단위 (2026-11-15 마루님). 위치는 나라 대표 좌표, 모르면 그 나라 첫 도시 좌표 */
   const groups = useMemo(() => {
     const m = new Map<string, { key: string; name: string; lat: number; lng: number; trips: WorldTrip[]; past: boolean }>();
     for (const t of shown) for (const c of t.cities) {
-      const key = `${c.country}:${c.name}`;
-      const g = m.get(key) ?? { key, name: c.name, lat: c.lat, lng: c.lng, trips: [], past: false };
+      const key = c.country === "ETC" || !c.country ? `ETC:${c.countryName || c.name}` : c.country;
+      const at = c.country ? COUNTRY_CENTER[c.country] : undefined;
+      const g = m.get(key) ?? { key, name: countryNameOf(c.country) ?? (c.countryName || c.name), lat: at?.[0] ?? c.lat, lng: at?.[1] ?? c.lng, trips: [], past: false };
       if (!g.trips.includes(t)) g.trips.push(t);
       g.past ||= t.status === "past";
       m.set(key, g);
@@ -57,7 +58,7 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
     if (!pts.length) return p.fitExtent([[10, 30], [W - 10, H - 30]], { type: "MultiPoint", coordinates: [[-170, -50], [170, 72]] });
     const lats = pts.map((x) => x[1]), lngs = pts.map((x) => x[0]);
     const cy = (Math.min(...lats) + Math.max(...lats)) / 2, cx = (Math.min(...lngs) + Math.max(...lngs)) / 2;
-    const half = Math.max(5, (Math.max(...lats) - Math.min(...lats)) / 2, (Math.max(...lngs) - Math.min(...lngs)) / 2.6);
+    const half = Math.max(9, (Math.max(...lats) - Math.min(...lats)) / 2, (Math.max(...lngs) - Math.min(...lngs)) / 2.6);
     const box: [number, number][] = [[cx - half * 1.3, Math.max(-80, cy - half)], [cx + half * 1.3, Math.min(80, cy + half)]];
     return p.fitExtent([[40, 84], [W - 40, H - 64]], { type: "MultiPoint", coordinates: [...pts, ...box] });
   }, [groups]);
@@ -76,7 +77,6 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
     return ok;
   }, [groups, projection]);
 
-  const lines = shown.flatMap((t) => (t.cities.length > 1 ? [{ id: t.id, past: t.status === "past", pts: t.cities.map((c) => projection([c.lng, c.lat])!) }] : []));
   const pickedGroup = groups.find((g) => g.key === picked);
   const tap = (g: (typeof groups)[number]) => { if (g.trips.length === 1) router.push(`/trips/${g.trips[0].id}`); else setPicked(g.key === picked ? null : g.key); };
 
@@ -101,10 +101,6 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
         <div className="relative -mt-2">
           <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full [mask-image:linear-gradient(to_bottom,transparent,black_72px)]" role="img" aria-label={`여행 지도, 핀 ${groups.length}곳`}>
             {land && <path d={path(land) ?? ""} className="fill-land" />}
-            {lines.map((l) => (
-              <polyline key={l.id} points={l.pts.map((p) => p.join(",")).join(" ")} fill="none" strokeWidth={2.5} strokeDasharray="2 7" strokeLinecap="round"
-                className={l.past ? "stroke-point" : "stroke-ink-sub"} />
-            ))}
             {groups.map((g) => {
               const [x, y] = projection([g.lng, g.lat])!;
               const big = g.trips.length > 1;
