@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TRIPS, getTrip, daysBetween, type Trip, type Item } from "@/lib/mock";
 import { currencyOf, formatMoney, iconUrl } from "@/lib/countries";
 import { avatarUrl } from "@/lib/storage";
-import { placesEnabled } from "@/lib/places";
+import { placesEnabled, details } from "@/lib/places";
 import type { Viewer } from "@/lib/viewer";
 
 const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소" };
@@ -542,6 +542,32 @@ export async function tripOpenLogger(v: Viewer, tripId: string): Promise<(() => 
   const sb = await createClient();
   if (!sb) return null;
   return async () => { try { await sb.rpc("log_trip_open", { p_trip: tripId }); } catch { /* 무시 */ } };
+}
+
+/* 좌표 다시 받기 (6단계 6번, migration 0029) : 30일 지나 비운 좌표를 장소 id 로 한 번에 5곳까지 다시 채운다.
+   화면을 보낸 뒤 after() 로 돌고, 채워지면 실시간 반영으로 지도에 다시 나온다 */
+export async function coordsRefiller(v: Viewer, tripId: string): Promise<(() => Promise<void>) | null> {
+  if (v.kind !== "user" || !placesEnabled()) return null;
+  const sb = await createClient();
+  if (!sb) return null;
+  return async () => {
+    try {
+      const [{ data: items }, { data: cities }] = await Promise.all([
+        sb.from("itinerary_items").select("id, google_place_id").eq("trip_id", tripId).not("google_place_id", "is", null).is("lat", null).limit(5),
+        sb.from("trip_cities").select("id, google_place_id").eq("trip_id", tripId).not("google_place_id", "is", null).is("lat", null).limit(5),
+      ]);
+      const todo = [
+        ...(cities ?? []).map((r) => ({ kind: "city", id: r.id as string, place: r.google_place_id as string })),
+        ...(items ?? []).map((r) => ({ kind: "item", id: r.id as string, place: r.google_place_id as string })),
+      ].slice(0, 5);
+      for (const t of todo) {
+        const { data: ok } = await sb.rpc("take_place_quota", { p_kind: "details" });
+        if (ok !== true) return; // 하루 상한이면 다음에
+        const d = await details(t.place);
+        if (d) await sb.rpc("refill_coords", { p_kind: t.kind, p_id: t.id, p_place: t.place, p_lat: d.lat, p_lng: d.lng });
+      }
+    } catch { /* 무시 : 다음에 열 때 다시 */ }
+  };
 }
 
 /* 여행 한 권 (5단계 6번) : 이 여행에서 내가 볼 수 있는 일기 전부 + 이 여행에서 받은 내 도장 */

@@ -13,7 +13,7 @@ import { TripTabs } from "@/components/trip-tabs";
 import { StampClaim } from "@/components/stamp-claim";
 import { getViewer, isIn } from "@/lib/viewer";
 import { addDays, weekday, md, placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
-import { loadTrip, loadTripSummary, tripOpenLogger } from "@/lib/trips";
+import { loadTrip, loadTripSummary, tripOpenLogger, coordsRefiller } from "@/lib/trips";
 import { TripSummaryRow } from "@/components/trip-summary";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; restored?: string; removed?: string; undated?: string; joined?: string }> };
@@ -57,6 +57,8 @@ export default async function TripDetail({ params, searchParams }: Props) {
 
   const logOpen = await tripOpenLogger(viewer, trip.id);
   if (logOpen) after(logOpen); // 화면을 다 보낸 뒤에 기록
+  const refill = await coordsRefiller(viewer, trip.id);
+  if (refill) after(refill);
   const len = tripLength(trip);
   const today = todayOf(trip);
   const fallback = statusOf(trip, today) === "ongoing" ? daysBetween(trip.start, today) + 1 : 1;
