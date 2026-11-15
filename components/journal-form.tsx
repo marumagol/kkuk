@@ -1,7 +1,8 @@
 "use client";
-/* 일기 쓰기 폼 : 제목(선택), 글, 사진 10장, 공개 범위(나만 보기 / 함께하는 사람). 사진은 place-photos/<여행 id>/j/ */
+/* 일기 쓰기 폼 (피그마 "일기 (11.15)" 03, 04) : 사진(대표 크게 + 작은 사진, 누르면 대표로), 제목과 글 한 카드, 이날 간 곳, 공개 범위 3줄
+   사진은 place-photos/<여행 id>/j/ (첫 사진이 대표). 공개 범위 : 함께하는 사람 / 나만 보기 / 링크로 공개 */
 import { useRef, useState, useTransition } from "react";
-import { Button, Field, Icon } from "@/components/kit";
+import { Button, Icon } from "@/components/kit";
 import { saveEntry } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 import { shrinkImage } from "@/lib/image";
@@ -9,12 +10,18 @@ import { createClient } from "@/lib/supabase/client";
 import type { EntryContext } from "@/lib/trips";
 
 const MAX = 10;
+type Vis = "members" | "private" | "public";
+const VIS: { v: Vis; icon: "users" | "lock" | "link"; label: string; desc: string }[] = [
+  { v: "members", icon: "users", label: "함께하는 사람", desc: "이 여행을 함께하는 사람이 보고 좋아요와 댓글을 남겨요" },
+  { v: "private", icon: "lock", label: "나만 보기", desc: "나만 볼 수 있어요. 좋아요와 댓글은 없어요" },
+  { v: "public", icon: "link", label: "링크로 공개", desc: "링크를 아는 사람은 로그인 없이 글과 사진을 봐요. 댓글은 안 보이고 검색에도 나오지 않아요" },
+];
 
 export function JournalForm({ ctx }: { ctx: EntryContext }) {
   const e = ctx.entry;
   const [title, setTitle] = useState(e?.title ?? "");
   const [body, setBody] = useState(e?.body ?? "");
-  const [visibility, setVisibility] = useState<"members" | "private" | "public">(e?.visibility ?? "members");
+  const [visibility, setVisibility] = useState<Vis>(e?.visibility ?? "members");
   const [photos, setPhotos] = useState<{ path: string; url: string }[]>(e?.photos ?? []);
   const [uploading, setUploading] = useState(0);
   const [error, setError] = useState("");
@@ -45,54 +52,100 @@ export function JournalForm({ ctx }: { ctx: EntryContext }) {
     const r = await safeCall(() => saveEntry(ctx.tripId, { kind: ctx.kind, day: ctx.dayIndex, title, body, visibility, photos: photos.map((p) => p.path) }));
     if (r?.error) setError(r.error);
   });
+  const cover = (p: { path: string; url: string }) => setPhotos((all) => [p, ...all.filter((x) => x !== p)]);
   const empty = !title.trim() && !body.trim() && !photos.length;
+  const pickPhotos = () => file.current?.click();
+  const count = [...body].length;
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-5 px-5 pt-4">
-        {ctx.places.length > 0 && (
-          <p className="rounded-field bg-surface px-3 py-2 text-tiny text-ink-sub">이날 간 곳 : {ctx.places.join(", ")}</p>
-        )}
-        <Field label="제목 (선택)" name="title" value={title} maxLength={60} placeholder={ctx.kind === "recap" ? "예 : 다시 가고 싶은 여행" : "예 : 바다가 보이던 오후"} disabled={busy}
-          onChange={(ev) => setTitle(ev.target.value)} />
-        <label className="flex flex-col gap-2">
-          <span className="text-sub font-bold text-ink-sub">글</span>
-          <textarea value={body} onChange={(ev) => setBody(ev.target.value)} maxLength={5000} rows={8} disabled={busy}
-            placeholder={ctx.kind === "recap" ? "여행을 돌아보며 남기고 싶은 이야기" : "오늘 있었던 일, 기억하고 싶은 순간"}
-            className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body leading-relaxed text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
-        </label>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-sub font-bold text-ink-sub">사진 ({photos.length}/{MAX})</span>
-          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-            {photos.map((p, i) => (
-              <span key={p.path} className="relative flex-none">
+      <div className="flex flex-1 flex-col gap-5 px-5 pt-3">
+        {/* 사진 */}
+        <section className="flex flex-col gap-2.5" aria-label="사진">
+          {photos.length ? (
+            <>
+              <div className="relative overflow-hidden rounded-[20px] bg-surface-soft">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt={`사진 ${i + 1}`} width={88} height={88} className="size-22 rounded-field object-cover" />
-                <button type="button" aria-label={`사진 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== p))}
-                  className="press absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-btn text-on-btn"><Icon name="x" size={14} /></button>
-              </span>
-            ))}
-            {Array.from({ length: uploading }, (_, i) => <span key={`u${i}`} className="flex size-22 flex-none items-center justify-center rounded-field bg-surface text-tiny text-ink-sub">올리는 중</span>)}
-            {photos.length + uploading < MAX && (
-              <button type="button" disabled={busy} onClick={() => file.current?.click()}
-                className="press flex size-22 flex-none flex-col items-center justify-center gap-1 rounded-field border border-dashed border-line-strong bg-surface text-tiny font-semibold text-ink-sub">
-                <Icon name="camera" size={22} />사진 추가
-              </button>
-            )}
-          </div>
+                <img src={photos[0].url} alt="대표 사진" className="aspect-[4/3] w-full object-cover" />
+                <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-surface px-2.5 text-tiny font-bold text-ink">대표 사진</span>
+                <button type="button" aria-label="대표 사진 빼기" disabled={busy} onClick={() => setPhotos(photos.slice(1))}
+                  className="press absolute right-2 top-2 flex size-11 items-center justify-center"><span className="flex size-8 items-center justify-center rounded-full bg-scrim text-on-deep"><Icon name="x" size={16} /></span></button>
+              </div>
+              <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
+                {photos.map((p, i) => (
+                  <span key={p.path} className="relative flex-none">
+                    <button type="button" onClick={() => cover(p)} disabled={busy || i === 0} aria-label={i === 0 ? "대표 사진" : `사진 ${i + 1}을 대표 사진으로`}
+                      className={`press block overflow-hidden rounded-field ${i === 0 ? "ring-2 ring-ink ring-offset-0" : ""}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.url} alt="" width={64} height={64} className="size-16 object-cover" />
+                    </button>
+                    {i > 0 && (
+                      <button type="button" aria-label={`사진 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== p))}
+                        className="press absolute -right-1.5 -top-1.5 flex size-6 items-center justify-center rounded-full bg-btn text-on-btn"><Icon name="x" size={12} /></button>
+                    )}
+                  </span>
+                ))}
+                {Array.from({ length: uploading }, (_, i) => <span key={`u${i}`} className="flex size-16 flex-none items-center justify-center rounded-field bg-surface text-tiny text-ink-sub">올리는 중</span>)}
+                {photos.length + uploading < MAX && (
+                  <button type="button" disabled={busy} onClick={pickPhotos} aria-label="사진 추가"
+                    className="press flex size-16 flex-none items-center justify-center rounded-field border border-dashed border-line-strong bg-surface text-ink"><Icon name="plus" size={22} /></button>
+                )}
+              </div>
+              <p className="text-tiny text-ink-sub">사진 {photos.length} / {MAX} · 작은 사진을 누르면 대표 사진이 바뀌어요</p>
+            </>
+          ) : (
+            <button type="button" disabled={busy || uploading > 0} onClick={pickPhotos}
+              className="press flex h-42 flex-col items-center justify-center gap-1.5 rounded-[20px] border border-dashed border-line-strong bg-surface text-ink">
+              <Icon name="camera" size={28} />
+              <span className="text-body font-bold">{uploading ? "사진 올리는 중" : "사진 추가"}</span>
+              <span className="text-tiny text-ink-sub">10장까지 올릴 수 있어요. 첫 사진이 대표 사진이에요</span>
+            </button>
+          )}
           <input ref={file} type="file" accept="image/*" multiple className="hidden" onChange={(ev) => { const fs = [...(ev.target.files ?? [])]; ev.target.value = ""; void add(fs); }} />
-        </div>
+        </section>
+
+        {/* 제목과 글 */}
+        <section className="rounded-[20px] bg-surface px-4">
+          <label className="sr-only" htmlFor="j-title">제목 (선택)</label>
+          <input id="j-title" value={title} onChange={(ev) => setTitle(ev.target.value)} maxLength={60} disabled={busy}
+            placeholder={ctx.kind === "recap" ? "제목 (선택) 예 : 다시 가고 싶은 여행" : "제목 (선택)"}
+            className="h-14 w-full bg-transparent text-title font-bold text-ink outline-none placeholder:font-semibold placeholder:text-ink-sub" />
+          <div className="h-px bg-line" />
+          <label className="sr-only" htmlFor="j-body">글</label>
+          <textarea id="j-body" value={body} onChange={(ev) => setBody(ev.target.value)} maxLength={5000} rows={6} disabled={busy}
+            placeholder={ctx.kind === "recap" ? "여행을 돌아보며 남기고 싶은 이야기" : "오늘 있었던 일, 기억하고 싶은 순간"}
+            className="block w-full resize-none bg-transparent py-3.5 text-body leading-relaxed text-ink outline-none placeholder:text-ink-sub" />
+          <p className="pb-3 text-right text-tiny text-ink-sub tabular-nums">{count.toLocaleString()} / 5,000</p>
+        </section>
+
+        {ctx.places.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <h2 className="text-sub font-bold text-ink-sub">이날 간 곳</h2>
+            <ul className="flex flex-wrap gap-1.5">
+              {ctx.places.map((p, i) => <li key={i} className="flex h-8 items-center gap-1 rounded-full bg-surface px-2.5 text-sub font-semibold text-ink"><Icon name="pin" size={14} className="text-point" />{p}</li>)}
+            </ul>
+          </section>
+        )}
 
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-2 text-sub font-bold text-ink-sub">누가 볼 수 있나요</legend>
-          <div role="radiogroup" className="grid grid-cols-3 gap-1 rounded-full bg-surface-soft p-1">
-            {([["members", "함께하는 사람"], ["private", "나만 보기"], ["public", "링크 공개"]] as const).map(([v, label]) => (
-              <button key={v} type="button" role="radio" aria-checked={visibility === v} disabled={busy} onClick={() => setVisibility(v)}
-                className={"press relative after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] h-9 rounded-full text-tiny font-bold " + (visibility === v ? "bg-surface text-ink shadow-sm" : "text-ink")}>{label}</button>
-            ))}
+          <div role="radiogroup" className="flex flex-col gap-0.5 rounded-[20px] bg-surface p-1.5">
+            {VIS.map((o) => {
+              const on = visibility === o.v;
+              return (
+                <button key={o.v} type="button" role="radio" aria-checked={on} disabled={busy} onClick={() => setVisibility(o.v)}
+                  className={`press flex items-center gap-3 rounded-[14px] px-3 py-3 text-left ${on ? "bg-surface-soft" : ""}`}>
+                  <Icon name={o.icon} size={20} className="flex-none text-ink" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-body font-bold text-ink">{o.label}</span>
+                    <span className="block text-tiny text-ink-sub">{o.desc}</span>
+                  </span>
+                  {on ? <span className="flex size-6 flex-none items-center justify-center rounded-full bg-btn text-on-btn"><Icon name="check" size={14} /></span>
+                    : <span className="size-6 flex-none rounded-full border-[1.5px] border-line-strong" />}
+                </button>
+              );
+            })}
           </div>
-          <p className="text-tiny text-ink-sub">{visibility === "private" ? "나만 볼 수 있어요" : visibility === "public" ? "링크를 아는 사람은 로그인 없이 이 글과 사진을 볼 수 있어요. 검색에는 나오지 않고, 공개를 끄면 링크가 끊겨요" : "이 여행을 함께하는 사람이 볼 수 있어요"}</p>
         </fieldset>
 
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}

@@ -24,7 +24,7 @@ export default async function WriteDiary({ params, searchParams }: { params: Pro
   const summary = full && "trip" in full ? await loadTripSummary(viewer, full.trip) : null;
   return (
     <PlaceShell tripId={id} title={ctx.entry ? "일기 고치기" : "일기 쓰기"} back={ctx.entry ? `/diary/${ctx.entry.id}` : `/trips/${id}${kind === "day" ? `?day=${ctx.dayIndex! + 1}` : ""}`}>
-      <p className="px-5 pt-2 text-sub font-semibold text-point-text">{ctx.tripTitle} · {slot}</p>
+      <p className="mx-5 mt-2 inline-flex h-8 items-center self-start rounded-full bg-point-soft px-3 text-tiny font-bold text-point-text">{ctx.tripTitle} · {slot}</p>
       {summary && <TripSummaryRow s={summary} className="mx-5 mt-3" />}
       <JournalForm ctx={ctx} />
     </PlaceShell>

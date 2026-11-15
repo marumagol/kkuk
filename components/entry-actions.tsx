@@ -19,8 +19,8 @@ async function shareUrl(path: string): Promise<"shared" | "copied" | "fail"> {
   }
 }
 
-type Props = { id: string; mine: boolean; visibility: Visibility; token: string | null; likes: number; liked: boolean; comments: number; detail?: boolean };
-export function EntryActions({ id, mine, visibility, token, likes, liked, comments, detail }: Props) {
+type Props = { id: string; mine: boolean; visibility: Visibility; token: string | null; likes: number; liked: boolean; comments: number; time: string };
+export function EntryActions({ id, mine, visibility, token, likes, liked, comments, time }: Props) {
   const [like, setLike] = useState({ on: liked, n: likes });
   const [tok, setTok] = useState(token);
   const [ask, setAsk] = useState(false);
@@ -43,38 +43,41 @@ export function EntryActions({ id, mine, visibility, token, likes, liked, commen
     if ("token" in r && r.token) { setTok(r.token); const s = await shareUrl(`/j/${r.token}`); setNote(s === "copied" ? "링크로 공개했어요. 링크를 복사했어요" : "링크로 공개했어요. 공유 버튼을 한 번 더 눌러 주세요"); }
   });
 
-  if (!social && !canShare) return <div className="h-3" />;
   return (
-    <div className="px-2 pt-1">
+    <div className="px-0.5 pt-1">
       <div className="flex items-center">
         {social && (
           <>
             <button type="button" onClick={tapLike} aria-pressed={like.on} aria-label={like.on ? "좋아요 취소" : "좋아요"}
-              className="press flex size-11 items-center justify-center text-ink">
+              className="press flex h-11 min-w-11 items-center gap-1.5 px-2 text-ink">
               <Icon name="heart" size={24} className={like.on ? "fill-[var(--point)] text-[var(--point)]" : undefined} />
+              <span className="text-sub font-bold tabular-nums">{like.n}</span>
             </button>
-            <Link href={`/diary/${id}#comments`} aria-label={`댓글 ${comments}개`} className="press flex size-11 items-center justify-center text-ink"><Icon name="chat" size={24} /></Link>
+            <Link href={`/diary/${id}#comments`} aria-label={`댓글 ${comments}개`} className="press flex h-11 min-w-11 items-center gap-1.5 px-2 text-ink">
+              <Icon name="chat" size={24} /><span className="text-sub font-bold tabular-nums">{comments}</span>
+            </Link>
           </>
         )}
         {canShare && (
           <button type="button" onClick={tapShare} aria-label="공유하기" className="press flex size-11 items-center justify-center text-ink"><Icon name="send" size={24} /></button>
         )}
+        <span className="ml-auto pr-2 text-tiny text-ink-sub" suppressHydrationWarning>{time}</span>
       </div>
-      {social && (like.n > 0 || detail) && <p className="px-2 text-sub font-bold text-ink">좋아요 {like.n}개</p>}
-      {note && <p role="status" className="px-2 pt-1 text-tiny font-semibold text-point-text">{note}</p>}
+      {note && <p role="status" className="px-2 pb-1 text-tiny font-semibold text-point-text">{note}</p>}
       {ask && <AlertDialog title="링크로 공개하고 공유할까요?" desc="링크를 아는 사람은 로그인 없이 이 일기의 글, 사진, 좋아요 수를 볼 수 있어요. 댓글은 보이지 않고, 사진에 위치 정보는 들어 있지 않아요"
         confirmLabel="공개하고 공유" onClose={() => setAsk(false)} confirm={publish} />}
     </div>
   );
 }
 
-/* 글 앞 세 줄 + 더 보기 */
-export function ClampText({ text, full = false }: { text: string; full?: boolean }) {
+/* 글 앞 몇 줄 + 더 보기 */
+const CLAMP = { 2: "line-clamp-2", 3: "line-clamp-3", 4: "line-clamp-4" } as const;
+export function ClampText({ text, full = false, lines = 2 }: { text: string; full?: boolean; lines?: 2 | 3 | 4 }) {
   const [open, setOpen] = useState(full);
-  const long = text.length > 90 || text.split("\n").length > 3;
+  const long = text.length > lines * 40 || text.split("\n").length > lines;
   return (
-    <div className="mt-1">
-      <p className={`whitespace-pre-wrap text-body leading-relaxed text-ink ${open ? "" : "line-clamp-3"}`}>{text}</p>
+    <div>
+      <p className={`whitespace-pre-wrap text-body leading-relaxed text-ink ${open ? "" : CLAMP[lines]}`}>{text}</p>
       {!open && long && <button type="button" onClick={() => setOpen(true)} className="press flex h-9 items-center text-sub font-semibold text-ink-sub">더 보기</button>}
     </div>
   );

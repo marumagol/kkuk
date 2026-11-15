@@ -239,6 +239,8 @@ export type Entry = {
   author: string; mine: boolean; updatedAt: string; shareToken: string | null;
   /* 피드 (0022) : 좋아요 수, 내가 눌렀는지, 댓글 수. 나만 보기 글은 모두 0 */
   likes: number; liked: boolean; comments: number;
+  /* 피드 디자인 (11.15) : 쓴 사람 얼굴, 최근 댓글 한 줄(피드에서만) */
+  avatar: string | null; latest?: { author: string; body: string } | null;
 };
 type EntryRow = { id: string; trip_id: string; author_id: string; kind: "day" | "recap"; day_index: number | null; title: string | null; body: string; photos: string[]; visibility: Visibility; updated_at: string; share_token: string | null };
 const ENTRY_COLS = "id, trip_id, author_id, kind, day_index, title, body, photos, visibility, updated_at, share_token";
@@ -252,9 +254,10 @@ async function toEntries(sb: NonNullable<Awaited<ReturnType<typeof createClient>
   ]);
   const tripOf = new Map((trips ?? []).map((t: { id: string; title: string; start_date: string }) => [t.id, t]));
   const nameOf = new Map((people ?? []).map((p: { trip_id: string; user_id: string | null; display_name: string }) => [`${p.trip_id}:${p.user_id}`, p.display_name]));
-  const [urls, { data: counts }] = await Promise.all([
+  const [urls, { data: counts }, face] = await Promise.all([
     photoUrls(sb, rows.flatMap((r) => (allPhotos ? r.photos : r.photos.slice(0, 1)))),
     sb.rpc("journal_counts", { p_ids: rows.map((r) => r.id) }),
+    faces(sb, [...new Set(rows.map((r) => r.author_id))]),
   ]);
   const countOf = new Map(((counts ?? []) as { entry_id: string; likes: number; liked: boolean; comments: number }[]).map((c) => [c.entry_id, c]));
   return rows.filter((r) => tripOf.has(r.trip_id)).map((r) => ({
@@ -262,16 +265,41 @@ async function toEntries(sb: NonNullable<Awaited<ReturnType<typeof createClient>
     kind: r.kind, dayIndex: r.day_index, title: r.title, body: r.body, visibility: r.visibility, updatedAt: r.updated_at, shareToken: r.visibility === "public" ? r.share_token : null,
     likes: countOf.get(r.id)?.likes ?? 0, liked: countOf.get(r.id)?.liked ?? false, comments: countOf.get(r.id)?.comments ?? 0,
     photos: r.photos.map((p) => ({ path: p, url: urls.get(p) ?? "" })).filter((p) => p.url),
-    author: nameOf.get(`${r.trip_id}:${r.author_id}`) ?? "나간 사람", mine: r.author_id === v.id,
+    author: nameOf.get(`${r.trip_id}:${r.author_id}`) ?? "나간 사람", mine: r.author_id === v.id, avatar: face.get(r.author_id) ?? null,
   }));
 }
 
 /* 일기 탭 : 내가 볼 수 있는 일기 최신순 (RLS 가 남의 나만 보기를 걸러 냄) */
-export const loadDiaryFeed = cache(async (v: Viewer): Promise<Entry[]> => {
+export type DiaryFilter = "all" | "mine" | "liked" | "commented";
+export const loadDiaryFeed = cache(async (v: Viewer, filter: DiaryFilter = "all"): Promise<Entry[]> => {
   if (v.kind !== "user") return [];
   const sb = (await createClient())!;
-  const { data } = await sb.from("journal_entries").select(ENTRY_COLS).is("removed_at", null).order("updated_at", { ascending: false }).limit(30);
-  return toEntries(sb, v, (data ?? []) as EntryRow[], true);
+  let q = sb.from("journal_entries").select(ENTRY_COLS).is("removed_at", null);
+  if (filter === "mine") q = q.eq("author_id", v.id);
+  if (filter === "liked" || filter === "commented") {
+    /* 내가 좋아요하거나 댓글, 답글을 단 일기 (지금 볼 수 있는 것만) */
+    const { data: mine } = filter === "liked"
+      ? await sb.from("journal_likes").select("entry_id").eq("user_id", v.id).order("created_at", { ascending: false }).limit(200)
+      : await sb.from("journal_comments").select("entry_id").eq("author_id", v.id).order("created_at", { ascending: false }).limit(300);
+    const ids = [...new Set(((mine ?? []) as { entry_id: string }[]).map((r) => r.entry_id))].slice(0, 100);
+    if (!ids.length) return [];
+    q = q.in("id", ids);
+  }
+  const { data } = await q.order("updated_at", { ascending: false }).limit(30);
+  const list = await toEntries(sb, v, (data ?? []) as EntryRow[], true);
+  /* 최근 댓글 한 줄 (답글 빼고). RLS 가 나만 보기 글 댓글은 걸러 낸다 */
+  const ids = list.filter((e) => e.comments > 0).map((e) => e.id);
+  if (!ids.length) return list;
+  const { data: cs } = await sb.from("journal_comments").select("entry_id, author_id, body, created_at").in("entry_id", ids).is("parent_id", null).order("created_at", { ascending: false }).limit(200);
+  const tripOf = new Map(list.map((e) => [e.id, e.tripId]));
+  const { data: people } = await sb.from("trip_members").select("trip_id, user_id, display_name").in("trip_id", [...new Set(list.map((e) => e.tripId))]);
+  const nameOf = new Map((people ?? []).map((p: { trip_id: string; user_id: string | null; display_name: string }) => [`${p.trip_id}:${p.user_id}`, p.display_name]));
+  const latest = new Map<string, { author: string; body: string }>();
+  for (const c of (cs ?? []) as { entry_id: string; author_id: string; body: string }[]) {
+    if (latest.has(c.entry_id)) continue;
+    latest.set(c.entry_id, { author: c.author_id === v.id ? "나" : nameOf.get(`${tripOf.get(c.entry_id)}:${c.author_id}`) ?? "나간 사람", body: c.body });
+  }
+  return list.map((e) => ({ ...e, latest: latest.get(e.id) ?? null }));
 });
 
 export const loadEntry = cache(async (v: Viewer, id: string): Promise<Entry | null> => {
@@ -282,17 +310,18 @@ export const loadEntry = cache(async (v: Viewer, id: string): Promise<Entry | nu
 });
 
 /* 일기 댓글 (0022) : 오래된 것부터. 나만 보기 글은 RLS 가 비워 준다 */
-export type EntryComment = { id: string; author: string; mine: boolean; body: string; at: string };
+export type EntryComment = { id: string; parentId: string | null; author: string; avatar: string | null; mine: boolean; body: string; at: string };
 export const loadComments = cache(async (v: Viewer, entryId: string, tripId: string): Promise<EntryComment[]> => {
   if (v.kind !== "user") return [];
   const sb = (await createClient())!;
   const [{ data }, { data: people }] = await Promise.all([
-    sb.from("journal_comments").select("id, author_id, body, created_at").eq("entry_id", entryId).order("created_at").limit(300),
+    sb.from("journal_comments").select("id, parent_id, author_id, body, created_at").eq("entry_id", entryId).order("created_at").limit(300),
     sb.from("trip_members").select("user_id, display_name").eq("trip_id", tripId),
   ]);
   const nameOf = new Map((people ?? []).map((p: { user_id: string | null; display_name: string }) => [p.user_id, p.display_name]));
-  return ((data ?? []) as { id: string; author_id: string; body: string; created_at: string }[])
-    .map((c) => ({ id: c.id, author: nameOf.get(c.author_id) ?? "나간 사람", mine: c.author_id === v.id, body: c.body, at: c.created_at }));
+  const rows = (data ?? []) as { id: string; parent_id: string | null; author_id: string; body: string; created_at: string }[];
+  const face = await faces(sb, [...new Set(rows.map((c) => c.author_id))]);
+  return rows.map((c) => ({ id: c.id, parentId: c.parent_id, author: nameOf.get(c.author_id) ?? "나간 사람", avatar: face.get(c.author_id) ?? null, mine: c.author_id === v.id, body: c.body, at: c.created_at }));
 });
 
 /* 일기 쓰기 화면 : 그 칸(하루 또는 회고)의 내 일기 + 그날 장소 이름 */
@@ -467,7 +496,7 @@ export const loadPublicShare = cache(async (token: string): Promise<PublicShare 
 });
 
 /* ───────── 앱 안 알림 (4단계 8, migration 0016) ───────── */
-export type Notice = { id: number; tripId: string; tripTitle: string; kind: "joined" | "items" | "journal" | "stamp" | "comment"; actor: string; refId: string | null; detail: string | null; count: number; at: string; read: boolean };
+export type Notice = { id: number; tripId: string; tripTitle: string; kind: "joined" | "items" | "journal" | "stamp" | "comment" | "reply"; actor: string; refId: string | null; detail: string | null; count: number; at: string; read: boolean };
 const PREVIEW_NOTICES: Notice[] = [
   { id: 1, tripId: "", tripTitle: "삿포로 겨울 여행", kind: "items", actor: "민지", refId: null, detail: "오타루 운하", count: 3, at: new Date(Date.now() - 20 * 60e3).toISOString(), read: false },
   { id: 2, tripId: "", tripTitle: "삿포로 겨울 여행", kind: "joined", actor: "준호", refId: null, detail: null, count: 1, at: new Date(Date.now() - 26 * 3600e3).toISOString(), read: true },

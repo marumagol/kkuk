@@ -479,14 +479,18 @@ export async function toggleLike(entryId: string, on: boolean): Promise<CreateTr
   if (error) return FEED_FAIL;
   revalidatePath("/diary", "layout");
 }
-export async function addComment(entryId: string, text: string): Promise<CreateTripResult> {
-  if (!isUuid(entryId)) return FEED_FAIL;
+export async function addComment(entryId: string, text: string, parentId?: string | null): Promise<CreateTripResult> {
+  if (!isUuid(entryId) || (parentId && !isUuid(parentId))) return FEED_FAIL;
   const body = String(text ?? "").trim();
   if (!body) return { error: "댓글을 적어 주세요" };
   if ([...body].length > 500) return { error: "댓글은 500자까지 쓸 수 있어요" };
   const c = await feedClient(); if (!c) return { error: "로그인이 필요해요" };
-  const { error } = await c.sb.from("journal_comments").insert({ entry_id: entryId, author_id: c.uid, body });
-  if (error) return error.message?.includes("comment_limit") ? { error: "이 일기에는 댓글을 더 달 수 없어요" } : FEED_FAIL;
+  const { error } = await c.sb.from("journal_comments").insert({ entry_id: entryId, author_id: c.uid, body, parent_id: parentId || null });
+  if (error) {
+    if (error.message?.includes("comment_limit")) return { error: "이 일기에는 댓글을 더 달 수 없어요" };
+    if (error.message?.includes("reply_")) return { error: "답글을 달 수 없는 댓글이에요. 지워졌을 수 있어요" };
+    return FEED_FAIL;
+  }
   revalidatePath("/diary", "layout");
 }
 export async function removeComment(id: string): Promise<CreateTripResult> {
