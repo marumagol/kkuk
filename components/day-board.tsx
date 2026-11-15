@@ -38,6 +38,31 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const lastY = useRef(0);
   const busy = useRef(false);
   const [asking, setAsking] = useState<Item | null>(null); // 지우기 확인
+  const [undo, setUndo] = useState<{ c: number; items: Item[] } | null>(null); // 동선 정렬 되돌리기
+
+  /* 알림 줄은 5초 뒤 사라진다 (되돌리기가 있으면 8초) */
+  useEffect(() => {
+    if (!msg) return;
+    const t = setTimeout(() => { setMsg(""); setUndo(null); }, undo ? 8000 : 5000);
+    return () => clearTimeout(t);
+  }, [msg, undo]);
+
+  /* 한 날의 순서를 통째로 바꿔 저장 (동선 정렬, 되돌리기) */
+  const applyDay = async (c: number, items: Item[], ok: string, keepUndo: { c: number; items: Item[] } | null) => {
+    const prev = colsRef.current;
+    const next = prev.map((x, i) => (i === c ? items : x));
+    setCols(next); colsRef.current = next; setMsg(""); setUndo(null); busy.current = true;
+    const r = await safeCall(() => reorderPlaces(tripId, items.map((x) => x.id!)));
+    busy.current = false;
+    if (r?.error) { setCols(prev); setMsg(r.error); } else { setMsg(ok); setUndo(keepUndo); }
+  };
+  const sortRoute = (c: number) => {
+    const cur = colsRef.current[c];
+    const next = routeOrder(cur);
+    if (!next) { setUndo(null); setMsg("지도 위치가 있는 장소가 3곳 이상이어야 동선을 정리할 수 있어요. 장소 검색으로 넣은 곳만 위치가 있어요"); return; }
+    if (next.every((x, i) => x === cur[i])) { setUndo(null); setMsg("이미 가장 짧은 동선이에요"); return; }
+    void applyDay(c, next, "가까운 순서로 동선을 정리했어요", { c, items: cur });
+  };
 
   /* 목록에서 바로 지우기 (확인 창 한 번). 실패하면 되돌리고 안내 */
   const remove = async (it: Item) => {
@@ -253,6 +278,12 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                   <h2 className="truncate text-title-lg font-extrabold text-ink">{plan.title ?? `${md(d)} (${weekday(d)})`}</h2>
                 </div>
                 <div className="flex flex-none gap-1.5">
+                  {editable && cols[c].filter((x) => x.lat != null).length >= 3 && (
+                    <button type="button" onClick={() => sortRoute(c)} disabled={!!dragId} aria-label={`${c + 1}일차 동선 정리`}
+                      className="press inline-flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                      <Icon name="refresh" size={16} />동선
+                    </button>
+                  )}
                   <Link href={`/trips/${tripId}/map?day=${c + 1}`} aria-label={`${c + 1}일차 지도`} className="press inline-flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
                     <Icon name="map" size={16} />지도
                   </Link>
@@ -288,11 +319,67 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           </section>
         )}
       </div>
-      <p role="status" aria-live="polite" className={msg ? "mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink" : "sr-only"}>{msg}</p>
+      <div role="status" aria-live="polite" className={msg ? "pointer-events-none fixed inset-x-0 bottom-24 z-30 mx-auto flex w-full max-w-[560px] justify-center px-5" : "sr-only"}>
+        {msg && (
+          <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-deep py-2 pl-4 pr-2 text-tiny font-semibold text-on-deep shadow-float">
+            <span className="min-w-0">{msg}</span>
+            {undo && <button type="button" onClick={() => { const u = undo; void applyDay(u.c, u.items, "원래 순서로 돌렸어요", null); }}
+              className="press h-8 flex-none rounded-full bg-deep-soft px-3 font-bold">되돌리기</button>}
+          </p>
+        )}
+      </div>
 
       {asking && <AlertDialog title={asking.category === "메모" ? "메모를 지울까요?" : "장소를 지울까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
         confirmLabel="지우기" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
       {canAdd && <BottomDock align="end"><GateFab href={user ? `/trips/${tripId}/places/new?day=${active}` : undefined} /></BottomDock>}
     </>
   );
+}
+
+/*
+  동선 정리 (2026-11-15) : 가까운 곳부터 차례로 + 엇갈린 길 풀기(2-opt)
+  - 움직이지 않는 칸 : 맨 처음 장소(출발점), 맨 끝의 숙소(도착점), 시간이 정해진 곳, 메모, 지도 위치가 없는 곳
+  - 나머지(위치 있고 시간 없는 곳)만 그 칸들 사이 빈자리에서 순서를 바꾼다
+  - 바꿀 곳이 2곳 미만이면 null
+*/
+function routeOrder(items: Item[]): Item[] | null {
+  const has = (x: Item) => x.lat != null && x.lng != null;
+  if (items.filter(has).length < 3) return null;
+  const last = items.length - 1;
+  const fixed = items.map((x, i) => i === 0 || (i === last && x.category === "숙소") || !!x.time || x.category === "메모" || !has(x));
+  const slots = items.map((_, i) => i).filter((i) => !fixed[i]);
+  const free = slots.map((i) => items[i]);
+  if (free.length < 2) return null;
+  const startAt = [...items.slice(0, slots[0])].reverse().find(has);
+  const endAt = items.slice(slots[slots.length - 1] + 1).find(has);
+  const d = (a: Item, b: Item) => {
+    const k = Math.cos(((a.lat! + b.lat!) / 2) * Math.PI / 180);
+    return Math.hypot(a.lat! - b.lat!, (a.lng! - b.lng!) * k);
+  };
+  // 가까운 곳부터
+  const left = [...free];
+  const path: Item[] = [];
+  let at = startAt ?? left.shift()!;
+  if (!startAt) path.push(at);
+  while (left.length) {
+    let bi = 0;
+    left.forEach((x, i) => { if (d(at, x) < d(at, left[bi])) bi = i; });
+    at = left.splice(bi, 1)[0]; path.push(at);
+  }
+  // 엇갈린 길 풀기
+  const full = () => [...(startAt ? [startAt] : []), ...path, ...(endAt ? [endAt] : [])];
+  const len = (p: Item[]) => p.slice(1).reduce((n, x, i) => n + d(p[i], x), 0);
+  for (let pass = 0, better = true; better && pass < 50; pass++) {
+    better = false;
+    for (let i = 0; i < path.length - 1; i++) for (let j = i + 1; j < path.length; j++) {
+      const before = len(full());
+      const seg = path.slice(i, j + 1).reverse();
+      path.splice(i, seg.length, ...seg);
+      if (len(full()) + 1e-12 < before) better = true;
+      else path.splice(i, seg.length, ...seg.reverse());
+    }
+  }
+  const out = [...items];
+  slots.forEach((slot, k) => { out[slot] = path[k]; });
+  return out;
 }
