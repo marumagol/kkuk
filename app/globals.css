@@ -237,3 +237,55 @@ select {
 :root[data-theme="dark"] select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A6ABB3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
+
+/* 인쇄 (여행 한 권, 5단계 6번) : 다크 모드여도 밝은 색으로 인쇄 */
+@media print {
+  :root:root:root {
+  color-scheme: light;
+
+  /* 바탕과 글자 */
+  --bg: #F5F3EE;            /* 화면 바탕, 시트 바탕 */
+  --surface: #FFFFFF;       /* 카드, 입력칸 */
+  --surface-soft: #EFEDE7;  /* 기본 칩, 눌린 자리 */
+  --ink: #2D3139;           /* 본문 글자 */
+  --ink-sub: #686D75;       /* 보조 글자 (피그마 #7A7F87 대비 보정) */
+  --line: #E9E6DF;          /* 구분선 */
+  --line-strong: #96918A;   /* 입력칸 테두리 (바탕과 3 : 1 이상) */
+
+  /* 다크 카드 (탑승권, 남은 예산), 탭바, 기본 버튼 */
+  --deep: #2D3139;
+  --on-deep: #FFFFFF;
+  --on-deep-sub: #A9ADB3;
+  --deep-soft: rgb(255 255 255 / 0.14);
+
+  /* 포인트 (주황) : 면과 아이콘에만. 글자는 --point-text */
+  --point: #FF5A36;
+  --point-text: #C23A18;
+  --point-soft: #FFE9E2;
+
+  /* 보조 (보라) */
+  --accent: #6B4EFF;
+  --accent-text: #5335E0;
+  --accent-soft: #ECE6FF;
+
+  /* 주의 (노랑), 성공/관광 (초록) */
+  --warn-soft: #FFF1C9;
+  --stamp-soft: #FFF4DF;    /* 홈 "모은 도장" 칸 (피그마 01 홈, 2026-11-14) */
+  --warn-text: #8A5F00;
+  --ok-soft: #DDF3E8;
+  --ok-text: #0A7A54;
+
+  /* 기본 버튼 (짙은 회색 바탕, 흰 글자) */
+  --btn: #2D3139;
+  --on-btn: #FFFFFF;
+
+  --kakao: #FEE500;
+
+  /* 시트 뒤 어둡게 */
+  --scrim: rgb(23 24 28 / 0.5);
+
+  /* 그림자는 떠 있는 것에만 */
+  --float-shadow: 0 12px 28px rgb(45 49 57 / 0.28);
+  }
+  body { background: #fff; }
+}

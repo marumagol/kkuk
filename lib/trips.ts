@@ -493,3 +493,18 @@ export async function tripOpenLogger(v: Viewer, tripId: string): Promise<(() => 
   if (!sb) return null;
   return async () => { try { await sb.rpc("log_trip_open", { p_trip: tripId }); } catch { /* 무시 */ } };
 }
+
+/* 여행 한 권 (5단계 6번) : 이 여행에서 내가 볼 수 있는 일기 전부 + 이 여행에서 받은 내 도장 */
+export type TripBook = { entries: Entry[]; stamps: { name: string; country: string; date: string }[] };
+export const loadTripBook = cache(async (v: Viewer, tripId: string): Promise<TripBook> => {
+  if (v.kind !== "user") return { entries: [], stamps: [] };
+  const sb = (await createClient())!;
+  const [{ data: rows }, { data: grants }] = await Promise.all([
+    sb.from("journal_entries").select(ENTRY_COLS).eq("trip_id", tripId).is("removed_at", null).order("day_index", { nullsFirst: false }).order("updated_at"),
+    sb.from("stamp_grants").select("granted_at, cities(name, country_code)").eq("trip_id", tripId).eq("user_id", v.id).order("granted_at"),
+  ]);
+  const entries = await toEntries(sb, v, (rows ?? []) as EntryRow[], true);
+  type G = { granted_at: string; cities: { name: string; country_code: string } | null };
+  const stamps = ((grants ?? []) as unknown as G[]).filter((g) => g.cities).map((g) => ({ name: g.cities!.name, country: g.cities!.country_code, date: g.granted_at.slice(0, 10) }));
+  return { entries, stamps };
+});

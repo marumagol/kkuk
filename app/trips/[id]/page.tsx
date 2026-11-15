@@ -97,6 +97,11 @@ export default async function TripDetail({ params, searchParams }: Props) {
             <Icon name="link" size={20} />
           </Link>
         )}
+        {viewer.kind === "user" && (
+          <Link href={`/trips/${trip.id}/book`} aria-label="여행 한 권 (인쇄, PDF)" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
+            <Icon name="book" size={20} />
+          </Link>
+        )}
         {editable && (
           <Link href={`/trips/${trip.id}/edit`} aria-label="여행 정보 수정" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
             <Icon name="pencil" size={20} />
