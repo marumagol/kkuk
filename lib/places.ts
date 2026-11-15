@@ -50,3 +50,23 @@ export async function details(id: string, session?: string): Promise<PlaceDetail
   const country = j.addressComponents?.find((c) => c.types?.includes("country"))?.shortText ?? null;
   return { id: j.id, name: j.displayName?.text ?? "", address: j.formattedAddress ?? "", lat: j.location.latitude, lng: j.location.longitude, country: country && /^[A-Z]{2}$/.test(country) ? country : null };
 }
+
+/* 이름으로 장소 하나 찾기 (2026-11-15 "위치 찾기") : Text Search 한 번에 좌표까지. 못 찾으면 null */
+export async function searchOne(text: string, bias?: { lat: number; lng: number } | null): Promise<PlaceDetail | null> {
+  if (!placesEnabled() || [...text].length < 2) return null;
+  const body: Record<string, unknown> = { textQuery: text, languageCode: "ko", pageSize: 1 };
+  if (bias) body.locationBias = { circle: { center: { latitude: bias.lat, longitude: bias.lng }, radius: 50000 } };
+  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST", cache: "no-store",
+    headers: { "Content-Type": "application/json", "X-Goog-Api-Key": KEY(), "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location" },
+    body: JSON.stringify(body),
+  }).catch((e) => { console.error("[places] searchText 연결 실패", String(e).slice(0, 200)); return null; });
+  if (!res?.ok) {
+    if (res) console.error("[places] searchText", res.status, (await res.text().catch(() => "")).slice(0, 400));
+    return null;
+  }
+  const j = (await res.json()) as { places?: { id: string; displayName?: { text: string }; formattedAddress?: string; location?: { latitude: number; longitude: number } }[] };
+  const p = j.places?.[0];
+  if (!p?.location || !/^[A-Za-z0-9_-]{10,255}$/.test(p.id)) return null;
+  return { id: p.id, name: p.displayName?.text ?? "", address: p.formattedAddress ?? "", lat: p.location.latitude, lng: p.location.longitude, country: null };
+}

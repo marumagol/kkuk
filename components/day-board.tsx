@@ -12,7 +12,8 @@ import Link from "next/link";
 import { Icon, PinCard } from "@/components/kit";
 import { GateFab, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
-import { reorderPlaces, moveItem, deletePlace } from "@/app/actions";
+import { reorderPlaces, moveItem, deletePlace, fillTripCoords, setItemTimes } from "@/app/actions";
+import { useRouter } from "next/navigation";
 import { safeCall } from "@/lib/safe-call";
 import { addDays, md, weekday, type Item } from "@/lib/mock";
 
@@ -52,14 +53,32 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     const prev = colsRef.current;
     const next = prev.map((x, i) => (i === c ? items : x));
     setCols(next); colsRef.current = next; setMsg(""); setUndo(null); busy.current = true;
-    const r = await safeCall(() => reorderPlaces(tripId, items.map((x) => x.id!)));
+    // 시간이 바뀐 장소가 있으면 먼저 시간 저장
+    const was = new Map(prev[c].map((x) => [x.id, x.time ?? null]));
+    const times = items.filter((x) => (x.time ?? null) !== was.get(x.id)).map((x) => ({ id: x.id!, time: x.time ?? null }));
+    const t = times.length ? await safeCall(() => setItemTimes(tripId, times)) : undefined;
+    const r = t?.error ? t : await safeCall(() => reorderPlaces(tripId, items.map((x) => x.id!)));
     busy.current = false;
     if (r?.error) { setCols(prev); setMsg(r.error); } else { setMsg(ok); setUndo(keepUndo); }
+  };
+  const router = useRouter();
+  const [finding, setFinding] = useState(false);
+  const noPin = cols.flat().filter((x) => x.id && x.lat == null && x.category !== "이동" && x.category !== "메모" && !/→|->/.test(x.title)).length;
+  const findCoords = async () => {
+    setFinding(true); setUndo(null); setMsg("");
+    const r = (await safeCall(() => fillTripCoords(tripId))) as Awaited<ReturnType<typeof fillTripCoords>> | undefined;
+    setFinding(false);
+    if (!r || r.error) { setMsg(r?.error ?? "위치를 찾지 못했어요"); return; }
+    const parts = [`${r.filled ?? 0}곳 위치를 찾았어요`];
+    if (r.missed) parts.push(`${r.missed}곳은 못 찾았어요`);
+    if (r.limited) parts.push("오늘 찾기 횟수를 다 써서 나머지는 내일 다시 눌러 주세요");
+    setMsg(parts.join(". "));
+    router.refresh();
   };
   const sortRoute = (c: number) => {
     const cur = colsRef.current[c];
     const next = routeOrder(cur);
-    if (!next) { setUndo(null); setMsg("지도 위치가 있는 장소가 3곳 이상이어야 동선을 정리할 수 있어요. 장소 검색으로 넣은 곳만 위치가 있어요"); return; }
+    if (!next) { setUndo(null); setMsg("순서를 바꿀 수 있는 관광, 쇼핑 장소가 2곳 이상이어야 해요. 지도 위치가 없으면 위 [위치 찾기] 를 먼저 눌러 주세요"); return; }
     if (next.every((x, i) => x === cur[i])) { setUndo(null); setMsg("이미 가장 짧은 동선이에요"); return; }
     void applyDay(c, next, "가까운 순서로 동선을 정리했어요", { c, items: cur });
   };
@@ -266,6 +285,15 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         </div>
       </nav>
 
+      {editable && noPin > 0 && (
+        <div className="mx-5 mt-2 flex items-center gap-2 rounded-field bg-surface px-3 py-2">
+          <Icon name="map" size={16} className="flex-none text-ink-sub" />
+          <span className="min-w-0 flex-1 text-tiny text-ink-sub">지도 위치가 없는 장소 {noPin}곳. 위치가 있어야 동선 정리와 지도에 쓰여요</span>
+          <button type="button" onClick={findCoords} disabled={finding} className="press h-9 flex-none rounded-full bg-btn px-3 text-tiny font-bold text-on-btn">
+            {finding ? "찾는 중" : "위치 찾기"}
+          </button>
+        </div>
+      )}
       <div className="flex flex-col gap-7 px-5 pt-3">
         {days.map((plan, c) => {
           const d = addDays(start, c);
@@ -278,7 +306,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                   <h2 className="truncate text-title-lg font-extrabold text-ink">{plan.title ?? `${md(d)} (${weekday(d)})`}</h2>
                 </div>
                 <div className="flex flex-none gap-1.5">
-                  {editable && cols[c].filter((x) => x.lat != null).length >= 3 && (
+                  {editable && movableOf(cols[c]) >= 2 && (
                     <button type="button" onClick={() => sortRoute(c)} disabled={!!dragId} aria-label={`${c + 1}일차 동선 정리`}
                       className="press inline-flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
                       <Icon name="refresh" size={16} />동선
@@ -338,16 +366,19 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
 /*
   동선 정리 (2026-11-15) : 가까운 곳부터 차례로 + 엇갈린 길 풀기(2-opt)
-  - 움직이지 않는 칸 : 맨 처음 장소(출발점), 맨 끝의 숙소(도착점), 시간이 정해진 곳, 메모, 지도 위치가 없는 곳
-  - 나머지(위치 있고 시간 없는 곳)만 그 칸들 사이 빈자리에서 순서를 바꾼다
+  - 움직이지 않는 칸 : 맨 처음(출발점), 맨 끝 숙소(도착점), 이동, 식사, 숙소, 메모, 지도 위치가 없는 곳
+  - 관광, 쇼핑(위치 있음)만 그 칸들 사이 빈자리에서 순서를 바꾼다
+  - 시간은 칸에 남는다 : 10:00 칸에 들어간 장소가 10:00 이 된다 (시간 순서가 흐트러지지 않게)
   - 바꿀 곳이 2곳 미만이면 null
 */
+const has = (x: Item) => x.lat != null && x.lng != null;
+const isFixed = (x: Item, i: number, last: number) =>
+  i === 0 || (i === last && x.category === "숙소") || x.category === "이동" || x.category === "식사" || x.category === "숙소" || x.category === "메모" || !has(x);
+export const movableOf = (items: Item[]) => items.filter((x, i) => !isFixed(x, i, items.length - 1)).length;
+
 function routeOrder(items: Item[]): Item[] | null {
-  const has = (x: Item) => x.lat != null && x.lng != null;
-  if (items.filter(has).length < 3) return null;
   const last = items.length - 1;
-  const fixed = items.map((x, i) => i === 0 || (i === last && x.category === "숙소") || !!x.time || x.category === "메모" || !has(x));
-  const slots = items.map((_, i) => i).filter((i) => !fixed[i]);
+  const slots = items.map((_, i) => i).filter((i) => !isFixed(items[i], i, last));
   const free = slots.map((i) => items[i]);
   if (free.length < 2) return null;
   const startAt = [...items.slice(0, slots[0])].reverse().find(has);
@@ -380,6 +411,6 @@ function routeOrder(items: Item[]): Item[] | null {
     }
   }
   const out = [...items];
-  slots.forEach((slot, k) => { out[slot] = path[k]; });
+  slots.forEach((slot, k) => { out[slot] = path[k] === items[slot] ? path[k] : { ...path[k], time: items[slot].time }; });
   return out;
 }

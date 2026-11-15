@@ -8,7 +8,7 @@ import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
 import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
 import { AVATAR_PATH } from "@/lib/storage";
 import { cleanDetails } from "@/lib/place-fields";
-import { autocomplete, details, type Suggestion, type PlaceDetail } from "@/lib/places";
+import { autocomplete, details, searchOne, type Suggestion, type PlaceDetail } from "@/lib/places";
 import { MAX_TRIP_DAYS, MAX_CITIES, MAX_TRIP_TITLE, MAX_PLACE_TITLE, MAX_PLACE_ADDRESS, MAX_PLACE_MEMO, MAX_PLACE_PHOTOS } from "@/lib/rules";
 
 /* 로그아웃 → 둘러보기 (홈) */
@@ -636,6 +636,56 @@ async function underPlaceQuota(sb: NonNullable<Awaited<ReturnType<typeof createC
   const { data, error } = await sb.rpc("take_place_quota", { p_kind: kind });
   return !error && data === true;
 }
+/*
+  위치 없는 장소의 지도 위치를 이름으로 한 번에 찾기 (2026-11-15, 동선 정리용)
+  - 이동(공항 → 역 같은 길), 메모는 빼고, 이름 앞 "점심:" 이나 괄호 안 후보는 떼고 찾는다
+  - 첫 결과를 그대로 잇는다. 틀리면 장소 수정에서 [연결 끊기]
+  - 사람당 하루 상세 횟수(take_place_quota details) 안에서만. 다 쓰면 멈추고 남은 수를 알려 준다
+*/
+export async function fillTripCoords(tripId: string): Promise<{ error?: string; filled?: number; missed?: number; left?: number; limited?: boolean }> {
+  if (!isUuid(tripId)) return { error: "다시 시도해 주세요" };
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) return { error: "로그인이 필요해요" };
+  const { data: rows } = await sb.from("itinerary_items").select("id, title, category")
+    .eq("trip_id", tripId).is("removed_at", null).is("google_place_id", null).not("category", "in", "(transport,memo)")
+    .order("day_index", { nullsFirst: false }).order("sort_order").limit(100);
+  const list = ((rows ?? []) as { id: string; title: string; category: string }[]).filter((r) => !/→|->/.test(r.title));
+  if (!list.length) return { filled: 0, missed: 0, left: 0 };
+  const { data: city } = await sb.from("trip_cities").select("*").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle();
+  let bias: { lat: number; lng: number } | null = city?.lat != null ? { lat: city.lat, lng: city.lng } : null;
+  if (!bias && city?.country_code) {
+    const { data: c } = await sb.from("cities").select("lat, lng").eq("country_code", city.country_code).eq("name", city.name).maybeSingle();
+    if (c?.lat != null) bias = { lat: c.lat, lng: c.lng };
+  }
+  const clean = (t: string) => t.replace(/^(아침|점심|저녁|간식|야식|브런치|카페)\s*[:：]\s*/, "").replace(/\(.*?\)/g, "").split(/\s+\/\s+|\s+또는\s+/)[0].trim();
+  let filled = 0, missed = 0, limited = false;
+  for (const r of list) {
+    if (!(await underPlaceQuota(sb, "details"))) { limited = true; break; }
+    const q = clean(r.title) || r.title;
+    const hit = await searchOne(city?.name && !q.includes(city.name) ? `${q} ${city.name}` : q, bias);
+    if (!hit) { missed++; continue; }
+    const { error } = await sb.from("itinerary_items").update({ google_place_id: hit.id, lat: hit.lat, lng: hit.lng, coords_at: new Date().toISOString() })
+      .eq("trip_id", tripId).eq("id", r.id).is("google_place_id", null);
+    if (error) missed++; else filled++;
+  }
+  revalidatePath(`/trips/${tripId}`);
+  return { filled, missed, left: list.length - filled - missed, limited };
+}
+
+/* 동선 정리에서 자리를 바꾼 장소의 시간 (칸의 시간은 그대로 두고 장소만 바꾼다) */
+export async function setItemTimes(tripId: string, times: { id: string; time: string | null }[]): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !Array.isArray(times) || times.length > 100 || times.some((t) => !isUuid(t.id) || (t.time !== null && !/^([01]\d|2[0-3]):[0-5]\d$/.test(t.time)))) return { error: "시간을 저장하지 못했어요" };
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  for (const t of times) {
+    const { error } = await sb.from("itinerary_items").update({ start_time: t.time }).eq("trip_id", tripId).eq("id", t.id);
+    if (error) return { error: "시간을 저장하지 못했어요. 고칠 권한이 없거나 잠시 문제가 생겼어요" };
+  }
+  revalidatePath(`/trips/${tripId}`);
+}
+
 export type FindResult = Suggestion[] | { limited: true };
 export async function findPlaces(input: string, session: string, kind: "place" | "city", bias?: { lat: number; lng: number } | null): Promise<FindResult> {
   const q = String(input ?? "").trim().slice(0, 80);
