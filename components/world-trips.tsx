@@ -59,7 +59,7 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
     const cy = (Math.min(...lats) + Math.max(...lats)) / 2, cx = (Math.min(...lngs) + Math.max(...lngs)) / 2;
     const half = Math.max(5, (Math.max(...lats) - Math.min(...lats)) / 2, (Math.max(...lngs) - Math.min(...lngs)) / 2.6);
     const box: [number, number][] = [[cx - half * 1.3, Math.max(-80, cy - half)], [cx + half * 1.3, Math.min(80, cy + half)]];
-    return p.fitExtent([[40, 60], [W - 40, H - 64]], { type: "MultiPoint", coordinates: [...pts, ...box] });
+    return p.fitExtent([[40, 84], [W - 40, H - 64]], { type: "MultiPoint", coordinates: [...pts, ...box] });
   }, [groups]);
   const path = useMemo(() => geoPath(projection), [projection]);
 
@@ -99,7 +99,7 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
           {countries.map((c) => chip(`c:${c}`, countryNameOf(c) ?? c))}
         </div>
         <div className="relative -mt-2">
-          <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label={`여행 지도, 핀 ${groups.length}곳`}>
+          <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full [mask-image:linear-gradient(to_bottom,transparent,black_72px)]" role="img" aria-label={`여행 지도, 핀 ${groups.length}곳`}>
             {land && <path d={path(land) ?? ""} className="fill-land" />}
             {lines.map((l) => (
               <polyline key={l.id} points={l.pts.map((p) => p.join(",")).join(" ")} fill="none" strokeWidth={2.5} strokeDasharray="2 7" strokeLinecap="round"
