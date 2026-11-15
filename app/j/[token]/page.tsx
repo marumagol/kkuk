@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { AppShell, Logo } from "@/components/screen";
 import { loadPublicEntry } from "@/lib/trips";
 import { addDays, md } from "@/lib/mock";
+import { PublicActions } from "@/components/entry-actions";
 
 type Props = { params: Promise<{ token: string }> };
 
@@ -41,6 +42,7 @@ export default async function PublicEntryPage({ params }: Props) {
             ))}
           </div>
         )}
+        <PublicActions likes={e.likes} />
         {e.body && <p className="whitespace-pre-wrap text-body leading-relaxed text-ink">{e.body}</p>}
         <div className="mt-4 flex flex-col items-center gap-2 rounded-card bg-surface px-4 py-5 text-center">
           <p className="text-sub text-ink">KKuK 에서 여행을 계획하고 일기를 남겨요</p>

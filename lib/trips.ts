@@ -237,6 +237,8 @@ export type Entry = {
   id: string; tripId: string; tripTitle: string; tripStart: string; kind: "day" | "recap"; dayIndex: number | null;
   title: string | null; body: string; photos: { path: string; url: string }[]; visibility: Visibility;
   author: string; mine: boolean; updatedAt: string; shareToken: string | null;
+  /* 피드 (0022) : 좋아요 수, 내가 눌렀는지, 댓글 수. 나만 보기 글은 모두 0 */
+  likes: number; liked: boolean; comments: number;
 };
 type EntryRow = { id: string; trip_id: string; author_id: string; kind: "day" | "recap"; day_index: number | null; title: string | null; body: string; photos: string[]; visibility: Visibility; updated_at: string; share_token: string | null };
 const ENTRY_COLS = "id, trip_id, author_id, kind, day_index, title, body, photos, visibility, updated_at, share_token";
@@ -250,10 +252,15 @@ async function toEntries(sb: NonNullable<Awaited<ReturnType<typeof createClient>
   ]);
   const tripOf = new Map((trips ?? []).map((t: { id: string; title: string; start_date: string }) => [t.id, t]));
   const nameOf = new Map((people ?? []).map((p: { trip_id: string; user_id: string | null; display_name: string }) => [`${p.trip_id}:${p.user_id}`, p.display_name]));
-  const urls = await photoUrls(sb, rows.flatMap((r) => (allPhotos ? r.photos : r.photos.slice(0, 1))));
+  const [urls, { data: counts }] = await Promise.all([
+    photoUrls(sb, rows.flatMap((r) => (allPhotos ? r.photos : r.photos.slice(0, 1)))),
+    sb.rpc("journal_counts", { p_ids: rows.map((r) => r.id) }),
+  ]);
+  const countOf = new Map(((counts ?? []) as { entry_id: string; likes: number; liked: boolean; comments: number }[]).map((c) => [c.entry_id, c]));
   return rows.filter((r) => tripOf.has(r.trip_id)).map((r) => ({
     id: r.id, tripId: r.trip_id, tripTitle: tripOf.get(r.trip_id)!.title, tripStart: tripOf.get(r.trip_id)!.start_date,
-    kind: r.kind, dayIndex: r.day_index, title: r.title, body: r.body, visibility: r.visibility, updatedAt: r.updated_at, shareToken: r.author_id === v.id ? r.share_token : null,
+    kind: r.kind, dayIndex: r.day_index, title: r.title, body: r.body, visibility: r.visibility, updatedAt: r.updated_at, shareToken: r.visibility === "public" ? r.share_token : null,
+    likes: countOf.get(r.id)?.likes ?? 0, liked: countOf.get(r.id)?.liked ?? false, comments: countOf.get(r.id)?.comments ?? 0,
     photos: r.photos.map((p) => ({ path: p, url: urls.get(p) ?? "" })).filter((p) => p.url),
     author: nameOf.get(`${r.trip_id}:${r.author_id}`) ?? "나간 사람", mine: r.author_id === v.id,
   }));
@@ -263,8 +270,8 @@ async function toEntries(sb: NonNullable<Awaited<ReturnType<typeof createClient>
 export const loadDiaryFeed = cache(async (v: Viewer): Promise<Entry[]> => {
   if (v.kind !== "user") return [];
   const sb = (await createClient())!;
-  const { data } = await sb.from("journal_entries").select(ENTRY_COLS).is("removed_at", null).order("updated_at", { ascending: false }).limit(60);
-  return toEntries(sb, v, (data ?? []) as EntryRow[], false);
+  const { data } = await sb.from("journal_entries").select(ENTRY_COLS).is("removed_at", null).order("updated_at", { ascending: false }).limit(30);
+  return toEntries(sb, v, (data ?? []) as EntryRow[], true);
 });
 
 export const loadEntry = cache(async (v: Viewer, id: string): Promise<Entry | null> => {
@@ -272,6 +279,20 @@ export const loadEntry = cache(async (v: Viewer, id: string): Promise<Entry | nu
   const sb = (await createClient())!;
   const { data } = await sb.from("journal_entries").select(ENTRY_COLS).eq("id", id).is("removed_at", null).maybeSingle();
   return data ? (await toEntries(sb, v, [data as EntryRow], true))[0] ?? null : null;
+});
+
+/* 일기 댓글 (0022) : 오래된 것부터. 나만 보기 글은 RLS 가 비워 준다 */
+export type EntryComment = { id: string; author: string; mine: boolean; body: string; at: string };
+export const loadComments = cache(async (v: Viewer, entryId: string, tripId: string): Promise<EntryComment[]> => {
+  if (v.kind !== "user") return [];
+  const sb = (await createClient())!;
+  const [{ data }, { data: people }] = await Promise.all([
+    sb.from("journal_comments").select("id, author_id, body, created_at").eq("entry_id", entryId).order("created_at").limit(300),
+    sb.from("trip_members").select("user_id, display_name").eq("trip_id", tripId),
+  ]);
+  const nameOf = new Map((people ?? []).map((p: { user_id: string | null; display_name: string }) => [p.user_id, p.display_name]));
+  return ((data ?? []) as { id: string; author_id: string; body: string; created_at: string }[])
+    .map((c) => ({ id: c.id, author: nameOf.get(c.author_id) ?? "나간 사람", mine: c.author_id === v.id, body: c.body, at: c.created_at }));
 });
 
 /* 일기 쓰기 화면 : 그 칸(하루 또는 회고)의 내 일기 + 그날 장소 이름 */
@@ -355,7 +376,7 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
 /* ───────── 링크로 공개한 일기 (3단계 7, migration 0013) : 로그인 없이 읽는다 ───────── */
 export type PublicEntry = {
   kind: "day" | "recap"; dayIndex: number | null; title: string | null; body: string; photos: string[];
-  updatedAt: string; author: string; tripTitle: string; start: string; end: string;
+  updatedAt: string; author: string; tripTitle: string; start: string; end: string; likes: number;
 };
 export const loadPublicEntry = cache(async (token: string): Promise<PublicEntry | null> => {
   if (!/^[0-9a-f]{32}$/.test(token)) return null;
@@ -363,13 +384,13 @@ export const loadPublicEntry = cache(async (token: string): Promise<PublicEntry 
   if (!sb) return null;
   const { data } = await sb.rpc("public_entry", { p_token: token });
   const r = (Array.isArray(data) ? data[0] : data) as
-    | { kind: "day" | "recap"; day_index: number | null; title: string | null; body: string; photos: string[]; updated_at: string; author: string; trip_title: string; start_date: string; end_date: string }
+    | { kind: "day" | "recap"; day_index: number | null; title: string | null; body: string; photos: string[]; updated_at: string; author: string; trip_title: string; start_date: string; end_date: string; like_count?: number }
     | undefined;
   if (!r) return null;
   const urls = await photoUrls(sb, r.photos);
   return {
     kind: r.kind, dayIndex: r.day_index, title: r.title, body: r.body, photos: r.photos.map((p) => urls.get(p) ?? "").filter(Boolean),
-    updatedAt: r.updated_at, author: r.author, tripTitle: r.trip_title, start: r.start_date, end: r.end_date,
+    updatedAt: r.updated_at, author: r.author, tripTitle: r.trip_title, start: r.start_date, end: r.end_date, likes: r.like_count ?? 0,
   };
 });
 
@@ -446,7 +467,7 @@ export const loadPublicShare = cache(async (token: string): Promise<PublicShare 
 });
 
 /* ───────── 앱 안 알림 (4단계 8, migration 0016) ───────── */
-export type Notice = { id: number; tripId: string; tripTitle: string; kind: "joined" | "items" | "journal" | "stamp"; actor: string; refId: string | null; detail: string | null; count: number; at: string; read: boolean };
+export type Notice = { id: number; tripId: string; tripTitle: string; kind: "joined" | "items" | "journal" | "stamp" | "comment"; actor: string; refId: string | null; detail: string | null; count: number; at: string; read: boolean };
 const PREVIEW_NOTICES: Notice[] = [
   { id: 1, tripId: "", tripTitle: "삿포로 겨울 여행", kind: "items", actor: "민지", refId: null, detail: "오타루 운하", count: 3, at: new Date(Date.now() - 20 * 60e3).toISOString(), read: false },
   { id: 2, tripId: "", tripTitle: "삿포로 겨울 여행", kind: "joined", actor: "준호", refId: null, detail: null, count: 1, at: new Date(Date.now() - 26 * 3600e3).toISOString(), read: true },

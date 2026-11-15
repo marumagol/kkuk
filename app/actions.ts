@@ -462,6 +462,50 @@ export async function removeEntry(id: string): Promise<CreateTripResult> {
   redirect("/diary?removed=1");
 }
 
+/* ───────── 일기 피드 (0022) : 좋아요, 댓글, 링크로 공개하고 공유. 누가 할 수 있는지는 DB(RLS)가 검사한다 ───────── */
+const FEED_FAIL = { error: "하지 못했어요. 볼 수 없는 일기이거나 잠시 문제가 생겼어요" };
+async function feedClient() {
+  const sb = await createClient();
+  if (!sb) return null;
+  const { data: auth } = await sb.auth.getUser();
+  return auth.user ? { sb, uid: auth.user.id } : null;
+}
+export async function toggleLike(entryId: string, on: boolean): Promise<CreateTripResult> {
+  if (!isUuid(entryId)) return FEED_FAIL;
+  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요" };
+  const { error } = on
+    ? await c.sb.from("journal_likes").upsert({ entry_id: entryId, user_id: c.uid }, { onConflict: "entry_id,user_id", ignoreDuplicates: true })
+    : await c.sb.from("journal_likes").delete().eq("entry_id", entryId).eq("user_id", c.uid);
+  if (error) return FEED_FAIL;
+  revalidatePath("/diary", "layout");
+}
+export async function addComment(entryId: string, text: string): Promise<CreateTripResult> {
+  if (!isUuid(entryId)) return FEED_FAIL;
+  const body = String(text ?? "").trim();
+  if (!body) return { error: "댓글을 적어 주세요" };
+  if ([...body].length > 500) return { error: "댓글은 500자까지 쓸 수 있어요" };
+  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요" };
+  const { error } = await c.sb.from("journal_comments").insert({ entry_id: entryId, author_id: c.uid, body });
+  if (error) return error.message?.includes("comment_limit") ? { error: "이 일기에는 댓글을 더 달 수 없어요" } : FEED_FAIL;
+  revalidatePath("/diary", "layout");
+}
+export async function removeComment(id: string): Promise<CreateTripResult> {
+  if (!isUuid(id)) return FEED_FAIL;
+  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요" };
+  const { data, error } = await c.sb.from("journal_comments").delete().eq("id", id).select("id");
+  if (error || !data?.length) return { error: "삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  revalidatePath("/diary", "layout");
+}
+/* 내 일기를 링크로 공개로 바꾸고 공유 주소를 돌려준다 (사진은 올릴 때 이미 위치 정보가 지워져 있다) */
+export async function publishEntry(id: string): Promise<{ token?: string; error?: string }> {
+  if (!isUuid(id)) return FEED_FAIL;
+  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요" };
+  const { data, error } = await c.sb.from("journal_entries").update({ visibility: "public" }).eq("id", id).eq("author_id", c.uid).is("removed_at", null).select("share_token").maybeSingle();
+  if (error || !data?.share_token) return { error: "공개하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  revalidatePath("/diary", "layout");
+  return { token: data.share_token as string };
+}
+
 /* ───────── 위치 도장 받기 (3단계 2) : 위치 확인은 DB 함수 claim_stamp 가 한다 ───────── */
 export type ClaimResult =
   | { ok: true; status: "new" | "again" | "already"; city: string; country: string; visits: number; byMe: boolean }

@@ -13,12 +13,14 @@ function textOf(n: Notice) {
     case "joined": return `${n.actor}님이 여행에 함께하기 시작했어요`;
     case "items": return n.count > 1 ? `${n.actor}님이 장소를 ${n.count}번 고쳤어요${n.detail ? ` (${n.detail} 등)` : ""}` : `${n.actor}님이 장소를 고쳤어요${n.detail ? ` (${n.detail})` : ""}`;
     case "journal": return `${n.actor}님이 일기를 남겼어요${n.detail ? ` : ${n.detail}` : ""}`;
+    case "comment": return n.count > 1 ? `${n.actor}님이 내 일기에 댓글을 ${n.count}개 남겼어요${n.detail ? ` : ${n.detail}` : ""}` : `${n.actor}님이 내 일기에 댓글을 남겼어요${n.detail ? ` : ${n.detail}` : ""}`;
     case "stamp": return `${n.actor}님 덕분에 ${n.detail ?? "도시"} 도장을 받았어요`;
   }
 }
 function hrefOf(n: Notice) {
   if (!n.tripId) return "#";
   if (n.kind === "journal" && n.refId) return `/diary/${n.refId}`;
+  if (n.kind === "comment" && n.refId) return `/diary/${n.refId}#comments`;
   if (n.kind === "stamp" && n.refId) return `/stamps?c=${n.refId}`;
   if (n.kind === "joined") return `/trips/${n.tripId}/members`;
   return `/trips/${n.tripId}`;
@@ -59,7 +61,7 @@ export default async function Notifications() {
             ))}
           </ul>
         ) : (
-          <EmptyState title="아직 알림이 없어요" desc="함께하는 사람이 장소를 고치거나 일기를 남기면 여기에 보여요" />
+          <EmptyState title="아직 알림이 없어요" desc="함께하는 사람이 장소를 고치거나 일기, 댓글을 남기면 여기에 보여요" />
         )}
       </div>
     </AppShell>

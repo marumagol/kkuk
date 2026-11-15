@@ -22,7 +22,7 @@ export default async function Diary({ searchParams }: { searchParams: Promise<{ 
     <AppShell>
       <header className="px-5 pt-6">
         <h1 className="text-title-xl font-extrabold text-ink">일기</h1>
-        <p className="mt-1 text-sub text-ink-sub">여행의 하루를 글과 사진으로 남겨요</p>
+        <p className="mt-1 text-sub text-ink-sub">여행의 하루를 사진과 글로 남기고 함께 이야기해요</p>
       </header>
       {removed && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">일기를 삭제했어요</p>}
       <div className="flex flex-col gap-4 px-5 pt-5">
