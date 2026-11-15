@@ -8,6 +8,7 @@ import { CategoryChip, EmptyState, Icon } from "@/components/kit";
 import { AppShell, BottomDock, Avatar, SectionTitle, MockNote } from "@/components/screen";
 import { GateFab, GateCta } from "@/components/gate";
 import { SortablePlaces } from "@/components/sortable-places";
+import { LiveRefresh } from "@/components/live-refresh";
 import { TripTabs } from "@/components/trip-tabs";
 import { StampClaim } from "@/components/stamp-claim";
 import { getViewer, isIn } from "@/lib/viewer";
@@ -111,6 +112,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
 
       {statusOf(trip, todayOf(trip)) === "past" && <TripSummaryRow s={await loadTripSummary(viewer, trip)} className="mx-5 mt-3" />}
       {viewer.kind === "user" && <TripTabs tripId={trip.id} active="일정" />}
+      {viewer.kind === "user" && <LiveRefresh tripId={trip.id} />}
       {viewer.kind === "user" && statusOf(trip, todayOf(trip)) === "ongoing" && <StampClaim tripId={trip.id} />}
 
       <nav className="mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]" aria-label="날짜">
