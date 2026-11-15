@@ -10,9 +10,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon, PinCard } from "@/components/kit";
-import { GateFab } from "@/components/gate";
+import { GateFab, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
-import { reorderPlaces, moveItem } from "@/app/actions";
+import { reorderPlaces, moveItem, deletePlace } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 import { addDays, md, weekday, type Item } from "@/lib/mock";
 
@@ -37,6 +37,17 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const nav = useRef<HTMLElement>(null);
   const lastY = useRef(0);
   const busy = useRef(false);
+  const [asking, setAsking] = useState<Item | null>(null); // 지우기 확인
+
+  /* 목록에서 바로 지우기 (확인 창 한 번). 실패하면 되돌리고 안내 */
+  const remove = async (it: Item) => {
+    const prev = colsRef.current;
+    const next = prev.map((c) => c.filter((x) => x.id !== it.id));
+    setCols(next); colsRef.current = next; setMsg(""); busy.current = true;
+    const r = await safeCall(() => deletePlace(tripId, it.id!));
+    busy.current = false;
+    if (r?.error) { setCols(prev); setMsg(r.error); } else setMsg(`"${it.title}"을(를) 지웠어요`);
+  };
 
   // 저장 뒤나 다른 사람이 고쳐서 새 목록이 오면 맞춘다 (끄는 중, 저장 중에는 그대로)
   useEffect(() => { if (!dragId && !busy.current) setCols(fromProps()); }, [fromProps]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -178,6 +189,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               desc={it.desc ?? ""} editedBy={it.editedBy} photo={it.photos?.[0]?.url} photoCount={it.photos?.length} last={i === cols[c].length - 1}
               href={editable && it.id ? `/trips/${tripId}/places/${it.id}` : undefined} />
           </div>
+          {editable && it.id && (
+          <div className="flex flex-none flex-col items-center">
           {canSort && (
             <button type="button" data-grip aria-label={`${it.title} 옮기기. 위아래 화살표로 순서와 날짜를 바꿔요`}
               className="press mt-2 flex size-11 flex-none cursor-grab touch-none items-center justify-center rounded-full text-ink-sub active:cursor-grabbing"
@@ -185,6 +198,12 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               onPointerDown={(e) => { e.preventDefault(); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); }}>
               <Icon name="grip" size={22} />
             </button>
+          )}
+            <button type="button" aria-label={`${it.title} 지우기`} onClick={() => setAsking(it)} disabled={!!dragId}
+              className={"press flex size-10 items-center justify-center rounded-full text-ink-sub " + (canSort ? "" : "mt-2")}>
+              <Icon name="trash" size={18} />
+            </button>
+          </div>
           )}
         </li>
       ))}
@@ -271,6 +290,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
       </div>
       <p role="status" aria-live="polite" className={msg ? "mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink" : "sr-only"}>{msg}</p>
 
+      {asking && <AlertDialog title={asking.category === "메모" ? "메모를 지울까요?" : "장소를 지울까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
+        confirmLabel="지우기" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
       {canAdd && <BottomDock align="end"><GateFab href={user ? `/trips/${tripId}/places/new?day=${active}` : undefined} /></BottomDock>}
     </>
   );

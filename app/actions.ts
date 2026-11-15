@@ -268,6 +268,18 @@ async function syncReservation(sb: NonNullable<Awaited<ReturnType<typeof createC
   await sb.from("checklist_items").insert({ trip_id: tripId, kind: "reservation", title: name, due_date: due, item_id: itemId, sort_order: (last?.sort_order ?? -1) + 1, created_by: uid });
 }
 
+/* 일정 목록에서 바로 지우기 (화면 이동 없음). 이어진 예약도 같이 뺀다 */
+export async function deletePlace(tripId: string, placeId: string): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !isUuid(placeId)) return { error: "지우지 못했어요" };
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 지울 수 없어요" };
+  const now = new Date().toISOString();
+  const { data, error } = await sb.from("itinerary_items").update({ removed_at: now }).eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).select("id");
+  if (error || !data?.length) return { error: "지우지 못했어요. 고칠 권한이 없거나 이미 지워졌을 수 있어요" };
+  await sb.from("checklist_items").update({ removed_at: now }).eq("trip_id", tripId).eq("item_id", placeId).is("removed_at", null);
+  revalidatePath(`/trips/${tripId}`);
+}
+
 export async function removePlace(tripId: string, placeId: string, day: number | null): Promise<CreateTripResult> {
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 삭제할 수 없어요" };
