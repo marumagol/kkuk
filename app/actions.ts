@@ -545,6 +545,42 @@ export async function saveBudget(tripId: string, currency: string, amount: strin
   revalidatePath(`/trips/${tripId}/prep`); revalidatePath(`/trips/${tripId}/expenses`);
 }
 
+/*
+  예산 한 번에 저장 (2026-11-17 마루님 "총예산 원화 + 통화별") : 총예산은 원화로 trip_budgets, 통화별 예산(미리 환전한 돈)은 trip_cash (0041)
+  - total 이 비면 총예산은 그대로 둔다 (지우는 권한이 없는 표). cash 의 빈 값은 그 통화 예산을 지운다
+*/
+export async function saveBudgetPlan(tripId: string, total: string, cash: Record<string, string>): Promise<CreateTripResult> {
+  if (!isUuid(tripId)) return PREP_FAIL;
+  const won = String(total ?? "").replace(/,/g, "").trim();
+  if (won && !/^\d{1,12}$/.test(won)) return { error: "총예산은 원 단위 숫자로 적어 주세요" };
+  const rows: { currency: string; amount: number }[] = [], drop: string[] = [];
+  for (const [cur, raw] of Object.entries(cash ?? {})) {
+    if (!/^[A-Z]{3}$/.test(cur) || cur === "KRW") return PREP_FAIL;
+    const t = String(raw ?? "").replace(/,/g, "").trim();
+    const d = decimalsOf(cur);
+    if (!t || Number(t) === 0) { drop.push(cur); continue; }
+    if (!new RegExp(`^\\d{1,12}${d ? `(\\.\\d{1,${d}})?` : ""}$`).test(t)) return { error: `${cur} 예산은 숫자로 적어 주세요` };
+    rows.push({ currency: cur, amount: Math.round(Number(t) * 10 ** d) });
+  }
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  if (won) {
+    const { error } = await c.sb.from("trip_budgets").upsert({ trip_id: tripId, currency: "KRW", total: Number(won), updated_by: c.uid, updated_at: new Date().toISOString() }, { onConflict: "trip_id" });
+    if (error) return PREP_FAIL;
+  }
+  if (rows.length || drop.length) {
+    const ready = "통화별 예산 저장 준비가 아직 안 됐어요. 총예산은 저장했어요";
+    if (rows.length) {
+      const { error } = await c.sb.from("trip_cash").upsert(rows.map((r) => ({ trip_id: tripId, ...r, updated_by: c.uid, updated_at: new Date().toISOString() })), { onConflict: "trip_id,currency" });
+      if (error) return { error: error.code === "42P01" || error.message?.includes("trip_cash") ? ready : "통화별 예산을 저장하지 못했어요" };
+    }
+    if (drop.length) {
+      const { error } = await c.sb.from("trip_cash").delete().eq("trip_id", tripId).in("currency", drop);
+      if (error && !(error.code === "42P01" || error.message?.includes("trip_cash"))) return { error: "통화별 예산을 지우지 못했어요" };
+    }
+  }
+  revalidatePath(`/trips/${tripId}/expenses`); revalidatePath(`/trips/${tripId}/prep`); revalidatePath("/");
+}
+
 /* 여행 환율 (0040) : 1 통화 = 몇 원. null 이면 지워서 그날 받아 온 환율로. 주인과 편집 가능만 (RLS) */
 export async function saveFxRate(tripId: string, currency: string, krwPer: number | null): Promise<CreateTripResult> {
   if (!isUuid(tripId) || !/^[A-Z]{3}$/.test(currency) || currency === "KRW") return PREP_FAIL;

@@ -1,5 +1,5 @@
 "use client";
-/* 준비 탭 내용 : 체크리스트, 예약 (예산 카드는 2026-11-16 경비 탭으로 옮김, BudgetSection). 저장은 app/actions.ts (RLS 가 권한 검사) */
+/* 준비 탭 내용 : 체크리스트, 예약 (예산 카드는 경비 탭 components/budget-card.tsx). 저장은 app/actions.ts (RLS 가 권한 검사) */
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
@@ -7,10 +7,8 @@ import { SwipeRow } from "@/components/swipe-row";
 import { Toast } from "@/components/toast";
 import { useRouter } from "next/navigation";
 import { Button, Field, Icon } from "@/components/kit";
-import { addPrepItem, addPrepDefaults, updatePrepItem, saveBudget, reorderPrep } from "@/app/actions";
+import { addPrepItem, addPrepDefaults, updatePrepItem, reorderPrep } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
-import { RateDialog, rateText } from "@/components/rate-dialog";
-import { decimalsOf, formatMoney } from "@/lib/countries";
 import { md } from "@/lib/mock";
 import type { PrepView, PrepItem } from "@/lib/trips";
 
@@ -83,98 +81,9 @@ function PrepSummary({ view }: { view: PrepView }) {
   );
 }
 
-/* 경비 탭 맨 위 예산 카드 (2026-11-16 마루님 "예산 섹션이 경비로"). actual : 실제 경비 합 (예산 통화, 다른 통화는 환율로 바꿔서). mixed : 다른 통화 경비가 섞였는지 */
-export function BudgetSection({ view, actual, mixed = false }: { view: PrepView; actual: number; mixed?: boolean }) {
-  const [error, setError] = useState("");
-  const [busy, start] = useTransition();
-  const run: RunFn = (fn) => start(async () => {
-    setError("");
-    const r = await safeCall(fn);
-    if (r && "error" in r && r.error) setError(r.error);
-  });
-  return (
-    <div className="flex flex-col gap-2">
-      <Budget view={view} canEdit={view.role !== "viewer"} busy={busy} run={run} actual={actual} mixed={mixed} />
-      {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
-    </div>
-  );
-}
-
-
 const DEFAULT_ITEMS = ["여권", "충전기", "보조배터리", "상비약", "환전", "여행자 보험", "유심 또는 eSIM", "세면도구"];
 
 type RunFn = (fn: () => Promise<{ error?: string } | undefined | void>) => void;
-
-function Budget({ view, canEdit, busy, run, actual, mixed }: { view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; actual: number; mixed: boolean }) {
-  const cur = view.budget?.currency ?? view.currency;
-  const d = decimalsOf(cur);
-  const [edit, setEdit] = useState(false);
-  const [amount, setAmount] = useState(view.budget ? String(view.budget.total / 10 ** d) : "");
-  const total = view.budget?.total ?? 0;
-  /* [원화로 보기] (2026-11-16 마루님) : 누르면 카드의 외화 금액이 모두 원화로 바뀐다. 다시 누르면 원래 통화 */
-  const [inKrw, setInKrw] = useState(false);
-  /* 환율 (2026-11-17 마루님 "원화로 묶기") : 여행에 정한 환율(0040 trip_fx)을 함께하는 사람 모두 같이 쓴다. 없으면 그날 받아 온 환율 */
-  const [rateOpen, setRateOpen] = useState(false);
-  const rate = cur === "KRW" ? null : view.krw;
-  const money = (minor: number) => (inKrw && rate ? `₩${Math.round((minor / 10 ** d) * rate).toLocaleString("ko-KR")}` : formatMoney(minor, cur));
-  const editBtn = canEdit && (
-    <button type="button" onClick={() => setEdit(true)} className="press inline-flex h-8 items-center rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">{view.budget ? "예산 수정" : "예산 정하기"}</button>
-  );
-  if (edit) return (
-    <section className="flex flex-col gap-3 rounded-card bg-surface p-5" aria-label="예산 수정">
-      <div className="flex items-end gap-2">
-        <div className="min-w-0 flex-1">
-          <Field label={`전체 예산 (${cur})`} name="budget" inputMode={d ? "decimal" : "numeric"} value={amount} placeholder="0"
-            onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ""))} disabled={busy} />
-        </div>
-        <Button type="button" size="lg" disabled={busy || !amount} onClick={() => run(async () => { const r = await saveBudget(view.tripId, cur, amount); if (!r?.error) setEdit(false); return r; })}>저장</Button>
-      </div>
-      <button type="button" onClick={() => setEdit(false)} className="press h-9 self-start px-1 text-tiny font-semibold text-ink-sub underline underline-offset-2">닫기</button>
-    </section>
-  );
-  /*
-    예산 카드 (2026-11-16 마루님 "예산, 경비, 정산을 명확히") : 실제로 쓴 돈(경비) 기준
-    - 큰 숫자 : 남은 예산 (예산이 없으면 쓴 돈), 막대 하나 = 쓴 돈 / 예산
-    - 장소 예상 비용은 "예상" 한 줄로만 작게
-  */
-  const remain = total - actual;
-  const used = total ? Math.min(100, Math.round((actual / total) * 100)) : 0;
-  const over = !!view.budget && remain < 0;
-  return (
-    <section className="flex flex-col gap-3 rounded-deep bg-deep p-5 text-on-deep" aria-labelledby="budget-title">
-      <div className="flex items-center justify-between gap-2">
-        <h2 id="budget-title" className="text-sub font-semibold text-on-deep-sub">{view.budget ? (over ? "예산을 넘었어요" : "남은 예산") : "쓴 돈"}</h2>
-        <span className="flex items-center gap-1.5">
-          {rate && <button type="button" onClick={() => setInKrw((v) => !v)} aria-pressed={inKrw}
-            className="press inline-flex h-8 items-center rounded-full border border-deep-soft px-3 text-tiny font-semibold text-on-deep">{inKrw ? `${cur}로 보기` : "원화로 보기"}</button>}
-          {editBtn}
-        </span>
-      </div>
-      <p className="flex flex-wrap items-baseline gap-x-2">
-        <span className={"text-number font-extrabold tabular-nums " + (over ? "text-[#FF8466]" : "")}>{inKrw && rate ? "약 " : ""}{money(view.budget ? Math.abs(remain) : actual)}</span>
-        {view.budget && <span className="text-sub text-on-deep-sub">/ 예산 {money(total)}</span>}
-      </p>
-      {view.budget && (
-        <div className="h-2 overflow-hidden rounded-full bg-deep-soft" role="img" aria-label={`예산의 ${used}% 씀`}>
-          <span className="block h-full rounded-full" style={{ width: `${used}%`, background: over ? "#FF8466" : "#6FD3A8" }} />
-        </div>
-      )}
-      <dl className="flex flex-col gap-1 text-sub">
-        {view.budget && <div className="flex items-center justify-between gap-2"><dt className="text-on-deep-sub">쓴 돈 (경비)</dt><dd className="font-bold tabular-nums">{money(actual)}</dd></div>}
-        {view.spent > 0 && <div className="flex items-center justify-between gap-2"><dt className="text-on-deep-sub">예상 경비 (장소에 적은 금액)</dt><dd className="font-semibold tabular-nums text-on-deep-sub">{money(view.spent)}</dd></div>}
-      </dl>
-      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-        <p className="min-w-0 flex-1 text-tiny text-on-deep-sub">{mixed ? "다른 통화 경비는 환율로 바꿔 더해요" : `${cur} 로 적은 경비를 더해요`}{(inKrw || mixed) && rate ? `. 1 ${cur} = ${rateText(rate)}원${view.krwCustom ? " (직접 정한 환율)" : ""} 기준` : ""}</p>
-        {cur !== "KRW" && (inKrw || mixed || !rate) && (
-          <button type="button" onClick={() => setRateOpen(true)} className="press inline-flex h-8 flex-none items-center gap-1 rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">
-            <Icon name="pencil" size={13} />환율 수정
-          </button>
-        )}
-      </div>
-      {rateOpen && <RateDialog tripId={view.tripId} cur={cur} current={rate} auto={view.krwAuto} custom={view.krwCustom} canEdit={canEdit} onClose={() => setRateOpen(false)} />}
-    </section>
-  );
-}
 
 function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
   title: string; kind: "item" | "reservation"; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; onSwipe: (it: PrepItem) => void;

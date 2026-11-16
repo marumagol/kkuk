@@ -13,7 +13,7 @@ import { shrinkImage } from "@/lib/image";
 import { AlertDialog } from "@/components/gate";
 import { savePlace, removePlace } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
-import { decimalsOf, curName, currencyOptions } from "@/lib/countries";
+import { decimalsOf, currencyOptions } from "@/lib/countries";
 import { CurrencySelect } from "@/components/currency-select";
 import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";

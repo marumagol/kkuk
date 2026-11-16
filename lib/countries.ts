@@ -92,6 +92,7 @@ export const decimalsOf = (cur: string) => {
 };
 export const formatMoney = (minor: number, cur: string) => {
   const d = decimalsOf(cur);
+  if (cur === "KRW") return `${Math.round(minor).toLocaleString("ko-KR")}원`; // 원화는 "1,000원" (2026-11-17 경비 화면 정리)
   try { return new Intl.NumberFormat("ko-KR", { style: "currency", currency: cur, maximumFractionDigits: d }).format(minor / 10 ** d); }
   catch { return `${minor} ${cur}`; }
 };

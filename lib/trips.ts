@@ -578,6 +578,8 @@ export type ExpensesView = {
   budget: { currency: string; total: number } | null; // 경비 탭 맨 위 "예산 중 얼마 썼어요" (2026-11-16)
   currencies: string[]; dayCurrency: (string | null)[]; // 여행 통화 칩, 날짜별 기본 통화 (2026-11-17)
   rates: Record<string, Rate>; // 원화로 묶기 환율 (0040)
+  cash: Record<string, number>; // 통화별 예산, 미리 환전한 돈 (0041 trip_cash, 최소 단위)
+  planned: { amount: number; currency: string }[]; // 일정에 적은 예상 경비 (통화별 합)
   importable: { id: string; title: string; amount: number; currency: string; date: string | null }[]; // 예상 비용이 적힌, 아직 경비로 안 가져온 장소 (0036)
 };
 export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<ExpensesView | null> => {
@@ -602,10 +604,20 @@ export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<Exp
   const expenses = ((rows ?? []) as { id: string; title: string; amount: number; currency: string; paid_by: string; split_with: string[]; spent_on: string | null; item_id: string | null }[])
     .map((e) => ({ id: e.id, title: e.title, amount: Number(e.amount), currency: e.currency, paidBy: e.paid_by, splitWith: e.split_with, spentOn: e.spent_on, itemId: e.item_id }));
   const taken = new Set(expenses.flatMap((e) => (e.itemId ? [e.itemId] : [])));
-  const fx = await tripCurrencies(sb, tripId, r.trip);
-  const rates = await tripRates(sb, tripId, [...fx.currencies, ...expenses.map((e) => e.currency), ...(budget?.currency ? [budget.currency] : [])]);
+  const [fx, { data: cashRows }] = await Promise.all([
+    tripCurrencies(sb, tripId, r.trip),
+    sb.from("trip_cash").select("currency, amount").eq("trip_id", tripId), // 0041 적용 전이면 오류 → 빈 값
+  ]);
+  const cash: Record<string, number> = {};
+  for (const x of (cashRows ?? []) as { currency: string; amount: number | string }[]) cash[x.currency] = Number(x.amount);
+  const plannedBy = new Map<string, number>();
+  for (const c of (costs ?? []) as { estimated_cost: number; cost_currency: string | null }[]) {
+    if (c.cost_currency && c.estimated_cost > 0) plannedBy.set(c.cost_currency, (plannedBy.get(c.cost_currency) ?? 0) + Number(c.estimated_cost));
+  }
+  const planned = [...plannedBy].map(([currency, amount]) => ({ currency, amount }));
+  const rates = await tripRates(sb, tripId, [...fx.currencies, ...expenses.map((e) => e.currency), ...(budget?.currency ? [budget.currency] : []), ...Object.keys(cash), ...plannedBy.keys()]);
   return {
-    ...fx, rates,
+    ...fx, rates, cash, planned,
     tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency: budget?.currency ?? currencyOf(city?.country_code), me: v.id,
     expenses,
     people: [...people.values()].map((p) => ({ ...p, avatar: face.get(p.userId) })),

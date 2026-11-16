@@ -4,10 +4,7 @@ import { AppShell } from "@/components/screen";
 import { TripTabs, TripHeader } from "@/components/trip-tabs";
 import { ExpensesPanel } from "@/components/expenses-panel";
 import { getViewer } from "@/lib/viewer";
-import { loadExpenses, loadTrip, loadPrep } from "@/lib/trips";
-import { BudgetSection } from "@/components/prep-panel";
-import { convertMinor, isMixed } from "@/lib/settle";
-import { decimalsOf } from "@/lib/countries";
+import { loadExpenses, loadTrip } from "@/lib/trips";
 
 export const metadata = { title: "경비" };
 
@@ -17,16 +14,13 @@ export default async function Expenses({ params, searchParams }: { params: Promi
   const viewer = await getViewer();
   if (viewer.kind === "guest") redirect(`/login?next=/trips/${id}/expenses`);
   if (viewer.kind === "preview") redirect(`/trips/${id}`);
-  const [view, r, prep] = await Promise.all([loadExpenses(viewer, id), loadTrip(viewer, id), loadPrep(viewer, id)]);
+  const [view, r] = await Promise.all([loadExpenses(viewer, id), loadTrip(viewer, id)]);
   if (!view || !("trip" in r)) notFound();
-  // 예산 카드의 쓴 돈 : 예산 통화로. 다른 통화 경비는 여행 환율로 바꿔 더한다 (환율을 모르면 뺀다)
-  const bcur = prep?.budget?.currency ?? prep?.currency ?? "KRW";
-  const actual = view.expenses.reduce((n, e) => n + (convertMinor(e.amount, e.currency, bcur, view.rates, decimalsOf) ?? 0), 0);
   return (
     <AppShell>
       <TripHeader trip={r.trip} meId={viewer.id} user owner={r.role === "owner"} editable={r.role !== "viewer"} />
       <TripTabs tripId={id} active="경비" />
-      <ExpensesPanel openAdd={add === "1"} view={view} budget={prep && <BudgetSection view={prep} actual={actual} mixed={isMixed(view.expenses)} />} />
+      <ExpensesPanel openAdd={add === "1"} view={view} />
     </AppShell>
   );
 }
