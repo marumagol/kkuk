@@ -112,23 +112,33 @@ function List({ title, kind, view, canEdit, busy, run, placeholder }: {
           ? <span className="text-sub font-bold text-point-text">{items.length - done}개 남음</span>
           : <span className="text-sub text-ink-sub">모두 끝냈어요</span>)}
       </div>
-      {items.length > 0 && (
-        <ul className="divide-y divide-line rounded-card bg-surface">
-          {items.map((it) => <Row key={it.id} it={it} view={view} canEdit={canEdit} busy={busy} run={run} />)}
-        </ul>
-      )}
-      {canEdit && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-end gap-2">
-            <div className="min-w-0 flex-1">
-              <Field label={`${title} 추가`} name={`add-${kind}`} placeholder={placeholder} value={text} maxLength={80} disabled={busy}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && text.trim()) { e.preventDefault(); add(); } }} />
+      {/* 목록과 추가 줄을 한 카드에 (2026-11-16 마루님 "하나의 섹션으로 보여야") */}
+      {(items.length > 0 || canEdit) && (
+        <div className="overflow-hidden rounded-card bg-surface">
+          {items.length > 0 && (
+            <ul className="divide-y divide-line">
+              {items.map((it) => <Row key={it.id} it={it} view={view} canEdit={canEdit} busy={busy} run={run} />)}
+            </ul>
+          )}
+          {canEdit && (
+            <div className={items.length ? "border-t border-line" : ""}>
+              <div className="flex min-h-14 items-center gap-3 px-4 py-2">
+                <span aria-hidden className="flex size-7 flex-none items-center justify-center rounded-full border-2 border-dashed border-line-strong text-ink-sub"><Icon name="plus" size={14} /></span>
+                <input name={`add-${kind}`} aria-label={`${title} 추가`} placeholder={`${title} 추가 (${placeholder})`} value={text} maxLength={80} disabled={busy}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && text.trim()) { e.preventDefault(); add(); } }}
+                  className="h-10 min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-sub" />
+                <button type="button" disabled={busy || !text.trim()} onClick={add}
+                  className="press h-9 flex-none rounded-full bg-btn px-3.5 text-sub font-bold text-on-btn disabled:bg-surface-soft disabled:text-ink-sub">추가</button>
+              </div>
+              {kind === "reservation" && (
+                <label className="flex items-center gap-3 pb-3 pl-14 pr-4">
+                  <span className="flex-none text-tiny font-semibold text-ink-sub">날짜 (선택)</span>
+                  <input type="date" name="due" value={due} onChange={(e) => setDue(e.target.value)} disabled={busy}
+                    className="h-10 min-w-0 flex-1 rounded-field bg-bg px-3 text-sub text-ink outline-none focus:ring-2 focus:ring-ink/15" />
+                </label>
+              )}
             </div>
-            <Button type="button" variant="secondary" size="lg" disabled={busy || !text.trim()} onClick={add}>추가</Button>
-          </div>
-          {kind === "reservation" && (
-            <Field label="날짜 (선택)" name="due" type="date" value={due} onChange={(e) => setDue(e.target.value)} disabled={busy} />
           )}
         </div>
       )}
