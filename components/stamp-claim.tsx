@@ -56,7 +56,7 @@ export function StampClaim({ tripId, inset = true }: { tripId: string; inset?: b
       </div>
       {state.kind !== "done" && (
         <button type="button" onClick={go} disabled={busy}
-          className="press h-12 rounded-full bg-btn text-body font-bold text-on-btn disabled:bg-surface-soft disabled:text-ink-sub">
+          className="press h-14 rounded-btn bg-btn text-[16px] font-bold text-on-btn disabled:bg-surface-soft disabled:text-ink-sub">
           {locating ? "위치 확인 중" : pending ? "도장 찍는 중" : state.kind === "idle" ? "도장 받기" : "다시 받기"}
         </button>
       )}

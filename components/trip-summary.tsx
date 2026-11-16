@@ -8,7 +8,7 @@ export function TripSummaryRow({ s, className = "" }: { s: TripSummary; classNam
     ["남긴 사진", String(s.photos), "", false], ["새 도장", String(s.stamps), "", false],
   ];
   return (
-    <dl className={"grid grid-cols-4 gap-2 rounded-[24px] bg-deep px-5 py-4 text-on-deep " + className} aria-label="여행 요약">
+    <dl className={"grid grid-cols-4 gap-2 rounded-card bg-deep px-5 py-4 text-on-deep " + className} aria-label="여행 요약">
       {cells.map(([k, v, u, hi]) => (
         <div key={k} className="flex min-w-0 flex-col-reverse gap-0.5">
           <dt className="truncate text-tiny text-on-deep-sub">{k}</dt>

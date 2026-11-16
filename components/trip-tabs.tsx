@@ -16,7 +16,7 @@ export function TripTabs({ tripId, active }: { tripId: string; active: TripTab }
     { name: "일정", href: `/trips/${tripId}` }, { name: "준비", href: `/trips/${tripId}/prep` }, { name: "기록", href: `/trips/${tripId}/record` },
   ].filter((t) => FEATURES.diary || t.name !== "기록");
   return (
-    <nav aria-label="여행 안 메뉴" className="mx-5 mt-4 flex gap-1 rounded-[18px] bg-surface-soft p-1">
+    <nav aria-label="여행 안 메뉴" className="mx-5 mt-4 flex gap-1 rounded-btn bg-surface-soft p-1">
       {tabs.map((t) => (
         <Link key={t.name} href={t.href} replace aria-current={active === t.name ? "page" : undefined}
           className={"press flex h-[38px] flex-1 items-center justify-center rounded-[14px] text-body " +

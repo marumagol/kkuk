@@ -339,7 +339,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                   <li key={it.id ?? `${sel}-${i}`} ref={(el) => { if (el && it.id) rows.current.set(it.id, el); }}
                     className={"flex flex-col transition-transform " + (dragId === it.id ? "relative z-10 scale-[1.02] opacity-90 drop-shadow-lg" : "")}>
                     {gap && !dragId && (
-                      <span className="-mt-2 mb-1 -ml-1 w-fit rounded-full border border-line bg-bg px-2 py-0.5 text-[11px] font-bold leading-4 text-ink-sub">{gap}</span>
+                      <span className="-mt-2 mb-1 -ml-1 w-fit rounded-full border border-line bg-bg px-2 py-0.5 text-tiny font-bold leading-4 text-ink-sub">{gap}</span>
                     )}
                     <div className="flex items-start gap-1">
                       <div className="min-w-0 flex-1">

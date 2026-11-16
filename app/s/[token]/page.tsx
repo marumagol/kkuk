@@ -72,7 +72,7 @@ export default async function SharedDays({ params }: Props) {
             </ol>
           </section>
         )}
-        <Link href="/" className="press flex h-12 items-center justify-center rounded-full bg-btn text-body font-bold text-on-btn">KKuK 로 내 여행 계획하기</Link>
+        <Link href="/" className="press flex h-14 items-center justify-center rounded-btn bg-btn text-[16px] font-bold text-on-btn">KKuK 로 내 여행 계획하기</Link>
       </div>
     </AppShell>
   );
