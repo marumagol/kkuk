@@ -90,7 +90,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   const [{ data, error }, { data: rows, error: itemsError }, { data: me }] = await Promise.all([
     sb.from("trips").select(SELECT).eq("id", id).maybeSingle(),
     sb.from("itinerary_items")
-      .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos, updated_by, updated_at, lat, lng, details")
+      .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos, updated_by, updated_at, lat, lng, details, google_place_id")
       .eq("trip_id", id).is("removed_at", null).order("sort_order"),
     sb.from("trip_members").select("role").eq("trip_id", id).eq("user_id", v.id).is("removed_at", null).maybeSingle(),
   ]);
@@ -115,7 +115,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   for (const it of (rows ?? []) as PlaceRow[]) {
     const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
     const desc = it.category === "memo" ? it.memo ?? "" : [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
-    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
+    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), addr: it.address || undefined, gpid: it.google_place_id || undefined, ...(it.estimated_cost != null && it.cost_currency ? { cost: it.estimated_cost, cur: it.cost_currency } : {}), hours: it.details?._hours || undefined, ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }

@@ -454,6 +454,18 @@ export async function addPrepItem(tripId: string, kind: string, title: string, d
   if (error) return PREP_FAIL;
   revalidatePath(`/trips/${tripId}/prep`);
 }
+/* 챙길 것 기본 목록 한 번에 넣기 (2026-11-16 마루님). 이미 있는 이름은 건너뛴다 */
+export async function addPrepDefaults(tripId: string, titles: string[]): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !Array.isArray(titles) || titles.length > 20) return PREP_FAIL;
+  const list = [...new Set(titles.map((x) => String(x ?? "").trim()).filter((x) => x && [...x].length <= 80))];
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const { data: had } = await c.sb.from("checklist_items").select("title, sort_order").eq("trip_id", tripId).eq("kind", "item").is("removed_at", null);
+  const names = new Set((had ?? []).map((x) => x.title));
+  let order = Math.max(-1, ...(had ?? []).map((x) => x.sort_order ?? -1));
+  const rows = list.filter((t) => !names.has(t)).map((t) => ({ trip_id: tripId, kind: "item", title: t, sort_order: ++order, created_by: c.uid }));
+  if (rows.length) { const { error } = await c.sb.from("checklist_items").insert(rows); if (error) return PREP_FAIL; }
+  revalidatePath(`/trips/${tripId}/prep`);
+}
 export async function updatePrepItem(tripId: string, id: string, patch: { done?: boolean; assignee?: string | null; remove?: boolean; title?: string; due?: string | null }): Promise<CreateTripResult> {
   if (!isUuid(tripId) || !isUuid(id)) return PREP_FAIL;
   const t = patch.title === undefined ? undefined : String(patch.title).trim();

@@ -4,7 +4,7 @@
 */
 import type { Category } from "@/components/kit";
 
-export type Item = { id?: string; time?: string; category: Category; title: string; desc?: string; detail?: string /* 맞춤 칸 한 줄 (편명, 예약번호) */; editedBy?: string; lat?: number; lng?: number; photos?: { path: string; url: string }[] /* 장소 사진 (url 은 1시간짜리 주소) */ };
+export type Item = { id?: string; time?: string; category: Category; title: string; desc?: string; detail?: string /* 맞춤 칸 한 줄 (편명, 예약번호) */; editedBy?: string; lat?: number; lng?: number; photos?: { path: string; url: string }[] /* 장소 사진 (url 은 1시간짜리 주소) */; addr?: string; gpid?: string /* 구글 장소 id (길찾기) */; cost?: number; cur?: string; hours?: string /* 영업시간 (lib/hours.ts 형식) */ };
 export type Trip = {
   id: string; title: string; start: string; end: string; // YYYY-MM-DD
   cities: string[]; members: { initial: string; name?: string; tone: "point" | "accent"; userId?: string; avatar?: string }[];

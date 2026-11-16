@@ -19,6 +19,9 @@ import { reorderPlaces, moveItem, deletePlace, fillTripCoords, setItemTimes } fr
 import { useRouter } from "next/navigation";
 import { safeCall } from "@/lib/safe-call";
 import { addDays, md, weekday, type Item } from "@/lib/mock";
+import { mapsDirUrl, mapsViewUrl, canMap } from "@/lib/maps-link";
+import { formatMoney } from "@/lib/countries";
+import { hoursWarning } from "@/lib/hours";
 
 type Props = {
   tripId: string; start: string; days: { title?: string; items: Item[] }[]; undated: Item[];
@@ -269,15 +272,24 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const d = sel === U ? null : addDays(start, sel);
   const chip = (c: number, label: string) => {
     const on = sel === c, over = overCol === c;
+    const empty = c !== U && !cols[c]?.length; // 빈 날은 흐린 점선 칩 (2026-11-16 마루님 "빈 날 접기")
     return (
       <button key={c} type="button" data-col={c} onClick={() => pickDay(c)} aria-current={on ? "true" : undefined}
         aria-label={c === U ? `날짜 미정 ${cols[U].length}곳` : `${c + 1}일차, ${md(addDays(start, c))} ${weekday(addDays(start, c))}요일`}
         className={"press flex h-10 flex-none items-center rounded-full px-4 text-sub font-bold transition-colors " +
-          (over ? "bg-point-soft text-point-text ring-2 ring-point" : on ? "bg-btn text-on-btn" : dragId ? "border border-dashed border-point bg-surface text-ink" : "border border-line-strong bg-surface text-ink-sub")}>
+          (over ? "bg-point-soft text-point-text ring-2 ring-point" : on ? "bg-btn text-on-btn" : dragId ? "border border-dashed border-point bg-surface text-ink" : empty ? "border border-dashed border-line-strong bg-transparent text-ink-sub/70" : "border border-line-strong bg-surface text-ink-sub")}>
         {label}
       </button>
     );
   };
+
+  /* 날짜별 예상 비용 (2026-11-16 마루님). 통화가 섞이면 통화마다 따로 */
+  const dayCost = (() => {
+    const sum = new Map<string, number>();
+    for (const it of cur) if (it.cost != null && it.cur) sum.set(it.cur, (sum.get(it.cur) ?? 0) + it.cost);
+    return [...sum].map(([c, n]) => formatMoney(n, c)).join(", ");
+  })();
+  const dayDate = sel === U ? null : addDays(start, sel);
 
   return (
     <>
@@ -315,6 +327,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           <h2 className="min-w-0 truncate text-title font-extrabold text-ink">
             {sel === U ? "날짜 미정" : <>{sel + 1}일차 <span className="font-semibold text-ink-sub">{md(d!)} ({weekday(d!)})</span></>}
             {sel !== U && days[sel]?.title && <span className="block truncate text-sub font-semibold text-ink-sub">{days[sel].title}</span>}
+            {dayCost && <span className="mt-0.5 block truncate text-tiny font-semibold text-ink-sub">이날 예상 비용 <span className="font-bold text-ink tabular-nums">{dayCost}</span></span>}
           </h2>
           <div className="flex flex-none gap-1.5">
             {editable && sel !== U && movableOf(cur) >= 2 && (
@@ -346,7 +359,12 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                       <div className="min-w-0 flex-1">
                         <PinCard index={marks[i].n} mark={marks[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
                           desc={it.desc ?? ""} editedBy={it.editedBy} photo={it.photos?.[0]?.url} photoCount={it.photos?.length} last={i === cur.length - 1}
-                          href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined} />
+                          href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined}
+                          warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
+                          footer={!editing && it.category !== "메모" && canMap(it) ? <>
+                            <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer" className="press inline-flex h-8 items-center gap-1 rounded-full bg-bg px-3 text-tiny font-bold text-ink"><Icon name="pin" size={14} className="text-point" />길찾기</a>
+                            <a href={mapsViewUrl(it)} target="_blank" rel="noopener noreferrer" className="press inline-flex h-8 items-center rounded-full px-2 text-tiny font-semibold text-ink-sub">구글 지도에서 보기</a>
+                          </> : undefined} />
                       </div>
                       {editing && editable && it.id && (
                         <div className="flex flex-none flex-col items-center">

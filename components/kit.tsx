@@ -173,12 +173,14 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, mark, time, category, title, desc, detail, editedBy, last, href, photo, photoCount }: {
+export function PinCard({ index, mark, time, category, title, desc, detail, editedBy, last, href, photo, photoCount, warn, footer }: {
   index: number; mark?: "plane" | "dot"; /* 비행기(공항, 항공) / 점(메모) : 번호 대신 (2026-11-16) */ time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
+  warn?: string /* 영업시간 경고 */; footer?: ReactNode /* 카드 아래 줄 (길찾기). 링크 밖이라 따로 눌린다 */;
 }) {
-  const Box = ({ children }: { children: ReactNode }) => href
-    ? <Link href={href} className="press mb-3 block min-w-0 flex-1 rounded-pin bg-surface px-4 py-3.5">{children}</Link>
-    : <article className="mb-3 min-w-0 flex-1 rounded-pin bg-surface px-4 py-3.5">{children}</article>;
+  const Box = ({ children }: { children: ReactNode }) => {
+    const inner = href ? <Link href={href} className="press block px-4 py-3.5">{children}</Link> : <div className="px-4 py-3.5">{children}</div>;
+    return <article className="mb-3 min-w-0 flex-1 overflow-hidden rounded-pin bg-surface">{inner}{footer && <div className="flex flex-wrap items-center gap-1.5 border-t border-line px-3 py-2">{footer}</div>}</article>;
+  };
   return (
     <div className="flex gap-3">
       <div className="flex w-7 flex-none flex-col items-center gap-1 pt-3.5">
@@ -201,6 +203,7 @@ export function PinCard({ index, mark, time, category, title, desc, detail, edit
             {/* 메모 (2026-11-16) : 제목 없이 글 한 칸. 예전 메모(글이 제목으로 시작하지 않음)만 제목을 따로 보인다 */}
             {(category !== "메모" || !desc || !desc.startsWith(title)) && <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>}
             {detail && <p className="mt-1 line-clamp-2 text-tiny font-semibold text-ink">{detail}</p>}
+            {warn && <p className="mt-1 flex items-center gap-1 text-tiny font-bold text-point-text"><Icon name="alert" size={14} />{warn}</p>}
             {desc && <p className={category === "메모" ? "mt-1.5 line-clamp-4 whitespace-pre-line text-body text-ink" : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}>{desc}</p>}
           </div>
           {photo && (

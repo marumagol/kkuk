@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Button, Field, Icon } from "@/components/kit";
-import { addPrepItem, updatePrepItem, saveBudget } from "@/app/actions";
+import { addPrepItem, addPrepDefaults, updatePrepItem, saveBudget } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 import { decimalsOf, formatMoney } from "@/lib/countries";
 import { md } from "@/lib/mock";
@@ -22,10 +22,6 @@ export function PrepPanel({ view }: { view: PrepView }) {
   return (
     <div className="flex flex-col gap-6 px-5 pt-5">
       <Budget view={view} canEdit={canEdit} busy={busy} run={run} />
-      <Link href={`/trips/${view.tripId}/expenses`} className="press flex min-h-14 items-center justify-between gap-3 rounded-card bg-surface px-5 py-3">
-        <span><span className="block text-body font-bold text-ink">경비와 정산</span><span className="block text-tiny text-ink-sub">누가 얼마 냈는지 적고 나눠 보내기</span></span>
-        <Icon name="right" size={20} className="text-ink-sub" />
-      </Link>
       {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
       <List title="예약" kind="reservation" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 숙소, 렌터카" />
       <List title="챙길 것" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 여권, 충전기" />
@@ -36,6 +32,8 @@ export function PrepPanel({ view }: { view: PrepView }) {
 
 /* 어두운 카드 위 분류 색 (바탕 #2D3139 와 4.5 : 1 이상) */
 const CAT_BAR: Record<string, string> = { "식사": "#FF8466", "쇼핑": "#B4A5FF", "이동": "#6FD3A8", "관광": "#FFD479", "숙소": "#8EC5FF" };
+
+const DEFAULT_ITEMS = ["여권", "충전기", "보조배터리", "상비약", "환전", "여행자 보험", "유심 또는 eSIM", "세면도구"];
 
 type RunFn = (fn: () => Promise<{ error?: string } | undefined | void>) => void;
 
@@ -92,6 +90,10 @@ function Budget({ view, canEdit, busy, run }: { view: PrepView; canEdit: boolean
         <p className="text-tiny text-on-deep-sub">장소에 예상 비용을 적으면 분류별로 여기에 모여요</p>
       )}
       <p className="text-tiny text-on-deep-sub">{cur} 로 적은 장소 예상 비용만 더해요</p>
+      {/* 경비와 정산은 따로 줄을 두지 않고 예산 카드 안에서 들어간다 (2026-11-16 마루님) */}
+      <Link href={`/trips/${view.tripId}/expenses`} className="press -mx-5 -mb-5 mt-1 flex min-h-12 items-center justify-between gap-2 border-t border-deep-soft px-5 py-3 text-sub font-bold text-on-deep">
+        경비와 정산 보기<Icon name="right" size={18} className="text-on-deep-sub" />
+      </Link>
     </section>
   );
 }
@@ -119,6 +121,13 @@ function List({ title, kind, view, canEdit, busy, run, placeholder }: {
             <ul className="divide-y divide-line">
               {items.map((it) => <Row key={it.id} it={it} view={view} canEdit={canEdit} busy={busy} run={run} />)}
             </ul>
+          )}
+          {canEdit && kind === "item" && items.length === 0 && (
+            <button type="button" disabled={busy} onClick={() => run(() => addPrepDefaults(view.tripId, DEFAULT_ITEMS))}
+              className="press flex min-h-14 w-full items-center gap-3 border-b border-line px-4 py-2 text-left">
+              <span aria-hidden className="flex size-7 flex-none items-center justify-center rounded-full bg-point-soft text-point-text"><Icon name="plus" size={14} /></span>
+              <span className="min-w-0 flex-1"><span className="block text-sub font-bold text-ink">자주 챙기는 것 한 번에 넣기</span><span className="block truncate text-tiny text-ink-sub">{DEFAULT_ITEMS.join(", ")}</span></span>
+            </button>
           )}
           {canEdit && (
             <div className={items.length ? "border-t border-line" : ""}>
