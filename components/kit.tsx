@@ -191,7 +191,7 @@ export function PinCard({ index, mark, time, category, title, desc, detail, edit
         {!last && <span className="w-0 flex-1 border-l-2 border-dashed border-line-strong/60" />}
       </div>
       <Box>
-        <div className={"flex min-h-7 items-center justify-between gap-2 " + (corner ? "pr-[72px]" : "")}>
+        <div className={"flex min-h-7 items-center justify-between gap-2 " + (corner ? "pr-9" : "")}>
           <div className="flex items-center gap-2">
             {time && <span className="text-sub font-bold text-ink">{time}</span>}
             {category !== "메모" && <CategoryChip category={category} />}

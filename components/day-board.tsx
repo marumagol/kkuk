@@ -363,7 +363,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
                           corner={!editing && it.category !== "메모" && canMap(it) ? (
                             <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer" aria-label={`${it.title} 길찾기 (구글 지도)`}
-                              className="press inline-flex h-7 items-center gap-1 rounded-full bg-bg px-2.5 text-tiny font-bold text-ink"><Icon name="pin" size={13} className="text-point" />길찾기</a>
+                              className="press flex size-8 items-center justify-center rounded-full bg-bg"><Icon name="pin" size={16} className="text-point" /></a>
                           ) : undefined} />
                       </div>
                       {editing && editable && it.id && (
