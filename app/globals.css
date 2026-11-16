@@ -240,6 +240,25 @@ select {
   padding-right: 44px !important;
   text-overflow: ellipsis;
 }
+
+/* 날짜, 시간 칸도 같은 화살표 (2026-11-16 마루님 "체크인 체크아웃 화살표도 치우쳐"). 브라우저 기본 표시는 여백을 무시해서 끄고 오른쪽 16px 안쪽에 직접 그린다.
+   크롬의 달력/시계 버튼은 투명하게 칸 전체에 깔아 어디를 눌러도 고르기가 열린다 */
+input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"] {
+  position: relative;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23686D75' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 18px;
+  padding-right: 44px !important;
+  text-align: left;
+}
+input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator, input[type="month"]::-webkit-calendar-picker-indicator {
+  position: absolute; inset: 0; width: auto; height: auto; margin: 0; padding: 0; opacity: 0; cursor: pointer;
+}
+input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A6ABB3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");

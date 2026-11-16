@@ -3,14 +3,14 @@
   목록 줄 제스처 (2026-11-16 마루님) : 왼쪽으로 밀면 삭제, 길게 누르면 옮기기 시작
   - 세로 스크롤은 그대로 (touch-action: pan-y). 가로로 먼저 움직일 때만 밀기로 본다
   - 너비의 35% (최대 120px) 넘게 밀고 놓으면 onDelete. 덜 밀면 제자리로
-  - 0.45초 동안 거의 안 움직이고 누르고 있으면 onLongPress(그 손가락의 y). 그 뒤 손가락 움직임은 부르는 쪽이 창(window)에서 받는다
+  - 0.3초 동안 거의 안 움직이고 누르고 있으면 onLongPress(그 손가락의 y). 그 뒤 손가락 움직임은 부르는 쪽이 창(window)에서 받는다
   - 밀거나 길게 누른 뒤 따라오는 누름(click)은 막아서, 카드 링크로 넘어가지 않는다
   - 버튼(삭제, 편집)은 그대로 두어 제스처를 못 쓰는 사람도 쓸 수 있다
 */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/kit";
 
-const HOLD_MS = 450, SLOP = 8;
+const HOLD_MS = 300, SLOP = 8;
 
 export function SwipeRow({ children, onDelete, onLongPress, disabled, className = "", rounded = "rounded-pin", bg = "bg-bg" }: {
   children: ReactNode; onDelete?: () => void; onLongPress?: (y: number) => void; disabled?: boolean; className?: string; rounded?: string; bg?: string /* 미는 줄의 바탕 (뒤 빨간 칸이 비치지 않게) */;

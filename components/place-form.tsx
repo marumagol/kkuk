@@ -423,11 +423,9 @@ function MoveStop({ label, placeholder, value, linked, searchable, bias, disable
   아래 화살표 아이콘을 칸 오른쪽 안쪽 16px 에 직접 둔다. 크롬의 시계 버튼은 투명하게 칸 전체에 깔아 어디를 눌러도 고르기가 열린다
 */
 function TimeInput({ value, onChange, disabled, autoFocus }: { value: string; onChange: (v: string) => void; disabled?: boolean; autoFocus?: boolean }) {
+  // 화살표는 globals.css 의 날짜/시간 칸 공통 규칙이 그린다
   return (
-    <span className="relative flex">
-      <input type="time" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} autoFocus={autoFocus}
-        className="h-12 w-full min-w-0 appearance-none rounded-field border border-line-strong bg-surface pl-4 pr-10 text-left text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-date-and-time-value]:text-left" />
-      <Icon name="chevron-down" size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-ink-sub" />
-    </span>
+    <input type="time" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} autoFocus={autoFocus}
+      className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-4 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />
   );
 }

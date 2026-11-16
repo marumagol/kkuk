@@ -228,7 +228,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
                   <SwipeRow rounded="" bg="bg-surface" disabled={!canEdit || busy || !!dragId}
                     onDelete={canEdit ? () => onSwipe(it) : undefined}
                     onLongPress={canEdit && items.length > 1 ? () => setDragId(it.id) : undefined}>
-                    <Row it={it} view={view} canEdit={canEdit} busy={busy} run={run} />
+                    <Row it={it} view={view} canEdit={canEdit} busy={busy} run={run} onGrip={canEdit && items.length > 1 ? () => setDragId(it.id) : undefined} />
                   </SwipeRow>
                 </li>
               ))}
@@ -268,7 +268,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
   );
 }
 
-function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn }) {
+function Row({ it, view, canEdit, busy, run, onGrip }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; onGrip?: () => void }) {
   const router = useRouter();
   // 예약은 [수정] 을 누르면 예약 화면(예약번호, 메모, 첨부 파일)으로 (2026-11-16 마루님 "목록에 뿌리지 말고 수정에서")
   const openEdit = () => (it.kind === "reservation" ? router.push(`/trips/${view.tripId}/bookings/${it.id}`) : setEdit(true));
@@ -326,6 +326,14 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
         </button>
       )}
       {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} onEdit={openEdit} />}
+      {/* 옮기기 손잡이 : 누르는 즉시 끌기 (2026-11-16 마루님) */}
+      {onGrip && (
+        <button type="button" data-grip aria-label={`${it.title} 옮기기`} disabled={busy}
+          onPointerDown={(e) => { e.preventDefault(); navigator.vibrate?.(10); onGrip(); }}
+          className="-mr-2 flex h-11 w-6 flex-none cursor-grab touch-none items-center justify-center text-ink-sub/70 active:cursor-grabbing">
+          <Icon name="grip" size={18} />
+        </button>
+      )}
     </div>
   );
 }

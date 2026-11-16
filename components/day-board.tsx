@@ -440,6 +440,15 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                               className="press flex size-8 items-center justify-center rounded-full bg-bg"><Icon name="pin" size={16} className="text-point" /></a>
                           ) : undefined} />
                       </div>
+                      {/* 옮기기 손잡이 (2026-11-16 마루님 "꾹 눌러 순서변경이 잘 안 돼") : 누르는 즉시 끌기 시작. 스크롤과 안 겹치게 touch-none */}
+                      {!editing && editable && canSort && sel !== ALL && it.id && (
+                        <button type="button" data-grip aria-label={`${it.title} 옮기기. 위아래 화살표로 순서와 날짜를 바꿔요`}
+                          className="mt-2 flex h-12 w-7 flex-none cursor-grab touch-none items-center justify-center text-ink-sub/70 active:cursor-grabbing"
+                          onKeyDown={(e) => onKey(e, it.id!)}
+                          onPointerDown={(e) => { e.preventDefault(); flushDel(); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); navigator.vibrate?.(10); }}>
+                          <Icon name="grip" size={18} />
+                        </button>
+                      )}
                       {editing && editable && it.id && (
                         <div className="flex flex-none flex-col items-center">
                           {canSort && (
