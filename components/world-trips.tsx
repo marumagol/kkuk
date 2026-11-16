@@ -142,7 +142,7 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
 
       <section className="relative -mt-4 flex flex-col gap-5 rounded-t-[28px] bg-surface px-5 pb-8 pt-6">
         <dl className="grid grid-cols-3 gap-2 border-b border-line pb-5" aria-label="여행 숫자">
-          {[["여행", shown.length, true], ["다닌 도시", cityCount, false], ["나라", countryCount, false]].map(([k, n, hi]) => (
+          {[["여행", shown.length, true], ["도시", cityCount, false], ["나라", countryCount, false]].map(([k, n, hi]) => (
             <div key={String(k)} className="flex flex-col-reverse">
               <dt className="text-sub text-ink-sub">{k}</dt>
               <dd className={"text-[34px] font-extrabold leading-tight tabular-nums " + (hi ? "text-point" : "text-ink")}>{n}</dd>
