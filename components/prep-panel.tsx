@@ -98,10 +98,6 @@ function Budget({ view, canEdit, busy, run }: { view: PrepView; canEdit: boolean
         <p className="text-tiny text-on-deep-sub">장소에 예상 비용을 적으면 분류별로 여기에 모여요</p>
       )}
       <p className="text-tiny text-on-deep-sub">{cur} 로 적은 장소 예상 비용만 더해요{inKrw && view.krw ? `. 원화는 1 ${cur} = ${view.krw < 10 ? view.krw.toFixed(2) : Math.round(view.krw).toLocaleString("ko-KR")}원 기준 참고용이에요` : ""}</p>
-      {/* 경비와 정산은 따로 줄을 두지 않고 예산 카드 안에서 들어간다 (2026-11-16 마루님) */}
-      <Link href={`/trips/${view.tripId}/expenses`} className="press -mx-5 -mb-5 mt-1 flex min-h-12 items-center justify-between gap-2 border-t border-deep-soft px-5 py-3 text-sub font-bold text-on-deep">
-        경비와 정산 보기<Icon name="right" size={18} className="text-on-deep-sub" />
-      </Link>
     </section>
   );
 }

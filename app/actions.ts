@@ -533,7 +533,7 @@ export async function saveBudget(tripId: string, currency: string, amount: strin
 }
 
 /* ───────── 경비 (6단계 3번, migration 0026) : 주인과 편집 가능만 (RLS + 트리거가 함께하는 사람인지 검사) ───────── */
-export type ExpenseInput = { title: string; amount: string; currency: string; paidBy: string; splitWith: string[] };
+export type ExpenseInput = { title: string; amount: string; currency: string; paidBy: string; splitWith: string[]; spentOn?: string | null; itemId?: string | null };
 export async function saveExpense(tripId: string, id: string | null, input: ExpenseInput): Promise<CreateTripResult> {
   if (!isUuid(tripId) || (id && !isUuid(id))) return PREP_FAIL;
   const title = String(input.title ?? "").trim();
@@ -544,11 +544,15 @@ export async function saveExpense(tripId: string, id: string | null, input: Expe
   if (!new RegExp(`^\\d{1,12}${d ? `(\\.\\d{1,${d}})?` : ""}$`).test(text) || Number(text) <= 0) return { error: "금액을 숫자로 적어 주세요" };
   if (!isUuid(input.paidBy) || !input.splitWith.length || !input.splitWith.every(isUuid)) return { error: "낸 사람과 나눌 사람을 골라 주세요" };
   const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
-  const row = { title, amount: Math.round(Number(text) * 10 ** d), currency: input.currency, paid_by: input.paidBy, split_with: input.splitWith };
+  if (input.spentOn && !/^\d{4}-\d{2}-\d{2}$/.test(input.spentOn)) return { error: "날짜를 다시 골라 주세요" };
+  if (input.itemId && !isUuid(input.itemId)) return PREP_FAIL;
+  const row = { title, amount: Math.round(Number(text) * 10 ** d), currency: input.currency, paid_by: input.paidBy, split_with: input.splitWith,
+    ...(input.spentOn !== undefined ? { spent_on: input.spentOn || null } : {}), ...(input.itemId !== undefined ? { item_id: input.itemId || null } : {}) };
   const { error } = id
     ? await c.sb.from("trip_expenses").update(row).eq("trip_id", tripId).eq("id", id)
     : await c.sb.from("trip_expenses").insert({ trip_id: tripId, ...row });
   if (error?.message?.includes("not_member")) return { error: "함께하는 사람만 고를 수 있어요" };
+  if (error?.code === "23505") return { error: "이 장소는 이미 경비로 가져왔어요" };
   if (error) return PREP_FAIL;
   revalidatePath(`/trips/${tripId}/expenses`);
 }

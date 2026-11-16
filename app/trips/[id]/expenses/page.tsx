@@ -1,31 +1,24 @@
-/* 준비 탭 > 경비와 정산 (6단계 3번). 보기만인 사람은 보기만 */
-import Link from "next/link";
+/* 경비 탭 (2026-11-16 마루님 "일정, 준비, 경비 세 개로") : 정산 요약, 경비 추가, 날짜별 목록. 보기만인 사람은 보기만 */
 import { notFound, redirect } from "next/navigation";
-import { Icon } from "@/components/kit";
 import { AppShell } from "@/components/screen";
+import { TripTabs, TripHeader } from "@/components/trip-tabs";
 import { ExpensesPanel } from "@/components/expenses-panel";
 import { getViewer } from "@/lib/viewer";
-import { loadExpenses } from "@/lib/trips";
-import { md } from "@/lib/mock";
+import { loadExpenses, loadTrip } from "@/lib/trips";
 
-export const metadata = { title: "경비와 정산" };
+export const metadata = { title: "경비" };
 
 export default async function Expenses({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const viewer = await getViewer();
   if (viewer.kind === "guest") redirect(`/login?next=/trips/${id}/expenses`);
   if (viewer.kind === "preview") redirect(`/trips/${id}`);
-  const view = await loadExpenses(viewer, id);
-  if (!view) notFound();
+  const [view, r] = await Promise.all([loadExpenses(viewer, id), loadTrip(viewer, id)]);
+  if (!view || !("trip" in r)) notFound();
   return (
     <AppShell>
-      <div className="flex items-center gap-2 px-5 pt-4">
-        <Link href={`/trips/${id}/prep`} aria-label="준비로" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink"><Icon name="back" size={20} /></Link>
-        <div className="min-w-0">
-          <h1 className="text-title-lg font-extrabold text-ink">경비와 정산</h1>
-          <p className="truncate text-tiny text-ink-sub">{view.tripTitle}, {md(view.start)} ~ {md(view.end)}</p>
-        </div>
-      </div>
+      <TripHeader trip={r.trip} meId={viewer.id} user owner={r.role === "owner"} editable={r.role !== "viewer"} />
+      <TripTabs tripId={id} active="경비" />
       <ExpensesPanel view={view} />
     </AppShell>
   );

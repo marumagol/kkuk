@@ -1,7 +1,7 @@
 /*
   여행 안 머리 + 탭 (2026-11-15 여행 메뉴 개편, 참고 이미지 "기록" 화면과 같게)
   - 머리 : 뒤로, 함께하는 사람, ⋯ 메뉴(공유, 수정, 여행 한 권). 2026-11-16 공유 알약과 연필을 ⋯ 하나로 / 여행 이름 / "2026.12.28 – 2027.1.4 · 윤과 함께"
-  - 탭 : 일정 / 준비 / 기록 세그먼트. 고른 탭은 흰 칸 + 굵은 글자, 나머지는 옅은 글자
+  - 탭 : 일정 / 준비 / 경비(2026-11-16 마루님) / 기록 세그먼트. 고른 탭은 흰 칸 + 굵은 글자, 나머지는 옅은 글자
 */
 import Link from "next/link";
 import { Icon } from "@/components/kit";
@@ -10,11 +10,11 @@ import type { Trip } from "@/lib/mock";
 import { FEATURES } from "@/lib/features";
 import { TripMenu } from "@/components/trip-menu";
 
-export type TripTab = "일정" | "준비" | "기록";
+export type TripTab = "일정" | "준비" | "경비" | "기록";
 
 export function TripTabs({ tripId, active }: { tripId: string; active: TripTab }) {
   const tabs = [
-    { name: "일정", href: `/trips/${tripId}` }, { name: "준비", href: `/trips/${tripId}/prep` }, { name: "기록", href: `/trips/${tripId}/record` },
+    { name: "일정", href: `/trips/${tripId}` }, { name: "준비", href: `/trips/${tripId}/prep` }, { name: "경비", href: `/trips/${tripId}/expenses` }, { name: "기록", href: `/trips/${tripId}/record` },
   ].filter((t) => FEATURES.diary || t.name !== "기록");
   return (
     <nav aria-label="여행 안 메뉴" className="mx-5 mt-4 flex gap-1 rounded-btn bg-surface-soft p-1">

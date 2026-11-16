@@ -8,7 +8,7 @@
 import { cache } from "react";
 import type { Category } from "@/components/kit";
 import { createClient } from "@/lib/supabase/server";
-import { TRIPS, getTrip, daysBetween, type Trip, type Item } from "@/lib/mock";
+import { TRIPS, getTrip, daysBetween, addDays, type Trip, type Item } from "@/lib/mock";
 import { currencyOf, formatMoney, iconUrl } from "@/lib/countries";
 import { avatarUrl } from "@/lib/storage";
 import { placesEnabled, details } from "@/lib/places";
@@ -612,21 +612,25 @@ export const loadTripBook = cache(async (v: Viewer, tripId: string): Promise<Tri
 });
 
 /* 경비와 정산 (6단계 3번, migration 0026) */
-export type Expense = { id: string; title: string; amount: number; currency: string; paidBy: string; splitWith: string[]; spentOn: string | null };
+export type Expense = { id: string; title: string; amount: number; currency: string; paidBy: string; splitWith: string[]; spentOn: string | null; itemId: string | null };
 export type ExpensesView = {
   tripId: string; tripTitle: string; start: string; end: string; role: Role; currency: string; me: string;
   expenses: Expense[];
-  people: { userId: string; name: string; active: boolean }[]; // 나간 사람도 이름은 남김
+  people: { userId: string; name: string; active: boolean; avatar?: string }[]; // 나간 사람도 이름은 남김
+  budget: { currency: string; total: number } | null; // 경비 탭 맨 위 "예산 중 얼마 썼어요" (2026-11-16)
+  importable: { id: string; title: string; amount: number; currency: string; date: string | null }[]; // 예상 비용이 적힌, 아직 경비로 안 가져온 장소 (0036)
 };
 export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<ExpensesView | null> => {
   if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
   const r = await loadTrip(v, tripId);
   if (!("trip" in r)) return null;
   const sb = (await createClient())!;
-  const [{ data: rows }, { data: members }, { data: city }] = await Promise.all([
-    sb.from("trip_expenses").select("id, title, amount, currency, paid_by, split_with, spent_on").eq("trip_id", tripId).is("removed_at", null).order("created_at", { ascending: false }),
+  const [{ data: rows }, { data: members }, { data: city }, { data: budget }, { data: costs }] = await Promise.all([
+    sb.from("trip_expenses").select("id, title, amount, currency, paid_by, split_with, spent_on, item_id").eq("trip_id", tripId).is("removed_at", null).order("created_at", { ascending: false }),
     sb.from("trip_members").select("user_id, display_name, removed_at, created_at").eq("trip_id", tripId).order("created_at"),
     sb.from("trip_cities").select("country_code").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle(),
+    sb.from("trip_budgets").select("currency, total").eq("trip_id", tripId).maybeSingle(),
+    sb.from("itinerary_items").select("id, title, estimated_cost, cost_currency, day_index, sort_order").eq("trip_id", tripId).is("removed_at", null).not("estimated_cost", "is", null).neq("category", "memo").order("day_index").order("sort_order"),
   ]);
   const people = new Map<string, { userId: string; name: string; active: boolean }>();
   for (const m of (members ?? []) as { user_id: string | null; display_name: string; removed_at: string | null }[]) {
@@ -634,11 +638,18 @@ export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<Exp
     const prev = people.get(m.user_id);
     if (!prev || !m.removed_at) people.set(m.user_id, { userId: m.user_id, name: m.display_name, active: !m.removed_at });
   }
+  const face = await faces(sb, [...people.keys()]);
+  const expenses = ((rows ?? []) as { id: string; title: string; amount: number; currency: string; paid_by: string; split_with: string[]; spent_on: string | null; item_id: string | null }[])
+    .map((e) => ({ id: e.id, title: e.title, amount: Number(e.amount), currency: e.currency, paidBy: e.paid_by, splitWith: e.split_with, spentOn: e.spent_on, itemId: e.item_id }));
+  const taken = new Set(expenses.flatMap((e) => (e.itemId ? [e.itemId] : [])));
   return {
-    tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency: currencyOf(city?.country_code), me: v.id,
-    expenses: ((rows ?? []) as { id: string; title: string; amount: number; currency: string; paid_by: string; split_with: string[]; spent_on: string | null }[])
-      .map((e) => ({ id: e.id, title: e.title, amount: Number(e.amount), currency: e.currency, paidBy: e.paid_by, splitWith: e.split_with, spentOn: e.spent_on })),
-    people: [...people.values()],
+    tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency: budget?.currency ?? currencyOf(city?.country_code), me: v.id,
+    expenses,
+    people: [...people.values()].map((p) => ({ ...p, avatar: face.get(p.userId) })),
+    budget: budget ? { currency: budget.currency, total: Number(budget.total) } : null,
+    importable: ((costs ?? []) as { id: string; title: string; estimated_cost: number; cost_currency: string | null; day_index: number | null }[])
+      .filter((c) => !taken.has(c.id) && c.cost_currency && c.estimated_cost > 0)
+      .map((c) => ({ id: c.id, title: c.title, amount: Number(c.estimated_cost), currency: c.cost_currency!, date: c.day_index == null ? null : addDays(r.trip.start, c.day_index) })),
   };
 });
 
