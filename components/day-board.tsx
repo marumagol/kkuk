@@ -290,7 +290,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const gapBefore = (list: Item[], i: number) => {
     const x = list[i];
     if (!hasPos(x) || x.category === "메모") return null;
-    for (let j = i - 1; j >= 0; j--) { const p = list[j]; if (p.category !== "메모" && hasPos(p)) return distText(km(p, x)); }
+    // 앞이 이동(도착지 있음)이면 도착지에서 잰다 (2026-11-17 마루님 "도착지 기준이 맞다")
+    for (let j = i - 1; j >= 0; j--) { const p = list[j]; if (p.category !== "메모" && hasPos(p)) return distText(km(p.arrive ? { ...p, lat: p.arrive.lat, lng: p.arrive.lng } : p, x)); }
     return null;
   };
 
@@ -485,7 +486,8 @@ function routeOrder(items: Item[]): Item[] | null {
   const slots = items.map((_, i) => i).filter((i) => !isFixed(items[i], i, last));
   const free = slots.map((i) => items[i]);
   if (free.length < 2) return null;
-  const startAt = [...items.slice(0, slots[0])].reverse().find(has);
+  const before = [...items.slice(0, slots[0])].reverse().find(has);
+  const startAt = before?.arrive ? { ...before, lat: before.arrive.lat, lng: before.arrive.lng } : before; // 이동이면 도착지에서 출발
   const endAt = items.slice(slots[slots.length - 1] + 1).find(has);
   const d = (a: Item, b: Item) => {
     const k = Math.cos(((a.lat! + b.lat!) / 2) * Math.PI / 180);
