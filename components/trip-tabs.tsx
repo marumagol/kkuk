@@ -53,11 +53,12 @@ export function TripHeader({ trip, meId, user, owner, editable, back = "/trips",
         <Link href={back} aria-label="여행 목록으로" className={round}><Icon name="back" size={20} /></Link>
         <span className="flex-1" />
         <Link href={user ? `/trips/${trip.id}/members` : "#"} aria-label={`함께하는 사람 ${trip.members.length}명${owner ? ", 초대하기" : ""}`}
-          className="press flex h-11 items-center gap-1 rounded-full bg-surface pl-1.5 pr-2.5">
+          className={"press flex h-11 items-center gap-1 rounded-full bg-surface pl-1.5 " + (owner && user ? "pr-2.5" : "pr-1.5")}>
           <span className="flex -space-x-2">
             {trip.members.slice(0, 3).map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} size={30} ring src={m.avatar} />)}
           </span>
-          {owner && user ? <Icon name="plus" size={16} className="text-ink-sub" /> : <span className="text-tiny font-bold text-ink-sub">{trip.members.length}</span>}
+          {/* 인원 숫자는 빼고 얼굴만 (2026-11-16 마루님) */}
+          {owner && user && <Icon name="plus" size={16} className="text-ink-sub" />}
         </Link>
         {editable ? <TripMenu tripId={trip.id} book={user && FEATURES.book} owner={owner && user} />
           : user && FEATURES.book && <Link href={`/trips/${trip.id}/book`} aria-label="여행 한 권 (인쇄, PDF)" className={round}><Icon name="book" size={20} /></Link>}
