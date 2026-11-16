@@ -1,6 +1,6 @@
 /*
   S01 홈 (0.58.0, 2026-11-16 마루님 "썰렁하고 의미가 없어서") : 내 여행 상황에 따라 내용이 바뀐다
-  - 여행 중 > 막 다녀온 여행(끝난 지 14일 안) > 다가오는 여행 > 여행 없음 순서로 하나만 고른다
+  - 여행 중 > 7일 안에 떠날 여행 > 막 다녀온 여행(끝난 지 14일 안) > 다가오는 여행 > 여행 없음 순서로 하나만 고른다
   - 여행 전 : 출발까지 남은 날 + 남은 준비 + 이번 여행에서 열릴 도장
   - 여행 중 : 오늘 도장 받기 + 다음 장소 + 빠른 버튼(경비, 장소) + 오늘 일정
   - 여행 후 : 이번 여행에서 받은 도장 + 남은 정산 + 다음 여행 만들기
@@ -307,6 +307,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
   const ongoing = next.find((t) => statusOf(t, todayOf(t)) === "ongoing");
   const recent = past.find((t) => daysBetween(t.end, todayOf(t)) <= 14);
   const coming = next.find((t) => statusOf(t, todayOf(t)) === "upcoming");
+  // 다음 여행이 7일 안이면 막 다녀온 여행보다 먼저 (2026-11-17 마루님 "곧 떠날 여행이 가려져요")
+  const soon = coming && daysBetween(todayOf(coming), coming.start) <= 7 ? coming : undefined;
 
   const count = stamps?.earned.length ?? 0;
   const countries = stamps?.countryCount ?? 0;
@@ -319,9 +321,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
       {bye && <FlashToast message="탈퇴했어요. 그동안 KKuK를 써 주셔서 고마워요" param="bye" />}
       <div className="flex flex-col gap-3 px-5 pb-4 pt-4">
         {ongoing ? <During v={viewer} trip={ongoing} today={todayOf(ongoing)} />
+          : soon || (coming && !recent) ? <Before v={viewer} trip={coming!} today={todayOf(coming!)} missing={stamps?.missing ?? []} />
           : recent ? <After v={viewer} trip={recent} />
-          : coming ? <Before v={viewer} trip={coming} today={todayOf(coming)} missing={stamps?.missing ?? []} />
           : <Empty first={trips.length === 0} />}
+        {/* 곧 떠날 여행에 자리를 내준 막 다녀온 여행은 작은 줄로 (2026-11-17) */}
+        {!ongoing && soon && recent && (
+          <Link href={`/trips/${recent.id}`} className="press flex min-h-14 items-center gap-3 rounded-card bg-surface px-4 py-3">
+            <span className="flex size-9 flex-none items-center justify-center rounded-full bg-surface-soft text-ink-sub"><Icon name="cal" size={18} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-tiny text-ink-sub">막 다녀온 여행</span>
+              <span className="block truncate text-sub font-bold text-ink">{recent.title}</span>
+            </span>
+            <Icon name="right" size={18} className="text-ink-sub" />
+          </Link>
+        )}
 
         {/* 수집 현황 한 줄 → 도장 탭 */}
         {loggedIn && (

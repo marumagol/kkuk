@@ -7,7 +7,7 @@
 */
 const PAGES = "kkuk-pages-v1";
 const STATIC = "kkuk-static-v1";
-const KEEP = /^\/($|trips(\/|$)|diary(\/|$)|stamps$|j\/)/;
+const KEEP = /^\/($|trips(\/|$)|stamps$)/;
 const OFFLINE_HTML = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KKuK</title>
 <style>body{margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;background:#F5F3EE;color:#2D3139;font-family:system-ui,sans-serif;text-align:center;padding:24px}
 @media (prefers-color-scheme:dark){body{background:#17181C;color:#F1EFEA}}h1{font-size:20px;margin:0 0 8px}p{margin:0;font-size:15px;opacity:.75}button{margin-top:20px;height:44px;padding:0 20px;border:0;border-radius:999px;background:#2D3139;color:#fff;font-size:15px;font-weight:700}</style></head>

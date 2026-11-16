@@ -4,6 +4,7 @@ import { placesEnabled } from "@/lib/places";
 import { AppShell } from "@/components/screen";
 import { TripCreate } from "@/components/trip-create";
 import { getViewer } from "@/lib/viewer";
+import { loadStampCities } from "@/lib/trips";
 import { todayKST } from "@/lib/mock";
 
 export const metadata = { title: "여행 만들기" };
@@ -13,7 +14,7 @@ export default async function NewTrip() {
   if (v.kind === "guest") redirect("/login?next=/trips/new");
   return (
     <AppShell bottomGap={false}>
-      <TripCreate today={todayKST()} searchable={placesEnabled()} />
+      <TripCreate today={todayKST()} searchable={placesEnabled()} stampCities={await loadStampCities()} />
     </AppShell>
   );
 }

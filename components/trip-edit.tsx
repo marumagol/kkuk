@@ -19,7 +19,7 @@ import type { TripForEdit } from "@/lib/trips";
 
 type Confirm = { title: string; desc: string; label: string; run: () => void } | null;
 
-export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) {
+export function TripEdit({ trip, today, stampCities }: { trip: TripForEdit; today: string; stampCities?: string[] | null }) {
   const [title, setTitle] = useState(trip.title);
   const [cities, setCities] = useState<City[]>(trip.cities);
   const draft = useCityDraft(trip.cities.at(-1));
@@ -73,7 +73,7 @@ export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) 
             onChange={(e) => { setTitle(e.target.value); setError(""); }} hint={`${titleLen}/${MAX_TRIP_TITLE}자`} />
         </FormCard>
 
-        <CityEditor cities={cities} onChange={setCities} draft={draft} onError={setError} disabled={busy} searchable={trip.searchable} />
+        <CityEditor cities={cities} onChange={setCities} draft={draft} onError={setError} disabled={busy} searchable={trip.searchable} stampCities={stampCities} />
 
         <FormCard title="기간">
           <p className="text-body font-semibold text-ink" aria-live="polite">

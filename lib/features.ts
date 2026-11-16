@@ -1,19 +1,17 @@
 /*
-  잠시 숨긴 기능 (2026-11-16 마루님 "일기, 여행 한 권은 일단 숨김. 여행 계획 짜는 기능을 먼저 확실하게")
-  - 코드와 DB 는 그대로 둔다. 다시 켜려면 값을 true 로만 바꾸면 된다
-  - diary : 아래 탭 "일기", 여행 안 "기록" 탭, 일정의 날짜별 [일기], 일기 화면들(/diary, /trips/[id]/diary, /trips/[id]/record)
-  - book : 여행 머리의 여행 한 권 단추, /trips/[id]/book
-  숨긴 주소로 들어오면 middleware 가 여행 화면으로 돌려보낸다
+  잠시 숨긴 기능
+  - book : 여행 머리의 여행 한 권 단추, /trips/[id]/book (2026-11-16 마루님 "여행 계획 짜는 기능을 먼저 확실하게"). 다시 켜려면 true
+  - 일기는 2026-11-17 마루님 "매력도가 없어서 삭제" : 화면과 코드를 지웠다 (DB 표 journal_* 는 남아 있음).
+    예전 일기 주소(/diary, /j/링크, 여행 안 기록·일기)로 들어오면 middleware 가 여행 화면이나 홈으로 돌려보낸다
 */
-export const FEATURES = { diary: false, book: false } as const;
+export const FEATURES = { book: false } as const;
 
-/* 숨긴 주소면 보낼 곳, 아니면 null */
+/* 숨긴(지운) 주소면 보낼 곳, 아니면 null */
 export function hiddenRedirect(path: string): string | null {
-  if (!FEATURES.diary) {
-    if (/^\/diary(\/|$)/.test(path)) return "/trips";
-    const m = path.match(/^\/trips\/([^/]+)\/(diary|record)(\/|$)/);
-    if (m) return `/trips/${m[1]}`;
-  }
+  if (/^\/diary(\/|$)/.test(path)) return "/trips";
+  if (/^\/j(\/|$)/.test(path)) return "/";
+  const d = path.match(/^\/trips\/([^/]+)\/(diary|record)(\/|$)/);
+  if (d) return `/trips/${d[1]}`;
   if (!FEATURES.book) {
     const m = path.match(/^\/trips\/([^/]+)\/book(\/|$)/);
     if (m) return `/trips/${m[1]}`;

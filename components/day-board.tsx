@@ -8,7 +8,6 @@
   - 키보드 : 손잡이에 초점을 두고 위/아래 화살표. 그 날 맨 위/아래에서 더 누르면 앞/뒤 날로 넘어간다
   - 저장에 실패하면 원래 자리로 되돌리고 안내
 */
-import { FEATURES } from "@/lib/features";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon, PinCard } from "@/components/kit";
@@ -365,11 +364,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                 <Icon name="refresh" size={15} />동선 정리
               </button>
             )}
-            {user && FEATURES.diary && sel !== U && sel !== ALL && (
-              <Link href={`/trips/${tripId}/diary?day=${sel + 1}`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                <Icon name="book" size={15} />일기
-              </Link>
-            )}
           </div>
         </div>
 
@@ -442,6 +436,13 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                 );
               })}
             </ol>
+          ) : canAdd && user && g.c !== U ? (
+            /* 빈 날 칸을 누르면 그날 장소 추가 (2026-11-17) */
+            <Link href={`/trips/${tripId}/places/new?day=${g.c + 1}`}
+              className={"press flex items-center justify-between gap-2 rounded-pin border-2 border-dashed border-line px-4 " + (sel === ALL ? "min-h-12 py-2" : "min-h-16 py-3")}>
+              <span className="text-sub text-ink-sub">아직 장소가 없어요</span>
+              <span className="inline-flex flex-none items-center gap-1 text-sub font-bold text-ink"><Icon name="plus" size={16} />장소 추가</span>
+            </Link>
           ) : (
             <div className={"flex items-center rounded-pin border-2 border-dashed border-line px-4 " + (sel === ALL ? "min-h-12 py-2" : "min-h-16 py-3")}>
               <span className="text-sub text-ink-sub">{g.c === U ? "날짜를 못 정한 장소가 없어요" : "아직 장소가 없어요"}</span>
@@ -458,7 +459,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
       {asking && <AlertDialog title={asking.category === "메모" ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
         confirmLabel="삭제" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
-      {canAdd && !dragId && <BottomDock align="end"><AddFab user={user} base={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel === ALL ? 1 : sel + 1}`} /></BottomDock>}
+      {canAdd && !dragId && <BottomDock align="end"><AddFab user={user} base={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel === ALL ? 1 : sel + 1}`}
+        pick={sel === ALL ? [...Array.from({ length: len }, (_, i) => ({ day: String(i + 1), label: `${i + 1}일차`, sub: `${md(addDays(start, i))} (${weekday(addDays(start, i))})` })), { day: "none", label: "날짜 미정" }] : undefined} /></BottomDock>}
     </>
   );
 }
@@ -517,25 +519,43 @@ function routeOrder(items: Item[]): Item[] | null {
 
 /*
   오른쪽 아래 + 버튼 (2026-11-16 마루님 "날짜별 장소/메모 버튼과 겹친다") : 누르면 [장소] [메모] 를 골라 지금 보는 날에 넣는다
+  [전체] 를 보고 있으면 장소/메모를 고른 뒤 넣을 날을 한 번 더 고른다 (2026-11-17, 무조건 1일차로 들어가던 것)
   로그인 전에는 문지기(로그인 필요 안내)를 거친다
 */
-function AddFab({ user, base }: { user: boolean; base: string }) {
+function AddFab({ user, base, pick }: { user: boolean; base: string; pick?: { day: string; label: string; sub?: string }[] }) {
   const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState<"" | "place" | "memo">("");
   const round = "press flex size-14 items-center justify-center rounded-full bg-btn text-on-btn shadow-float";
   if (!user) return <GateButton label="장소 추가" className={round}><Icon name="plus" size={26} strokeWidth={2.5} /></GateButton>;
   const item = "press flex h-12 items-center gap-2.5 rounded-full bg-surface pl-4 pr-5 text-body font-bold text-ink shadow-float";
+  const close = () => { setOpen(false); setKind(""); };
+  const href = (k: "place" | "memo", day?: string) => `${day ? base.replace(/day=[^&]*/, `day=${day}`) : base}${k === "memo" ? "&kind=memo" : ""}`;
+  const choose = (k: "place" | "memo") => (e: React.MouseEvent) => { if (pick) { e.preventDefault(); setKind(k); } else close(); };
   return (
     <div className="relative flex flex-col items-end gap-2">
       {open && (
         <>
-          <div className="fixed inset-0 -z-10" onClick={() => setOpen(false)} aria-hidden />
-          <div role="menu" aria-label="추가할 것" onKeyDown={(e) => e.key === "Escape" && setOpen(false)} className="flex flex-col items-end gap-2">
-            <Link href={base} role="menuitem" autoFocus className={item} onClick={() => setOpen(false)}><Icon name="pin" size={18} className="text-point" />장소</Link>
-            <Link href={`${base}&kind=memo`} role="menuitem" className={item} onClick={() => setOpen(false)}><Icon name="pencil" size={18} className="text-ink-sub" />메모</Link>
-          </div>
+          <div className="fixed inset-0 -z-10" onClick={close} aria-hidden />
+          {kind && pick ? (
+            <div role="menu" aria-label={`${kind === "memo" ? "메모" : "장소"}를 넣을 날`} onKeyDown={(e) => e.key === "Escape" && close()}
+              className="flex max-h-[55vh] w-56 flex-col gap-1 overflow-y-auto rounded-card bg-surface p-2 shadow-float">
+              <p className="px-2 pb-1 pt-1 text-tiny font-bold text-ink-sub">어느 날에 넣을까요?</p>
+              {pick.map((d, i) => (
+                <Link key={d.day} href={href(kind, d.day)} role="menuitem" autoFocus={i === 0} onClick={close}
+                  className="press flex min-h-11 items-center justify-between gap-2 rounded-field px-3 text-sub font-bold text-ink hover:bg-bg">
+                  {d.label}{d.sub && <span className="text-tiny font-semibold text-ink-sub">{d.sub}</span>}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div role="menu" aria-label="추가할 것" onKeyDown={(e) => e.key === "Escape" && close()} className="flex flex-col items-end gap-2">
+              <Link href={href("place")} role="menuitem" autoFocus className={item} onClick={choose("place")}><Icon name="pin" size={18} className="text-point" />장소</Link>
+              <Link href={href("memo")} role="menuitem" className={item} onClick={choose("memo")}><Icon name="pencil" size={18} className="text-ink-sub" />메모</Link>
+            </div>
+          )}
         </>
       )}
-      <button type="button" aria-label={open ? "닫기" : "장소나 메모 추가"} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className={round}>
+      <button type="button" aria-label={open ? "닫기" : "장소나 메모 추가"} aria-haspopup="menu" aria-expanded={open} onClick={() => (open ? close() : setOpen(true))} className={round}>
         <Icon name="plus" size={26} strokeWidth={2.5} className={"transition-transform " + (open ? "rotate-45" : "")} />
       </button>
     </div>

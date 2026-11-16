@@ -9,13 +9,14 @@ import { Avatar } from "@/components/screen";
 import type { Trip } from "@/lib/mock";
 import { FEATURES } from "@/lib/features";
 import { TripMenu } from "@/components/trip-menu";
+import { TripBack } from "@/components/trip-back";
 
-export type TripTab = "일정" | "준비" | "경비" | "기록";
+export type TripTab = "일정" | "준비" | "경비";
 
 export function TripTabs({ tripId, active }: { tripId: string; active: TripTab }) {
   const tabs = [
-    { name: "일정", href: `/trips/${tripId}` }, { name: "준비", href: `/trips/${tripId}/prep` }, { name: "경비", href: `/trips/${tripId}/expenses` }, { name: "기록", href: `/trips/${tripId}/record` },
-  ].filter((t) => FEATURES.diary || t.name !== "기록");
+    { name: "일정", href: `/trips/${tripId}` }, { name: "준비", href: `/trips/${tripId}/prep` }, { name: "경비", href: `/trips/${tripId}/expenses` },
+  ]; // 기록 탭은 2026-11-17 일기 기능 삭제로 뺌
   return (
     <nav aria-label="여행 안 메뉴" className="mx-5 mt-4 flex gap-1 rounded-btn bg-surface-soft p-1">
       {tabs.map((t) => (
@@ -50,7 +51,7 @@ export function TripHeader({ trip, meId, user, owner, editable, back = "/trips",
   return (
     <>
       <div className="flex items-center gap-1.5 px-5 pt-4">
-        <Link href={back} aria-label="여행 목록으로" className={round}><Icon name="back" size={20} /></Link>
+        <TripBack tripId={trip.id} fallback={back} className={round} />
         <span className="flex-1" />
         <Link href={user ? `/trips/${trip.id}/members` : "#"} aria-label={`함께하는 사람 ${trip.members.length}명${owner ? ", 초대하기" : ""}`}
           className={"press flex h-11 items-center gap-1 rounded-full bg-surface pl-1.5 " + (owner && user ? "pr-2.5" : "pr-1.5")}>

@@ -131,9 +131,17 @@ function CountryPicker({ draft, onError, disabled }: { draft: ReturnType<typeof 
   );
 }
 
-export function CityEditor({ cities, onChange, draft, onError, disabled, searchable, numbered }: {
+/* 도장을 받을 수 있는 도시인지 : 검색으로 넣어 위치가 있거나, 앱 도장 목록에 있는 도시 (claim_stamp 와 같은 기준) */
+/* 받침이 있으면 "은", 없으면 "는" */
+const eunNeun = (w: string) => { const c = w.charCodeAt(w.length - 1); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? "은" : "는"; };
+const stampKey = (c: City) => `${c.country === "US-HI" ? "US" : c.country}|${c.name}`;
+export function CityEditor({ cities, onChange, draft, onError, disabled, searchable, numbered, stampCities }: {
   cities: City[]; onChange: (c: City[]) => void; draft: ReturnType<typeof useCityDraft>; onError: (e: string) => void; disabled?: boolean; searchable?: boolean; numbered?: boolean;
+  stampCities?: string[] | null;
 }) {
+  const stampSet = stampCities ? new Set(stampCities) : null;
+  const noStamp = (c: City) => !!stampSet && c.lat == null && !stampSet.has(stampKey(c));
+  const missing = cities.filter(noStamp);
   // 장소 검색으로 고른 도시 : 구글이 알려 준 나라가 목록에 있으면 그 나라, 없으면 지금 고른 나라
   const addPicked = (d: Picked) => {
     const n = (d.name || "").trim().slice(0, 40);
@@ -171,6 +179,7 @@ export function CityEditor({ cities, onChange, draft, onError, disabled, searcha
               <CountryMark country={c.country} icon={c.icon && iconUrl(c.icon)} size={24} />
               <span className="text-ink-sub">{i + 1}</span> {c.name}
               <span className="text-tiny text-ink-sub">{c.countryName ?? countryOf(c.country)?.name.replace(/ \(.*\)/, "")}</span>
+              {noStamp(c) && <span className="rounded-full bg-warn-soft px-1.5 py-0.5 text-[11px] font-bold text-warn-text">도장 없음</span>}
               <button type="button" disabled={disabled} onClick={() => onChange(cities.filter((x) => x !== c))} aria-label={`${c.name} 빼기`}
                 className="press flex size-9 items-center justify-center rounded-full text-ink-sub">
                 <Icon name="x" size={16} />
@@ -178,6 +187,12 @@ export function CityEditor({ cities, onChange, draft, onError, disabled, searcha
             </li>
           ))}
         </ol>
+      )}
+      {missing.length > 0 && (
+        <p role="status" className="rounded-field bg-warn-soft px-3 py-2 text-tiny font-semibold text-warn-text">
+          {missing.map((c) => c.name).join(", ")}{eunNeun(missing[missing.length - 1].name)} 도장을 받을 수 없는 도시예요.
+          {searchable ? " 빼고 도시 검색에서 후보를 골라 넣으면 도장을 받을 수 있어요" : " 인기 도시에서 고르면 도장을 받을 수 있어요"}
+        </p>
       )}
       {/* 고른 나라의 인기 도시 : 누르면 넣고, 다시 누르면 뺀다 */}
       {(POPULAR_CITIES[draft.country] ?? []).length > 0 && (

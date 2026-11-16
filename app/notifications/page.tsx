@@ -1,5 +1,4 @@
-/* 알림 (4단계 8) : 함께하는 사람 참여, 장소 고침, 새 일기, 함께 받은 도장. 열면 모두 읽음 */
-import { FEATURES } from "@/lib/features";
+/* 알림 (4단계 8) : 함께하는 사람 참여, 장소 고침, 함께 받은 도장. 열면 모두 읽음. 일기/댓글/답글 알림은 2026-11-17 일기 삭제로 안 보여 준다 */
 import Link from "next/link";
 import { EmptyState, Icon } from "@/components/kit";
 import { AppShell, MockNote } from "@/components/screen";
@@ -8,6 +7,7 @@ import { getViewer } from "@/lib/viewer";
 import { loadNotices, type Notice } from "@/lib/trips";
 
 export const metadata = { title: "알림" };
+const DIARY_KINDS: string[] = ["journal", "comment", "reply"];
 
 function textOf(n: Notice) {
   switch (n.kind) {
@@ -21,8 +21,6 @@ function textOf(n: Notice) {
 }
 function hrefOf(n: Notice) {
   if (!n.tripId) return "#";
-  if (FEATURES.diary && n.kind === "journal" && n.refId) return `/diary/${n.refId}`;
-  if (FEATURES.diary && (n.kind === "comment" || n.kind === "reply") && n.refId) return `/diary/${n.refId}#comments`;
   if (n.kind === "stamp" && n.refId) return `/stamps?c=${n.refId}`;
   if (n.kind === "joined") return `/trips/${n.tripId}/members`;
   return `/trips/${n.tripId}`;
@@ -37,7 +35,7 @@ function ago(at: string) {
 
 export default async function Notifications() {
   const viewer = await getViewer();
-  const list = await loadNotices(viewer);
+  const list = (await loadNotices(viewer)).filter((n) => !DIARY_KINDS.includes(n.kind));
   const unread = list.some((n) => !n.read);
   return (
     <AppShell bottomGap={false}>
@@ -63,7 +61,7 @@ export default async function Notifications() {
             ))}
           </ul>
         ) : (
-          <EmptyState title="아직 알림이 없어요" desc="함께하는 사람이 장소를 수정하거나 일기, 댓글을 남기면 여기에 보여요" />
+          <EmptyState title="아직 알림이 없어요" desc="함께하는 사람이 들어오거나 장소를 수정하면 여기에 보여요" />
         )}
       </div>
     </AppShell>

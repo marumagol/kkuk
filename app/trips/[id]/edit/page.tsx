@@ -5,7 +5,7 @@ import { Icon } from "@/components/kit";
 import { AppShell } from "@/components/screen";
 import { TripEdit } from "@/components/trip-edit";
 import { getViewer } from "@/lib/viewer";
-import { loadTripForEdit } from "@/lib/trips";
+import { loadTripForEdit, loadStampCities } from "@/lib/trips";
 import { todayIn } from "@/lib/mock";
 
 export const metadata = { title: "여행 정보 수정" };
@@ -26,7 +26,7 @@ export default async function EditTrip({ params }: { params: Promise<{ id: strin
         </Link>
         <h1 className="text-title-lg font-extrabold text-ink">여행 정보 수정</h1>
       </div>
-      <TripEdit trip={trip} today={todayIn(trip.timeZone)} />
+      <TripEdit trip={trip} today={todayIn(trip.timeZone)} stampCities={await loadStampCities()} />
     </AppShell>
   );
 }

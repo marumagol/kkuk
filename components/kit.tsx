@@ -3,7 +3,6 @@
   모든 화면은 이 조각과 globals.css 토큰으로 만든다. 색 값을 직접 쓰지 않는다.
   서버/클라이언트 어디서나 import 할 수 있게 상태(useState)는 넣지 않았다.
 */
-import { FEATURES } from "@/lib/features";
 import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes } from "react";
 import Link from "next/link";
 import { blobPath, stampArt } from "@/lib/stamp-art";
@@ -415,15 +414,15 @@ export function SkeletonPinCard() {
 
 /* ---------- 하단 탭 (떠 있는 알약) ---------- */
 /* 2026-11-14 : "지도" 탭을 "도장" 으로 (마루님 결정. 지도는 4단계라 아직 없음) */
-/* 하단 탭 5개 : 홈/여행/일기/도장/설정. 가운데 + 는 뺐음 (2026-11-14 마루님) */
+/* 하단 탭 : 홈/여행/도장/설정 (일기는 2026-11-17 삭제). 가운데 + 는 뺐음 (2026-11-14 마루님) */
 /* 2026-11-15 마루님 : 도장은 여행 탭 안으로 합침 (아래 탭 4칸). 도장 화면에서는 여행 탭이 켜진다 */
-export function TabBar({ active: asked = "홈" }: { active?: "홈" | "여행" | "일기" | "도장" | "설정" }) {
+export function TabBar({ active: asked = "홈" }: { active?: "홈" | "여행" | "도장" | "설정" }) {
   const active = asked;
   // 도장은 따로 탭 (2026-11-16 마루님 "도장을 새로운 탭 메뉴로")
-  const tabs: { name: "홈" | "여행" | "일기" | "도장" | "설정"; icon: IconName; href: string }[] = [
-    { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" }, { name: "일기", icon: "book", href: "/diary" },
+  const tabs: { name: "홈" | "여행" | "도장" | "설정"; icon: IconName; href: string }[] = [
+    { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" },
     { name: "도장", icon: "stamp", href: "/stamps" }, { name: "설정", icon: "gear", href: "/me" },
-  ].filter((t) => FEATURES.diary || t.name !== "일기") as typeof tabs;
+  ];
   const item = (t: (typeof tabs)[number]) => (
     <Link key={t.name} href={t.href} aria-label={t.name} aria-current={active === t.name ? "page" : undefined}
       className={cx("press flex h-[52px] items-center justify-center gap-1.5 rounded-full",

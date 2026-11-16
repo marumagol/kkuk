@@ -16,7 +16,7 @@ import { daysBetween, md, weekday } from "@/lib/mock";
 
 const STEPS = ["어디로 가요?", "언제 가요?", "여행 이름을 정해요"];
 
-export function TripCreate({ today, searchable }: { today: string; searchable?: boolean }) {
+export function TripCreate({ today, searchable, stampCities }: { today: string; searchable?: boolean; stampCities?: string[] | null }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [cities, setCities] = useState<City[]>([]);
@@ -71,7 +71,7 @@ export function TripCreate({ today, searchable }: { today: string; searchable?: 
         <h1 className="text-title-xl font-extrabold text-ink">{STEPS[step]}</h1>
 
         {step === 0 && (
-          <div className="mt-5"><CityEditor numbered cities={cities} onChange={setCities} draft={draft} onError={setError} searchable={searchable} /></div>
+          <div className="mt-5"><CityEditor numbered cities={cities} onChange={setCities} draft={draft} onError={setError} searchable={searchable} stampCities={stampCities} /></div>
         )}
 
         {step === 1 && (
