@@ -74,7 +74,7 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
         <Link href={back} aria-label="일정으로" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
           <Icon name="back" size={20} />
         </Link>
-        <h1 className="min-w-0 flex-1 text-center text-title font-extrabold text-ink">{p ? "메모 고치기" : "메모 쓰기"}</h1>
+        <h1 className="min-w-0 flex-1 text-center text-title font-extrabold text-ink">{p ? "메모 수정" : "메모 추가"}</h1>
         <button type="button" onClick={save} disabled={!ready}
           className="press h-11 w-14 flex-none rounded-full text-body font-bold text-point-text disabled:text-ink-sub disabled:opacity-60">
           {busy ? "저장 중" : "완료"}
@@ -117,11 +117,11 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
 
         {p && (
           <button type="button" onClick={() => setConfirm(true)} disabled={busy}
-            className="press mt-auto h-12 self-start rounded-full px-1 text-sub font-semibold text-ink-sub underline underline-offset-2">메모 지우기</button>
+            className="press mt-auto h-12 self-start rounded-full px-1 text-sub font-semibold text-ink-sub underline underline-offset-2">메모 삭제</button>
         )}
       </div>
 
-      {confirm && <AlertDialog title="메모를 지울까요?" desc="일정에서 이 메모가 사라져요" confirmLabel="지우기"
+      {confirm && <AlertDialog title="메모를 삭제할까요?" desc="일정에서 이 메모가 사라져요" confirmLabel="삭제"
         confirm={remove} onClose={() => setConfirm(false)} />}
     </>
   );

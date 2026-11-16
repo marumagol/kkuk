@@ -24,7 +24,7 @@ export function WithdrawForm({ email }: { email: string }) {
       {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
       <Button variant="secondary" full disabled={!agree || busy} onClick={() => setConfirm(true)}>{busy ? "탈퇴하는 중" : "탈퇴하기"}</Button>
       <p className="text-center text-tiny text-ink-sub">{email}</p>
-      {confirm && <AlertDialog title="정말 탈퇴할까요?" desc="내 여행과 계정이 바로 지워지고 되살릴 수 없어요" confirmLabel="탈퇴"
+      {confirm && <AlertDialog title="정말 탈퇴할까요?" desc="내 여행과 계정이 바로 삭제되고 되살릴 수 없어요" confirmLabel="탈퇴하기"
         confirm={run} onClose={() => setConfirm(false)} />}
     </div>
   );

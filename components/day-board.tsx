@@ -119,7 +119,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     setCols(next); colsRef.current = next; setMsg(""); busy.current = true;
     const r = await safeCall(() => deletePlace(tripId, it.id!));
     busy.current = false;
-    if (r?.error) { setCols(prev); setMsg(r.error); } else setMsg(`"${it.title}"을(를) 지웠어요`);
+    if (r?.error) { setCols(prev); setMsg(r.error); } else setMsg(`"${it.title}"을(를) 삭제했어요`);
   };
 
   // 저장 뒤나 다른 사람이 고쳐서 새 목록이 오면 맞춘다 (끄는 중, 저장 중에는 그대로)
@@ -319,7 +319,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
             {editable && sel !== U && movableOf(cur) >= 2 && (
               <button type="button" onClick={() => sortRoute(sel)} disabled={!!dragId} aria-label={`${sel + 1}일차 동선 정리`}
                 className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                <Icon name="refresh" size={15} />동선
+                <Icon name="refresh" size={15} />동선 정리
               </button>
             )}
             {user && FEATURES.diary && sel !== U && (
@@ -357,7 +357,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                               <Icon name="grip" size={22} />
                             </button>
                           )}
-                          <button type="button" aria-label={`${it.title} 지우기`} onClick={() => setAsking(it)} disabled={!!dragId}
+                          <button type="button" aria-label={`${it.title} 삭제`} onClick={() => setAsking(it)} disabled={!!dragId}
                             className={"press flex size-10 items-center justify-center rounded-full text-ink-sub " + (canSort ? "" : "mt-2")}>
                             <Icon name="trash" size={18} />
                           </button>
@@ -376,10 +376,10 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           {canAdd && !dragId && user && (
             <div className="mt-1 flex gap-1.5 pl-10">
               <Link href={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                <Icon name="plus" size={14} />장소
+                <Icon name="plus" size={14} />장소 추가
               </Link>
               <Link href={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}&kind=memo`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                <Icon name="pencil" size={14} />메모
+                <Icon name="pencil" size={14} />메모 추가
               </Link>
             </div>
           )}
@@ -396,8 +396,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         )}
       </div>
 
-      {asking && <AlertDialog title={asking.category === "메모" ? "메모를 지울까요?" : "장소를 지울까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
-        confirmLabel="지우기" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
+      {asking && <AlertDialog title={asking.category === "메모" ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
+        confirmLabel="삭제" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
       {canAdd && <BottomDock align="end"><GateFab href={user ? `/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}` : undefined} /></BottomDock>}
     </>
   );

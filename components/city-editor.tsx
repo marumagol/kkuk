@@ -115,7 +115,7 @@ function CountryPicker({ draft, onError, disabled }: { draft: ReturnType<typeof 
             <CountryMark country="ETC" icon={draft.icon?.preview} size={36} />
             <div className="flex min-w-0 flex-1 flex-col">
               <span className="text-sub font-bold text-ink">아이콘 (선택)</span>
-              <span className="text-tiny text-ink-sub">PNG, JPG, WEBP · 1MB 이하. 동그랗게 잘려 보여요</span>
+              <span className="text-tiny text-ink-sub">PNG, JPG, WEBP 파일을 1MB 이하로 올려 주세요. 동그랗게 잘려 보여요</span>
             </div>
             {draft.icon ? (
               <Button type="button" variant="secondary" size="md" disabled={disabled || uploading} onClick={() => draft.setIcon(null)}>빼기</Button>

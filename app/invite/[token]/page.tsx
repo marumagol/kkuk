@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   const p = ((data ?? []) as Preview[])[0];
   if (!p || p.status !== "ok" || !p.title) return { title: "초대", robots: { index: false } };
   const title = `${p.inviter ?? "함께할 사람"}님이 "${p.title}" 여행에 초대했어요`;
-  const description = p.start_date && p.end_date ? `${md(p.start_date)} ~ ${md(p.end_date)} · KKuK 에서 함께 계획해요` : "KKuK 에서 함께 계획해요";
+  const description = p.start_date && p.end_date ? `${md(p.start_date)} ~ ${md(p.end_date)}, KKuK 에서 함께 계획해요` : "KKuK 에서 함께 계획해요";
   return {
     title, description, robots: { index: false },
     openGraph: { title, description, siteName: "KKuK", images: [{ url: "/icon-512.png", width: 512, height: 512 }] },
@@ -49,13 +49,13 @@ export default async function Invite({ params }: { params: Promise<{ token: stri
             <h1 className="text-title-xl font-extrabold text-ink">{p.title}</h1>
             <p className="text-sub text-ink-sub">{p.start_date && p.end_date ? `${md(p.start_date)} ~ ${md(p.end_date)}` : ""} · {p.role === "viewer" ? "보기만" : "편집 가능"}으로 함께해요</p>
             {p.status === "joined" && p.trip_id ? (
-              <Link href={`/trips/${p.trip_id}`} className="press inline-flex h-14 items-center justify-center rounded-btn bg-btn text-[16px] font-bold text-on-btn">이미 함께하고 있어요 · 여행 보기</Link>
+              <Link href={`/trips/${p.trip_id}`} className="press inline-flex h-14 items-center justify-center rounded-btn bg-btn text-[16px] font-bold text-on-btn">이미 함께하는 여행이에요. 여행 보기</Link>
             ) : viewer.kind === "user" ? (
               <JoinButton token={token} />
             ) : (
               <>
                 <Link href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`} className="press inline-flex h-14 items-center justify-center rounded-btn bg-btn text-[16px] font-bold text-on-btn">로그인하고 참여하기</Link>
-                <p className="text-tiny text-ink-sub">이메일로 받은 코드로 로그인해요. 비밀번호는 없어요</p>
+                <p className="text-tiny text-ink-sub">구글 계정이나 이메일로 받은 코드로 로그인해요. 비밀번호는 없어요</p>
               </>
             )}
           </section>

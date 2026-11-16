@@ -133,7 +133,7 @@ export async function updateTrip(id: string, input: NewTrip & { prevFirstCountry
     p_cities: c.cities.map((x) => ({ name: x.name, country_code: isoOf(x.country), place_id: x.placeId, lat: x.lat, lng: x.lng })),
   });
   if (error) {
-    if (error.message?.includes("forbidden")) return { error: "이 여행을 고칠 권한이 없어요" };
+    if (error.message?.includes("forbidden")) return { error: "이 여행을 수정할 권한이 없어요" };
     return { error: "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   }
   await saveCustomCountries(sb, id, auth.user.id, c.cities);
@@ -159,7 +159,7 @@ export async function restoreTrip(id: string): Promise<{ error?: string }> {
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
   const { error } = await sb.rpc("restore_trip", { p_trip: id });
-  if (error?.message?.includes("too_old")) return { error: "지운 지 30일이 지나 되살릴 수 없어요" };
+  if (error?.message?.includes("too_old")) return { error: "삭제한 지 30일이 지나 되살릴 수 없어요" };
   if (error?.message?.includes("owner_only")) return { error: "여행 주인만 되살릴 수 있어요" };
   if (error && !error.message?.includes("not_removed")) return { error: "되살리지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   revalidatePath("/", "layout");
@@ -237,12 +237,12 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
     if (!prev) return { error: "이 장소를 찾을 수 없어요. 이미 삭제됐을 수 있어요" };
     const patch = prev.day_index === day ? row : { ...row, sort_order: await lastOrder() };
     const { data, error } = await sb.from("itinerary_items").update(patch).eq("trip_id", tripId).eq("id", placeId).select("id");
-    if (error || !data?.length) return { error: "저장하지 못했어요. 고칠 권한이 없거나 잠시 문제가 생겼어요" };
+    if (error || !data?.length) return { error: "저장하지 못했어요. 수정할 권한이 없거나 잠시 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요" };
   }
   let savedId = placeId;
   if (!placeId) {
     const { data, error } = await sb.from("itinerary_items").insert({ ...row, trip_id: tripId, sort_order: await lastOrder(), created_by: auth.user.id }).select("id").single();
-    if (error || !data) return { error: "저장하지 못했어요. 고칠 권한이 없거나 잠시 문제가 생겼어요" };
+    if (error || !data) return { error: "저장하지 못했어요. 수정할 권한이 없거나 잠시 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요" };
     savedId = data.id as string;
   }
   if (input?.reserve !== undefined && savedId) await syncReservation(sb, auth.user.id, tripId, savedId, !isMemo && !!input.reserve, title, day);
@@ -270,12 +270,12 @@ async function syncReservation(sb: NonNullable<Awaited<ReturnType<typeof createC
 
 /* 일정 목록에서 바로 지우기 (화면 이동 없음). 이어진 예약도 같이 뺀다 */
 export async function deletePlace(tripId: string, placeId: string): Promise<CreateTripResult> {
-  if (!isUuid(tripId) || !isUuid(placeId)) return { error: "지우지 못했어요" };
+  if (!isUuid(tripId) || !isUuid(placeId)) return { error: "삭제하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 지울 수 없어요" };
   const now = new Date().toISOString();
   const { data, error } = await sb.from("itinerary_items").update({ removed_at: now }).eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).select("id");
-  if (error || !data?.length) return { error: "지우지 못했어요. 고칠 권한이 없거나 이미 지워졌을 수 있어요" };
+  if (error || !data?.length) return { error: "삭제하지 못했어요. 수정할 권한이 없거나 이미 삭제됐을 수 있어요. 화면을 새로고침해 확인해 주세요" };
   await sb.from("checklist_items").update({ removed_at: now }).eq("trip_id", tripId).eq("item_id", placeId).is("removed_at", null);
   revalidatePath(`/trips/${tripId}`);
 }
@@ -297,12 +297,12 @@ export async function removePlace(tripId: string, placeId: string, day: number |
 export async function reorderPlaces(tripId: string, ids: string[]): Promise<CreateTripResult> {
   const uuid = /^[0-9a-f-]{36}$/i;
   if (!uuid.test(tripId) || !Array.isArray(ids) || !ids.length || ids.length > 500 || !ids.every((x) => uuid.test(String(x)))) {
-    return { error: "순서를 저장하지 못했어요" };
+    return { error: "순서를 저장하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   }
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
   const { error } = await sb.rpc("reorder_items", { p_trip: tripId, p_ids: ids });
-  if (error) return { error: error.message?.includes("forbidden") ? "이 여행을 고칠 권한이 없어요" : "순서를 저장하지 못했어요. 원래 자리로 돌려놨어요" };
+  if (error) return { error: error.message?.includes("forbidden") ? "이 여행을 수정할 권한이 없어요" : "순서를 저장하지 못했어요. 원래 자리로 돌려놨어요" };
   revalidatePath(`/trips/${tripId}`);
 }
 
@@ -311,12 +311,12 @@ export async function moveItem(tripId: string, itemId: string, day: number | nul
   const uuid = /^[0-9a-f-]{36}$/i;
   if (!uuid.test(tripId) || !uuid.test(itemId) || !Array.isArray(ids) || !ids.length || ids.length > 500 || !ids.every((x) => uuid.test(String(x))) || !ids.includes(itemId)
     || (day != null && (!Number.isInteger(day) || day < 0 || day >= MAX_TRIP_DAYS))) {
-    return { error: "옮기지 못했어요" };
+    return { error: "옮기지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   }
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
   const { error } = await sb.rpc("move_item", { p_trip: tripId, p_item: itemId, p_day: day, p_ids: ids });
-  if (error) return { error: error.message?.includes("forbidden") ? "이 여행을 고칠 권한이 없어요" : "옮기지 못했어요. 원래 자리로 돌려놨어요" };
+  if (error) return { error: error.message?.includes("forbidden") ? "이 여행을 수정할 권한이 없어요" : "옮기지 못했어요. 원래 자리로 돌려놨어요" };
   revalidatePath(`/trips/${tripId}`);
 }
 
@@ -382,38 +382,38 @@ const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s);
 const okRole = (r: string) => r === "editor" || r === "viewer";
 
 export async function makeInvite(tripId: string, role: string): Promise<{ error?: string; token?: string }> {
-  if (!isUuid(tripId) || !okRole(role)) return { error: "다시 시도해 주세요" };
+  if (!isUuid(tripId) || !okRole(role)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const r = await memberRpc("create_invite", { p_trip: tripId, p_role: role }, `/trips/${tripId}/members`);
   if ("error" in r) return r;
   revalidatePath(`/trips/${tripId}/members`);
   return { token: String(r.data) };
 }
 export async function revokeInvite(tripId: string): Promise<CreateTripResult> {
-  if (!isUuid(tripId)) return { error: "다시 시도해 주세요" };
+  if (!isUuid(tripId)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const r = await memberRpc("revoke_invite", { p_trip: tripId }, `/trips/${tripId}/members`);
   if ("error" in r) return r;
   revalidatePath(`/trips/${tripId}/members`);
 }
 export async function changeMemberRole(tripId: string, memberId: string, role: string): Promise<CreateTripResult> {
-  if (!isUuid(memberId) || !okRole(role)) return { error: "다시 시도해 주세요" };
+  if (!isUuid(memberId) || !okRole(role)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const r = await memberRpc("set_member_role", { p_member: memberId, p_role: role }, `/trips/${tripId}/members`);
   if ("error" in r) return r;
   revalidatePath("/", "layout");
 }
 export async function kickMember(tripId: string, memberId: string): Promise<CreateTripResult> {
-  if (!isUuid(memberId)) return { error: "다시 시도해 주세요" };
+  if (!isUuid(memberId)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const r = await memberRpc("remove_member", { p_member: memberId }, `/trips/${tripId}/members`);
   if ("error" in r) return r;
   revalidatePath("/", "layout");
 }
 export async function giveOwner(tripId: string, memberId: string): Promise<CreateTripResult> {
-  if (!isUuid(memberId)) return { error: "다시 시도해 주세요" };
+  if (!isUuid(memberId)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const r = await memberRpc("transfer_owner", { p_member: memberId }, `/trips/${tripId}/members`);
   if ("error" in r) return r;
   revalidatePath("/", "layout");
 }
 export async function leaveTrip(tripId: string): Promise<CreateTripResult> {
-  if (!isUuid(tripId)) return { error: "다시 시도해 주세요" };
+  if (!isUuid(tripId)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const r = await memberRpc("leave_trip", { p_trip: tripId }, `/trips/${tripId}/members`);
   if ("error" in r) return r;
   revalidatePath("/", "layout");
@@ -438,7 +438,7 @@ async function prepClient(tripId: string) {
   if (!auth.user) redirect(`/login?next=/trips/${tripId}/prep`);
   return { sb, uid: auth.user.id } as const;
 }
-const PREP_FAIL = { error: "저장하지 못했어요. 고칠 권한이 없거나 잠시 문제가 생겼어요" };
+const PREP_FAIL = { error: "저장하지 못했어요. 수정할 권한이 없거나 잠시 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요" };
 
 export async function addPrepItem(tripId: string, kind: string, title: string, due: string | null): Promise<CreateTripResult> {
   const t = String(title ?? "").trim();
@@ -562,7 +562,7 @@ async function feedClient() {
 }
 export async function toggleLike(entryId: string, on: boolean): Promise<CreateTripResult> {
   if (!isUuid(entryId)) return FEED_FAIL;
-  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요" };
+  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요. 로그인한 뒤 다시 시도해 주세요" };
   const { error } = on
     ? await c.sb.from("journal_likes").upsert({ entry_id: entryId, user_id: c.uid }, { onConflict: "entry_id,user_id", ignoreDuplicates: true })
     : await c.sb.from("journal_likes").delete().eq("entry_id", entryId).eq("user_id", c.uid);
@@ -574,18 +574,18 @@ export async function addComment(entryId: string, text: string, parentId?: strin
   const body = String(text ?? "").trim();
   if (!body) return { error: "댓글을 적어 주세요" };
   if ([...body].length > 500) return { error: "댓글은 500자까지 쓸 수 있어요" };
-  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요" };
+  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요. 로그인한 뒤 다시 시도해 주세요" };
   const { error } = await c.sb.from("journal_comments").insert({ entry_id: entryId, author_id: c.uid, body, parent_id: parentId || null });
   if (error) {
     if (error.message?.includes("comment_limit")) return { error: "이 일기에는 댓글을 더 달 수 없어요" };
-    if (error.message?.includes("reply_")) return { error: "답글을 달 수 없는 댓글이에요. 지워졌을 수 있어요" };
+    if (error.message?.includes("reply_")) return { error: "답글을 달 수 없는 댓글이에요. 삭제됐을 수 있어요" };
     return FEED_FAIL;
   }
   revalidatePath("/diary", "layout");
 }
 export async function removeComment(id: string): Promise<CreateTripResult> {
   if (!isUuid(id)) return FEED_FAIL;
-  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요" };
+  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요. 로그인한 뒤 다시 시도해 주세요" };
   const { data, error } = await c.sb.from("journal_comments").delete().eq("id", id).select("id");
   if (error || !data?.length) return { error: "삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   revalidatePath("/diary", "layout");
@@ -593,7 +593,7 @@ export async function removeComment(id: string): Promise<CreateTripResult> {
 /* 내 일기를 링크로 공개로 바꾸고 공유 주소를 돌려준다 (사진은 올릴 때 이미 위치 정보가 지워져 있다) */
 export async function publishEntry(id: string): Promise<{ token?: string; error?: string }> {
   if (!isUuid(id)) return FEED_FAIL;
-  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요" };
+  const c = await feedClient(); if (!c) return { error: "로그인이 필요해요. 로그인한 뒤 다시 시도해 주세요" };
   const { data, error } = await c.sb.from("journal_entries").update({ visibility: "public" }).eq("id", id).eq("author_id", c.uid).is("removed_at", null).select("share_token").maybeSingle();
   if (error || !data?.share_token) return { error: "공개하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   revalidatePath("/diary", "layout");
@@ -643,11 +643,11 @@ async function underPlaceQuota(sb: NonNullable<Awaited<ReturnType<typeof createC
   - 사람당 하루 상세 횟수(take_place_quota details) 안에서만. 다 쓰면 멈추고 남은 수를 알려 준다
 */
 export async function fillTripCoords(tripId: string): Promise<{ error?: string; filled?: number; missed?: number; left?: number; limited?: boolean }> {
-  if (!isUuid(tripId)) return { error: "다시 시도해 주세요" };
+  if (!isUuid(tripId)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
   const { data: auth } = await sb.auth.getUser();
-  if (!auth.user) return { error: "로그인이 필요해요" };
+  if (!auth.user) return { error: "로그인이 필요해요. 로그인한 뒤 다시 시도해 주세요" };
   const { data: rows } = await sb.from("itinerary_items").select("id, title, category")
     .eq("trip_id", tripId).is("removed_at", null).is("google_place_id", null).not("category", "in", "(transport,memo)")
     .order("day_index", { nullsFirst: false }).order("sort_order").limit(100);
@@ -676,12 +676,12 @@ export async function fillTripCoords(tripId: string): Promise<{ error?: string; 
 
 /* 동선 정리에서 자리를 바꾼 장소의 시간 (칸의 시간은 그대로 두고 장소만 바꾼다) */
 export async function setItemTimes(tripId: string, times: { id: string; time: string | null }[]): Promise<CreateTripResult> {
-  if (!isUuid(tripId) || !Array.isArray(times) || times.length > 100 || times.some((t) => !isUuid(t.id) || (t.time !== null && !/^([01]\d|2[0-3]):[0-5]\d$/.test(t.time)))) return { error: "시간을 저장하지 못했어요" };
+  if (!isUuid(tripId) || !Array.isArray(times) || times.length > 100 || times.some((t) => !isUuid(t.id) || (t.time !== null && !/^([01]\d|2[0-3]):[0-5]\d$/.test(t.time)))) return { error: "시간을 저장하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
   for (const t of times) {
     const { error } = await sb.from("itinerary_items").update({ start_time: t.time }).eq("trip_id", tripId).eq("id", t.id);
-    if (error) return { error: "시간을 저장하지 못했어요. 고칠 권한이 없거나 잠시 문제가 생겼어요" };
+    if (error) return { error: "시간을 저장하지 못했어요. 수정할 권한이 없거나 잠시 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요" };
   }
   revalidatePath(`/trips/${tripId}`);
 }
@@ -714,7 +714,7 @@ const SHARE_ERRORS: Record<string, string> = {
 };
 /* days 가 null 이면 여행 전체 링크 (0018) */
 export async function makeDayShare(tripId: string, days: number[] | null): Promise<{ error?: string; token?: string }> {
-  if (!isUuid(tripId)) return { error: "다시 시도해 주세요" };
+  if (!isUuid(tripId)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   if (days !== null && (!Array.isArray(days) || !days.length || days.some((d) => !Number.isInteger(d) || d < 0 || d > 59))) return { error: SHARE_ERRORS.days_invalid };
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
@@ -724,7 +724,7 @@ export async function makeDayShare(tripId: string, days: number[] | null): Promi
   return { token: String(data) };
 }
 export async function revokeDayShare(tripId: string, token: string): Promise<{ error?: string }> {
-  if (!isUuid(tripId) || !/^[0-9a-f]{32}$/.test(token)) return { error: "다시 시도해 주세요" };
+  if (!isUuid(tripId) || !/^[0-9a-f]{32}$/.test(token)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
   const { error } = await sb.rpc("revoke_trip_share", { p_trip: tripId, p_token: token });

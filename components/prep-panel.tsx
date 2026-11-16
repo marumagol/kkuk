@@ -48,10 +48,10 @@ function Budget({ view, canEdit, busy, run }: { view: PrepView; canEdit: boolean
   const left = total - view.spent;
   const pct = total ? Math.min(100, Math.round((view.spent / total) * 100)) : 0;
   const editBtn = canEdit && (
-    <button type="button" onClick={() => setEdit(true)} className="press inline-flex h-8 items-center rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">{view.budget ? "예산 고치기" : "예산 정하기"}</button>
+    <button type="button" onClick={() => setEdit(true)} className="press inline-flex h-8 items-center rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">{view.budget ? "예산 수정" : "예산 정하기"}</button>
   );
   if (edit) return (
-    <section className="flex flex-col gap-3 rounded-card bg-surface p-5" aria-label="예산 고치기">
+    <section className="flex flex-col gap-3 rounded-card bg-surface p-5" aria-label="예산 수정">
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
           <Field label={`전체 예산 (${cur})`} name="budget" inputMode={d ? "decimal" : "numeric"} value={amount} placeholder="0"
@@ -149,7 +149,7 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
   });
   if (edit) return (
     <li className="flex flex-col gap-2 px-4 py-3">
-      <Field label="고치기" name={`edit-${it.id}`} value={title} maxLength={80} disabled={busy} autoFocus
+      <Field label="이름" name={`edit-${it.id}`} value={title} maxLength={80} disabled={busy} autoFocus
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && title.trim()) { e.preventDefault(); save(); } if (e.key === "Escape") setEdit(false); }} />
       {it.kind === "reservation" && <Field label="날짜 (선택)" name={`edit-due-${it.id}`} type="date" value={due} onChange={(e) => setDue(e.target.value)} disabled={busy} />}
@@ -168,7 +168,7 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
       </button>
       <div className="min-w-0 flex-1">
         {canEdit ? (
-          <button type="button" onClick={() => setEdit(true)} disabled={busy} aria-label={`${it.title} 고치기`}
+          <button type="button" onClick={() => setEdit(true)} disabled={busy} aria-label={`${it.title} 수정`}
             className={"block w-full truncate text-left text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</button>
         ) : <p className={"truncate text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</p>}
         {it.itemId && <Link href={`/trips/${view.tripId}/places/${it.itemId}`} className="inline-flex items-center gap-0.5 text-tiny text-ink-sub underline underline-offset-2"><Icon name="pin" size={12} />일정 장소</Link>}
@@ -180,7 +180,7 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
   );
 }
 
-/* 줄 오른쪽 ⋯ 메뉴 : 담당자 지정, 고치기, 지우기 (2026-11-16 마루님 "버튼이 칸을 너무 차지해") */
+/* 줄 오른쪽 ⋯ 메뉴 : 담당자 지정, 수정, 삭제 (2026-11-16 마루님 "버튼이 칸을 너무 차지해") */
 function RowMenu({ it, view, busy, run, onEdit }: { it: PrepItem; view: PrepView; busy: boolean; run: RunFn; onEdit: () => void }) {
   const [open, setOpen] = useState<"menu" | "who" | null>(null);
   const close = () => setOpen(null);
@@ -198,9 +198,9 @@ function RowMenu({ it, view, busy, run, onEdit }: { it: PrepItem; view: PrepView
             {open === "menu" ? (
               <>
                 <button type="button" role="menuitem" autoFocus className={item} onClick={() => setOpen("who")}><Icon name="user" size={18} className="text-ink-sub" />담당자 지정</button>
-                <button type="button" role="menuitem" className={item} onClick={() => { close(); onEdit(); }}><Icon name="pencil" size={18} className="text-ink-sub" />고치기</button>
+                <button type="button" role="menuitem" className={item} onClick={() => { close(); onEdit(); }}><Icon name="pencil" size={18} className="text-ink-sub" />수정</button>
                 <button type="button" role="menuitem" className={item + " text-point-text"} onClick={() => { close(); run(() => updatePrepItem(view.tripId, it.id, { remove: true })); }}>
-                  <Icon name="trash" size={18} />지우기
+                  <Icon name="trash" size={18} />삭제
                 </button>
               </>
             ) : (

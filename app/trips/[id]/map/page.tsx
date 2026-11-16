@@ -48,10 +48,10 @@ export default async function TripMapPage({ params, searchParams }: { params: Pr
       <div className="flex flex-col gap-3 px-5 pb-10 pt-4">
         {points.length ? <TripMap points={points} /> : (
           <p className="rounded-card bg-surface px-4 py-8 text-center text-sub text-ink-sub">
-            {items.length ? "이 날 장소에 지도 위치가 없어요. 장소를 고칠 때 검색해서 고르면 지도에 보여요" : "이 날은 아직 장소가 없어요"}
+            {items.length ? "이 날 장소에 지도 위치가 없어요. 장소를 수정할 때 검색해서 고르면 지도에 보여요" : "이 날은 아직 장소가 없어요"}
           </p>
         )}
-        {points.length > 0 && noPin > 0 && <p className="text-tiny text-ink-sub">위치가 없는 장소 {noPin}곳은 지도에 안 보여요. 장소를 고칠 때 검색해서 고르면 보여요</p>}
+        {points.length > 0 && noPin > 0 && <p className="text-tiny text-ink-sub">위치가 없는 장소 {noPin}곳은 지도에 안 보여요. 장소를 수정할 때 검색해서 고르면 보여요</p>}
         {points.length > 0 && (
           <ol className="flex flex-col gap-1.5">
             {points.map((p, i) => (

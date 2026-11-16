@@ -261,7 +261,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
         <Button full onClick={save} disabled={busy || !titleLen || uploading > 0}>{busy ? "저장하는 중" : uploading ? "사진 올리는 중" : p ? "저장" : isMemo ? "메모 추가" : "장소 추가"}</Button>
       </div>
 
-      {confirm && <AlertDialog title="장소를 삭제할까요?" desc={`"${p?.title}"이(가) 일정에서 사라져요`} confirmLabel="삭제"
+      {confirm && <AlertDialog title={isMemo ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${p?.title}"이(가) 일정에서 사라져요`} confirmLabel="삭제"
         confirm={remove} onClose={() => setConfirm(false)} />}
     </>
   );

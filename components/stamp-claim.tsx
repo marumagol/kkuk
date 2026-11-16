@@ -14,7 +14,7 @@ export function StampClaim({ tripId, inset = true }: { tripId: string; inset?: b
   const busy = locating || pending;
 
   const go = () => {
-    if (!("geolocation" in navigator)) return setState({ kind: "error", text: "이 기기에서는 위치를 읽을 수 없어요" });
+    if (!("geolocation" in navigator)) return setState({ kind: "error", text: "이 기기에서는 위치를 읽을 수 없어요. 위치 기능이 있는 휴대폰에서 다시 열어 주세요" });
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {

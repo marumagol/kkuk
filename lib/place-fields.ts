@@ -50,7 +50,7 @@ export function fieldsOf(category: string, mode?: string): FieldDef[] {
       { key: "menu", label: "먹을 메뉴", placeholder: "예 : 징기스칸, 수프카레", max: 60 },
     ];
     case "sight": return [
-      { key: "booking", label: "예약·입장권 번호", half: true, max: 40 },
+      { key: "booking", label: "예약/입장권 번호", half: true, max: 40 },
       { key: "hours", label: "운영 시간", placeholder: "예 : 9:00~17:00", half: true, max: 30 },
     ];
     case "shopping": return [{ key: "list", label: "살 것", placeholder: "예 : 로이스 초콜릿, 르타오", max: 100 }];

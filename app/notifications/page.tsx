@@ -63,7 +63,7 @@ export default async function Notifications() {
             ))}
           </ul>
         ) : (
-          <EmptyState title="아직 알림이 없어요" desc="함께하는 사람이 장소를 고치거나 일기, 댓글을 남기면 여기에 보여요" />
+          <EmptyState title="아직 알림이 없어요" desc="함께하는 사람이 장소를 수정하거나 일기, 댓글을 남기면 여기에 보여요" />
         )}
       </div>
     </AppShell>

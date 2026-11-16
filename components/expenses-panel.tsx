@@ -108,7 +108,7 @@ function ExpenseForm({ view, active, editing, onDone }: { view: ExpensesView; ac
   });
   return (
     <section className="flex flex-col gap-4 rounded-card bg-surface p-5" aria-labelledby="form-title">
-      <h2 id="form-title" className="text-body font-bold text-ink">{editing ? "경비 고치기" : "경비 적기"}</h2>
+      <h2 id="form-title" className="text-body font-bold text-ink">{editing ? "경비 수정" : "경비 추가"}</h2>
       <Field label="내용" name="title" placeholder="예 : 저녁, 택시" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} disabled={busy} />
       <Field label={`금액 (${CUR_NAME[currency] ?? currency})`} name="amount" inputMode={decimalsOf(currency) ? "decimal" : "numeric"} placeholder="0"
         value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ""))} disabled={busy} />
@@ -132,7 +132,7 @@ function ExpenseForm({ view, active, editing, onDone }: { view: ExpensesView; ac
         {editing && <Button type="button" variant="secondary" onClick={onDone} disabled={busy}>취소</Button>}
         <Button type="button" full disabled={busy || !title.trim() || !amount || !split.length} onClick={submit}>{busy ? "저장하는 중" : editing ? "고친 내용 저장" : "경비 추가"}</Button>
       </div>
-      {editing && <button type="button" onClick={remove} disabled={busy} className="press mx-auto h-11 px-2 text-sub font-semibold text-point-text underline underline-offset-2">이 경비 지우기</button>}
+      {editing && <button type="button" onClick={remove} disabled={busy} className="press mx-auto h-11 px-2 text-sub font-semibold text-point-text underline underline-offset-2">이 경비 삭제</button>}
     </section>
   );
 }
