@@ -186,7 +186,7 @@ export function PinCard({ index, mark, time, category, title, desc, detail, edit
       <div className="flex w-7 flex-none flex-col items-center gap-1 pt-3.5">
         {mark === "plane" ? <span className="flex size-7 items-center justify-center rounded-full bg-point text-white"><Icon name="plane" size={15} strokeWidth={2} /></span>
           : mark === "dot" ? <span className="mt-2.5 size-2.5 rounded-full bg-ink-sub" />
-          : index > 0 ? <span className="flex size-7 items-center justify-center rounded-full bg-btn text-tiny font-bold text-on-btn">{index}</span>
+          : index > 0 ? <span className="flex size-7 items-center justify-center rounded-full bg-point text-tiny font-extrabold text-white ring-2 ring-surface">{index}</span> /* 지도 핀과 같은 주황 (2026-11-16 마루님) */
           : <span className="mt-2 size-3 rounded-full border-2 border-line-strong bg-surface" />}
         {!last && <span className="w-0 flex-1 border-l-2 border-dashed border-line-strong/60" />}
       </div>
