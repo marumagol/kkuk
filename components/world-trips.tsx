@@ -117,7 +117,7 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
                 <g key={g.key} transform={`translate(${x},${y})`} className="cursor-pointer" role="link" tabIndex={0}
                   aria-label={big ? `${g.name}, 여행 ${g.trips.length}개` : `${g.trips[0].title}, ${g.name}`}
                   onClick={() => tap(g)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tap(g); } }}>
-                  <path d="M0 0c-7-9-12-14-12-20a12 12 0 1 1 24 0c0 6-5 11-12 20z" transform="translate(0,-2)" className={g.past ? "fill-point" : "fill-deep"} />
+                  <path d="M0 0c-7-9-12-14-12-20a12 12 0 1 1 24 0c0 6-5 11-12 20z" transform="translate(0,-2)" className={g.past ? "fill-deep" : "fill-point"} />
                   <circle cx={0} cy={-22} r={4.5} className="fill-surface" />
                   {labeled.has(g.key) && <g transform="translate(0,8)">
                     <rect x={-w / 2} y={0} width={w} height={24} rx={12} className="fill-surface" style={{ filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.12))" }} />
@@ -126,9 +126,9 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
                     </text>
                   </g>}
                   {nextId && g.trips.some((t) => t.id === nextId) && <g transform="translate(0,-34)" aria-hidden="true">
-                    <rect x={-31} y={-22} width={62} height={20} rx={10} className="fill-point" />
-                    <path d="M-4 -2.5h8l-4 4.5z" className="fill-point" />
-                    <text x={0} y={-8} textAnchor="middle" className="fill-white text-[11px] font-extrabold">다음 여행</text>
+                    {/* 주황 핀과 구분되게 진회색 말풍선 + 흰 테두리 (2026-11-16 마루님) */}
+                    <path d="M-31 -12a10 10 0 0 1 10-10h42a10 10 0 0 1 0 20h-17l-4 4.5-4-4.5h-17a10 10 0 0 1-10-10z" className="fill-deep stroke-surface" strokeWidth={2} style={{ filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.18))" }} />
+                    <text x={0} y={-8} textAnchor="middle" className="fill-on-deep text-[11px] font-extrabold">다음 여행</text>
                   </g>}
                 </g>
               );
@@ -142,7 +142,7 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
             <p className="px-2 pb-1 pt-1 text-tiny font-bold text-ink-sub">{pickedGroup.name}에 간 여행</p>
             {pickedGroup.trips.map((t) => (
               <Link key={t.id} href={`/trips/${t.id}`} className="press flex h-12 items-center gap-2 rounded-field px-2">
-                <span className={"size-2.5 flex-none rounded-full " + (t.status === "past" ? "bg-point" : "bg-deep")} />
+                <span className={"size-2.5 flex-none rounded-full " + (t.status === "past" ? "bg-deep" : "bg-point")} />
                 <span className="min-w-0 flex-1 truncate text-body font-semibold text-ink">{t.title}</span>
                 <span className="text-tiny text-ink-sub">{t.start.slice(2, 4)}.{Number(t.start.slice(5, 7))}</span>
                 <Icon name="right" size={16} className="text-ink-sub" />
@@ -156,7 +156,7 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
         {/* 목록은 다가오는 여행 / 다녀온 여행 탭으로 나눠 본다 (2026-11-16 마루님). 점 색은 지도 핀 색과 같다 */}
         <div className="flex flex-col gap-3">
           <div role="tablist" aria-label="여행 나눠 보기" className="flex gap-1 rounded-btn bg-bg p-1">
-            {([["upcoming", "다가오는 여행", upcoming.length, "bg-deep"], ["past", "다녀온 여행", past.length, "bg-point"]] as const).map(([k, label, n, dot]) => (
+            {([["upcoming", "다가오는 여행", upcoming.length, "bg-point"], ["past", "다녀온 여행", past.length, "bg-deep"]] as const).map(([k, label, n, dot]) => (
               <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
                 className={"press flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[14px] text-sub font-bold " + (tab === k ? "bg-surface text-ink shadow-sm" : "text-ink-sub")}>
                 <span className={"size-2.5 rounded-full " + dot} />{label} {n}
