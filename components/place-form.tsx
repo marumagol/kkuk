@@ -62,7 +62,9 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     const next = { ...extra, [k]: v.name, [`${k}_pos`]: v.lat != null && v.lng != null ? posText(v.lat, v.lng) : "", [`${k}_id`]: v.id ?? "" };
     setExtra(next);
     const auto = [next.from, next.to].filter(Boolean).join(" → ");
-    if (!title.trim() || title === autoTitle.current) { autoTitle.current = auto; setTitle(auto.slice(0, MAX_PLACE_TITLE)); }
+    // 이름이 비었거나, 자동 이름이거나, 출발지/도착지 이름 그대로(예 : "신치토세 공항")면 "출발 → 도착"으로 바꾼다
+    const t = title.trim();
+    if (!t || t === autoTitle.current || [extra.from, extra.to, v.name].some((x) => x?.trim() === t)) { autoTitle.current = auto; setTitle(auto.slice(0, MAX_PLACE_TITLE)); }
     setError("");
   };
   // 장소 검색으로 고른 구글 장소. undefined = 건드리지 않음, null = 연결 끊음
@@ -104,6 +106,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
 
   const currencies = [...new Set([ctx.currency, startCur, "KRW", "USD"])];
   const titleLen = [...title.trim()].length;
+  const autoName = [extra.from, extra.to].map((x) => x?.trim()).filter(Boolean).join(" → ");
   const dayNum = dayValue === "none" ? null : Number(dayValue);
   // 시간 빠른 고르기 : [시간 정하기] 를 누르면 그날 가장 늦은 장소 + 1시간을 미리 채운다
   const lastTime = ctx.lastTimes[dayNum ?? ctx.days] ?? null;
@@ -113,7 +116,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
 
   const save = (again = false) => {
     setError("");
-    if (!titleLen) return setError(isMemo ? "메모 제목을 적어 주세요" : "장소 이름을 적어 주세요");
+    if (!titleLen && !(isMove && autoName)) return setError(isMemo ? "메모 제목을 적어 주세요" : "장소 이름을 적어 주세요");
     startBusy(async () => {
       // 이동은 일정 지도 위치 = 출발지(없으면 도착지)
       let place = linked;
@@ -122,7 +125,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
         const main = f && extra.from_id ? { id: extra.from_id, ...f } : t && extra.to_id ? { id: extra.to_id, ...t } : null;
         if (main) place = main; else if (moveTouched.current) place = null;
       }
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo || !timed ? "" : isMove ? extra.depart ?? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: isMove && !timed ? { ...extra, depart: "", arrive: "" } : extra, reserve, again, ...(place !== undefined ? { place } : {}) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title: titleLen ? title : isMove ? autoName.slice(0, MAX_PLACE_TITLE) : title, address, category, time: isMemo || !timed ? "" : isMove ? extra.depart ?? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: isMove && !timed ? { ...extra, depart: "", arrive: "" } : extra, reserve, again, ...(place !== undefined ? { place } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -173,8 +176,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             <div className="-mt-0.5 grid grid-cols-2 gap-2">
               <label className="flex min-w-0 flex-col gap-1.5">
                 <span className="text-tiny font-bold text-ink-sub">시간</span>
-                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} autoFocus={!p?.start_time}
-                  className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-4 pr-4 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 [&::-webkit-calendar-picker-indicator]:ml-2" />
+                <TimeInput value={time} onChange={setTime} disabled={busy} autoFocus={!p?.start_time} />
               </label>
             </div>
           )}
@@ -183,8 +185,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
               {(["depart", "arrive"] as const).map((k) => (
                 <label key={k} className="flex min-w-0 flex-col gap-1.5">
                   <span className="text-tiny font-bold text-ink-sub">{k === "depart" ? "출발 시간" : "도착 시간"}</span>
-                  <input type="time" value={extra[k] ?? ""} disabled={busy} onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [k]: v })); setError(""); }}
-                    className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-4 pr-4 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 [&::-webkit-calendar-picker-indicator]:ml-2" />
+                  <TimeInput value={extra[k] ?? ""} disabled={busy} onChange={(v) => { setExtra((x) => ({ ...x, [k]: v })); setError(""); }} />
                 </label>
               ))}
             </div>
@@ -204,30 +205,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
         </FormCard>
 
         <FormCard title={isMemo ? "메모" : "장소"}>
-        <Field label={isMemo ? "메모 제목" : "장소 이름"} name="title" placeholder={isMemo ? "예 : 체크아웃 전에 짐 맡기기" : "예 : 오타루 운하"} value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
-          onChange={(e) => { setTitle(e.target.value); autoTitle.current = null; setError(""); }} autoFocus={!p}
-          error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
-        {ctx.searchable && !isLinked && !isMemo && !isMove && (
-          <PlaceSuggest query={title} kind="place" bias={ctx.bias} disabled={busy}
-            onFallback={(s) => { setTitle(s.name.slice(0, MAX_PLACE_TITLE)); if (s.sub && !address.trim()) setAddress(s.sub.slice(0, 200)); }}
-            onPick={(d: Picked) => {
-              setTitle(d.name.slice(0, MAX_PLACE_TITLE)); if (d.address) setAddress(d.address.slice(0, 200)); setLinked({ id: d.id, lat: d.lat, lng: d.lng });
-              // 구글 장소 종류로 분류(와 이동 수단)를 골라 둔다. 직접 고른 분류는 그대로
-              const g = catTouched.current ? null : guessCategory(d.types);
-              if (g) {
-                setCategory(g.category); if (g.mode) setExtra((x) => ({ ...x, mode: x.mode || g.mode! }));
-                // 공항, 역을 고르면 출발지로 넣어 둔다. 이름은 직접 고른 것으로 보고 자동으로 바꾸지 않는다
-                if (g.category === "transport") { autoTitle.current = null; moveTouched.current = true; setExtra((x) => (x.from ? x : { ...x, from: d.name.slice(0, 60), from_pos: posText(d.lat, d.lng), from_id: d.id })); }
-              }
-            }} />
-        )}
-        {isLinked && !isMemo && !(isMove && (extra.from_pos || extra.to_pos)) && (
-          <div className="-mt-1.5 flex items-center gap-2 text-tiny text-ink-sub">
-            <Icon name="map" size={14} />지도에 위치가 연결된 장소예요
-            <button type="button" onClick={() => setLinked(null)} disabled={busy} className="press ml-auto h-9 px-2 font-semibold text-ink underline underline-offset-2">연결 끊기</button>
-          </div>
-        )}
-
+        {/* 분류를 먼저 고른다. 이동이면 이름 검색 대신 출발지/도착지 검색, 이름은 자동 (2026-11-16 마루님) */}
         <fieldset className="flex min-w-0 flex-col gap-2">
           <legend className="mb-2 text-tiny font-bold text-ink-sub">분류</legend>
           <div className="flex flex-wrap gap-2">
@@ -262,7 +240,30 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                 placeholder={k === "from" ? "예 : 인천국제공항" : "예 : 신치토세 공항"} value={extra[k] ?? ""} linked={!!extra[`${k}_pos`]}
                 searchable={ctx.searchable} bias={ctx.bias} disabled={busy} onChange={(v) => setStop(k, v)} />
             ))}
-            <p className="text-tiny text-ink-sub">출발지와 도착지를 고르면 이름이 자동으로 채워지고, 지도에 두 곳이 이어져요</p>
+            <p className="text-tiny text-ink-sub">출발지와 도착지를 고르면 일정 이름이 &lsquo;출발 → 도착&rsquo;으로 채워지고, 지도에 두 곳이 이어져요</p>
+          </div>
+        )}
+        <Field label={isMemo ? "메모 제목" : isMove ? "표시 이름 (선택)" : "장소 이름"} name="title" placeholder={isMemo ? "예 : 체크아웃 전에 짐 맡기기" : isMove ? autoName || "출발지와 도착지를 고르면 자동으로 채워져요" : "예 : 오타루 운하"} value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
+          onChange={(e) => { setTitle(e.target.value); autoTitle.current = null; setError(""); }} autoFocus={!p}
+          error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
+        {ctx.searchable && !isLinked && !isMemo && !isMove && (
+          <PlaceSuggest query={title} kind="place" bias={ctx.bias} disabled={busy}
+            onFallback={(s) => { setTitle(s.name.slice(0, MAX_PLACE_TITLE)); if (s.sub && !address.trim()) setAddress(s.sub.slice(0, 200)); }}
+            onPick={(d: Picked) => {
+              setTitle(d.name.slice(0, MAX_PLACE_TITLE)); if (d.address) setAddress(d.address.slice(0, 200)); setLinked({ id: d.id, lat: d.lat, lng: d.lng });
+              // 구글 장소 종류로 분류(와 이동 수단)를 골라 둔다. 직접 고른 분류는 그대로
+              const g = catTouched.current ? null : guessCategory(d.types);
+              if (g) {
+                setCategory(g.category); if (g.mode) setExtra((x) => ({ ...x, mode: x.mode || g.mode! }));
+                // 공항, 역을 고르면 출발지로 넣어 둔다. 이름은 직접 고른 것으로 보고 자동으로 바꾸지 않는다
+                if (g.category === "transport") { autoTitle.current = null; moveTouched.current = true; setExtra((x) => (x.from ? x : { ...x, from: d.name.slice(0, 60), from_pos: posText(d.lat, d.lng), from_id: d.id })); }
+              }
+            }} />
+        )}
+        {isLinked && !isMemo && !(isMove && (extra.from_pos || extra.to_pos)) && (
+          <div className="-mt-1.5 flex items-center gap-2 text-tiny text-ink-sub">
+            <Icon name="map" size={14} />지도에 위치가 연결된 장소예요
+            <button type="button" onClick={() => setLinked(null)} disabled={busy} className="press ml-auto h-9 px-2 font-semibold text-ink underline underline-offset-2">연결 끊기</button>
           </div>
         )}
           {!isMemo && !isMove && <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
@@ -372,9 +373,9 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
         <div className="flex gap-2">
         {!p && !isMemo && (
-          <Button variant="secondary" onClick={() => save(true)} disabled={busy || !titleLen || uploading > 0} className="flex-none">이어서 추가</Button>
+          <Button variant="secondary" onClick={() => save(true)} disabled={busy || !(titleLen || (isMove && autoName)) || uploading > 0} className="flex-none">이어서 추가</Button>
         )}
-        <Button full onClick={() => save()} disabled={busy || !titleLen || uploading > 0}>{busy ? "저장하는 중" : uploading ? "사진 올리는 중" : p ? "저장" : isMemo ? "메모 추가" : "장소 추가"}</Button>
+        <Button full onClick={() => save()} disabled={busy || !(titleLen || (isMove && autoName)) || uploading > 0}>{busy ? "저장하는 중" : uploading ? "사진 올리는 중" : p ? "저장" : isMemo ? "메모 추가" : "장소 추가"}</Button>
         </div>
       </div>
 
@@ -408,5 +409,19 @@ function MoveStop({ label, placeholder, value, linked, searchable, bias, disable
           onPick={(d) => onChange({ name: d.name.slice(0, 60), lat: d.lat, lng: d.lng, id: d.id })} />
       )}
     </div>
+  );
+}
+
+/*
+  시간 칸 (2026-11-16 마루님 "화살표가 오른쪽으로 치우쳐"). 브라우저 기본 화살표는 여백을 무시해서 끄고,
+  아래 화살표 아이콘을 칸 오른쪽 안쪽 16px 에 직접 둔다. 크롬의 시계 버튼은 투명하게 칸 전체에 깔아 어디를 눌러도 고르기가 열린다
+*/
+function TimeInput({ value, onChange, disabled, autoFocus }: { value: string; onChange: (v: string) => void; disabled?: boolean; autoFocus?: boolean }) {
+  return (
+    <span className="relative flex">
+      <input type="time" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} autoFocus={autoFocus}
+        className="h-12 w-full min-w-0 appearance-none rounded-field border border-line-strong bg-surface pl-4 pr-10 text-left text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-date-and-time-value]:text-left" />
+      <Icon name="chevron-down" size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-ink-sub" />
+    </span>
   );
 }
