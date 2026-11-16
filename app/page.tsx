@@ -34,7 +34,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
   const { bye } = await searchParams;
   const viewer = await getViewer();
   const loggedIn = isIn(viewer);
-  const trips = await loadTrips(viewer);
+  // 여행 목록, 도장, 안 읽은 알림은 서로 기다리지 않고 한꺼번에 (성능)
+  const [trips, stamps, unread] = await Promise.all([loadTrips(viewer), loggedIn ? loadStamps(viewer) : null, loadUnreadCount(viewer)]);
   const next = upcomingOf(trips);
   const past = pastOf(trips);
   const hero = next[0];
@@ -45,9 +46,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
   const full = ongoing ? await loadTrip(viewer, hero.id) : null;
   const todayItems = full && "trip" in full ? full.trip.days[dayNo - 1]?.items ?? [] : [];
   const canEdit = !!full && "role" in full && full.role !== "viewer" && viewer.kind === "user";
-  const stamps = loggedIn ? await loadStamps(viewer) : null;
   const left = hero && !ongoing ? daysBetween(today, hero.start) : 0;
-  const unread = await loadUnreadCount(viewer);
 
   return (
     <AppShell>

@@ -86,25 +86,32 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   if (v.kind === "preview") { const t = getTrip(id); return t ? { trip: t, role: "owner" } : { missing: "none" }; }
   if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(id)) return { missing: "none" };
   const sb = (await createClient())!;
-  const { data, error } = await sb.from("trips").select(SELECT).eq("id", id).maybeSingle();
+  // 여행, 장소, 내 권한은 서로 기다릴 필요가 없어 한꺼번에 묻는다 (성능 : 왕복 5번 → 2번)
+  const [{ data, error }, { data: rows, error: itemsError }, { data: me }] = await Promise.all([
+    sb.from("trips").select(SELECT).eq("id", id).maybeSingle(),
+    sb.from("itinerary_items")
+      .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos, updated_by, updated_at, lat, lng, details")
+      .eq("trip_id", id).is("removed_at", null).order("sort_order"),
+    sb.from("trip_members").select("role").eq("trip_id", id).eq("user_id", v.id).is("removed_at", null).maybeSingle(),
+  ]);
   if (error) throw new Error("trip_load_failed");
   if (!data) return { missing: "none" };
   const r = data as unknown as Row;
   if (r.removed_at) return { missing: "removed" };
-
-  const { data: rows } = await sb.from("itinerary_items")
-    .select("id, day_index, sort_order, title, address, category, start_time, estimated_cost, cost_currency, memo, photos, updated_by, updated_at, lat, lng, details")
-    .eq("trip_id", id).is("removed_at", null).order("sort_order");
+  // 장소를 못 읽었는데 빈 일정으로 보이면 지워진 줄 안다 → 오류 화면(다시 시도)으로
+  if (itemsError) throw new Error("trip_items_load_failed");
   // 누가 고쳤는지 : 다른 사람이 24시간 안에 고친 장소에 이름 (2단계)
   const names = new Map(r.trip_members.filter((m) => m.user_id).map((m) => [m.user_id!, m.display_name]));
   const dayAgo = Date.now() - 24 * 3600 * 1000;
   const editorOf = (it: PlaceRow) => it.updated_by && it.updated_by !== v.id && it.updated_at && Date.parse(it.updated_at) > dayAgo ? names.get(it.updated_by) : undefined;
   const trip = base(r);
-  const face = await faces(sb, trip.members.flatMap((m) => (m.userId ? [m.userId] : [])));
+  const [face, photos] = await Promise.all([
+    faces(sb, trip.members.flatMap((m) => (m.userId ? [m.userId] : []))),
+    photoUrls(sb, ((rows ?? []) as PlaceRow[]).flatMap((it) => it.photos ?? [])),
+  ]);
   trip.members = trip.members.map((m) => ({ ...m, avatar: m.userId ? face.get(m.userId) : undefined }));
   const len = daysBetween(trip.start, trip.end) + 1;
   trip.days = Array.from({ length: len }, () => ({ items: [] as Item[] }));
-  const photos = await photoUrls(sb, ((rows ?? []) as PlaceRow[]).flatMap((it) => it.photos ?? []));
   for (const it of (rows ?? []) as PlaceRow[]) {
     const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
     const desc = it.category === "memo" ? it.memo ?? "" : [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
@@ -112,7 +119,6 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }
-  const { data: me } = await sb.from("trip_members").select("role").eq("trip_id", id).eq("user_id", v.id).is("removed_at", null).maybeSingle();
   return { trip, role: (me?.role ?? "viewer") as Role };
 });
 
@@ -155,24 +161,22 @@ export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?
   const r = await loadTrip(v, tripId);
   if (!("trip" in r)) return null;
   const sb = (await createClient())!;
+  // 첫 도시, 고칠 장소, 예약 연결은 서로 기다리지 않고 한꺼번에 (성능)
   // "*" : 0014(좌표 칸) 적용 전에도 깨지지 않게
-  const { data: city } = await sb.from("trip_cities").select("*").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle();
+  const [{ data: city }, { data: placeRow }, { data: rsv }] = await Promise.all([
+    sb.from("trip_cities").select("*").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle(),
+    placeId ? sb.from("itinerary_items").select("*").eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).maybeSingle() : Promise.resolve({ data: null }),
+    placeId ? sb.from("checklist_items").select("id").eq("trip_id", tripId).eq("item_id", placeId).is("removed_at", null).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
   let bias: { lat: number; lng: number } | null = city?.lat != null ? { lat: city.lat, lng: city.lng } : null;
   if (!bias && city?.country_code) {
     const { data: c } = await sb.from("cities").select("lat, lng").eq("country_code", city.country_code).eq("name", city.name).maybeSingle();
     if (c?.lat != null) bias = { lat: c.lat, lng: c.lng };
   }
-  let place: PlaceRow | undefined;
-  if (placeId) {
-    const { data } = await sb.from("itinerary_items")
-      .select("*")
-      .eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).maybeSingle();
-    if (!data) return null;
-    place = data as PlaceRow;
-  }
+  if (placeId && !placeRow) return null;
+  const place = (placeRow ?? undefined) as PlaceRow | undefined;
   const t = r.trip;
   const photos = placeId ? [...t.days.flatMap((d) => d.items), ...t.undated].find((it) => it.id === placeId)?.photos : undefined;
-  const { data: rsv } = placeId ? await sb.from("checklist_items").select("id").eq("trip_id", tripId).eq("item_id", placeId).is("removed_at", null).maybeSingle() : { data: null };
   return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos, searchable: placesEnabled(), bias, reserved: !!rsv };
 });
 
@@ -187,18 +191,17 @@ export const loadMembers = cache(async (v: Viewer, tripId: string): Promise<Memb
   const r = await loadTrip(v, tripId);
   if (!("trip" in r)) return null;
   const sb = (await createClient())!;
-  const { data: rows } = await sb.from("trip_members").select("id, user_id, display_name, role, created_at")
-    .eq("trip_id", tripId).is("removed_at", null).order("created_at");
+  const [{ data: rows }, { data: inv }] = await Promise.all([
+    sb.from("trip_members").select("id, user_id, display_name, role, created_at").eq("trip_id", tripId).is("removed_at", null).order("created_at"),
+    r.role === "owner"
+      ? sb.from("trip_invites").select("token, role, expires_at").eq("trip_id", tripId).is("revoked_at", null).gt("expires_at", new Date().toISOString()).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
   const order: Record<string, number> = { owner: 0, editor: 1, viewer: 2 };
   const members = ((rows ?? []) as { id: string; user_id: string | null; display_name: string; role: Role }[])
     .map((m) => ({ id: m.id, name: m.display_name, role: m.role, isMe: m.user_id === v.id, userId: m.user_id ?? undefined, avatar: r.trip.members.find((x) => x.userId && x.userId === m.user_id)?.avatar }))
     .sort((a, b) => order[a.role] - order[b.role]);
-  let invite: MembersView["invite"] = null;
-  if (r.role === "owner") {
-    const { data } = await sb.from("trip_invites").select("token, role, expires_at")
-      .eq("trip_id", tripId).is("revoked_at", null).gt("expires_at", new Date().toISOString()).maybeSingle();
-    if (data) invite = { token: data.token, role: data.role, expiresAt: data.expires_at };
-  }
+  const invite: MembersView["invite"] = inv ? { token: inv.token, role: inv.role, expiresAt: inv.expires_at } : null;
   return { tripId, tripTitle: r.trip.title, role: r.role, members, invite };
 });
 
@@ -373,9 +376,10 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
   if (v.kind === "preview") return PREVIEW_STAMPS;
   if (v.kind !== "user") return { earned: [], missing: [], cityCount: 0, countryCount: 0 };
   const sb = (await createClient())!;
-  const [{ data: grants }, { data: myCities }] = await Promise.all([
+  const [{ data: grants }, { data: myCities }, { data: catalog }] = await Promise.all([
     sb.from("stamp_grants").select("trip_id, city_id, granted_at, cities(name, country_code)").eq("user_id", v.id).order("granted_at"),
     sb.from("trip_cities").select("name, country_code, trips!inner(removed_at)").is("trips.removed_at", null),
+    sb.from("cities").select("id, name, country_code"),
   ]);
   type G = { trip_id: string; city_id: number; granted_at: string; cities: { name: string; country_code: string } | null };
   const gs = (grants ?? []) as unknown as G[];
@@ -403,7 +407,6 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
   }
   const earned = [...byCity.values()];
   const have = new Set(earned.map((s) => `${s.country}:${s.name}`));
-  const { data: catalog } = await sb.from("cities").select("id, name, country_code");
   const known = new Map((catalog ?? []).map((c: { id: number; name: string; country_code: string }) => [`${c.country_code}:${c.name}`, c.id]));
   const missing: StampCard[] = [];
   for (const c of (myCities ?? []) as { name: string; country_code: string | null }[]) {
