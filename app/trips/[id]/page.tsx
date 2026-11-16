@@ -84,7 +84,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
       {viewer.kind === "user" && ongoing && <StampClaim tripId={trip.id} />}
 
       <DayBoard tripId={trip.id} start={trip.start} days={trip.days.slice(0, len)} undated={trip.undated}
-        editable={editable} canAdd={canEdit} user={viewer.kind === "user"} initialDay={day}
+        editable={editable} canAdd={canEdit} user={viewer.kind === "user"} initialDay={sp.day === "all" ? 0 : day}
         jump={(valid && asked > 1) || (!valid && ongoing && day > 1)} jumpUndated={!!sp.undated} />
       {viewer.kind === "user" && statusOf(trip, today) !== "past" && <OfflineSaver tripId={trip.id} days={len} />}
     </AppShell>

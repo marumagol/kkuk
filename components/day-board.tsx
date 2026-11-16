@@ -37,8 +37,9 @@ const AIRPORT = /(공항|airport|空港|機場|机场)(\s*(국제선|국내선|�
 const isFlight = (x: Item) => AIRPORT.test(x.title.trim()) || (x.category === "이동" && (x.detail ?? "").startsWith("비행기"));
 const hasPos = (x: Item) => x.lat != null && x.lng != null;
 /* 번호 : 위치가 있는 장소만, 메모와 공항·항공은 빼고 1부터. 지도 핀과 같은 번호 */
-function numbering(items: Item[]) {
-  let n = 0;
+const ALL = -1; // 날짜 칩 [전체]
+function numbering(items: Item[], from = 0) {
+  let n = from;
   return items.map((x) => (x.category === "메모" ? { mark: "dot" as const, n: 0 } : isFlight(x) ? { mark: "plane" as const, n: 0 } : hasPos(x) ? { n: ++n } : { n: 0 }));
 }
 function km(a: Item, b: Item) {
@@ -55,7 +56,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const fromProps = useCallback(() => [...days.map((d) => d.items), undated], [days, undated]);
   const [cols, setCols] = useState<Item[][]>(fromProps);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [sel, setSel] = useState(jumpUndated && undated.length ? U : Math.min(Math.max(initialDay, 1), len) - 1);
+  const [sel, setSel] = useState(jumpUndated && undated.length ? U : initialDay === 0 ? ALL : Math.min(Math.max(initialDay, 1), len) - 1); // ALL = 전체 (2026-11-16 마루님)
   const [editing, setEditing] = useState(false);
   const [overCol, setOverCol] = useState<number | null>(null); // 끄는 중 날짜 칩 위
   const [msg, setMsg] = useState("");
@@ -131,12 +132,12 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   /* 고른 날 : 칩을 가운데로, 주소에 남기기 */
   useEffect(() => {
     nav.current?.querySelector<HTMLElement>(`[data-col="${sel}"]`)?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
-    history.replaceState(history.state, "", `/trips/${tripId}?${sel === U ? "undated=1" : `day=${sel + 1}`}`);
+    history.replaceState(history.state, "", `/trips/${tripId}?${sel === U ? "undated=1" : sel === ALL ? "day=all" : `day=${sel + 1}`}`);
   }, [sel, tripId, U]);
 
   const sheetTop = () => (sheet.current ? sheet.current.getBoundingClientRect().top + scrollY : 0);
   const pickDay = (c: number) => {
-    setSel(c); setUndo(null);
+    setSel(c); setUndo(null); if (c === ALL) setEditing(false); // 전체에서는 순서 바꾸기를 하지 않는다
     // 시트를 끌어 올려 둔 상태면 새 날의 맨 위부터
     if (scrollY > sheetTop()) scrollTo({ top: sheetTop(), behavior: "smooth" });
   };
@@ -249,12 +250,16 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
   const canSort = editable && cols.flat().every((i) => i.id);
   const showUndated = cols[U].length > 0 || sel === U || (editable && !!dragId);
-  const cur = useMemo(() => cols[sel] ?? [], [cols, sel]);
-  const marks = useMemo(() => numbering(cur), [cur]);
+  // 전체 : 날마다 묶어 이어서 보인다. 번호는 1일차부터 이어서 (지도 핀과 같은 번호)
+  const groups = useMemo(() => (sel === ALL ? [...cols.map((items, c) => ({ c, items }))].filter((g) => g.c < U || g.items.length) : [{ c: sel, items: cols[sel] ?? [] }]), [cols, sel, U]);
+  const groupMarks = useMemo(() => { let n = 0; return groups.map((g) => { const m = numbering(g.items, n); n = Math.max(n, ...m.map((x) => x.n)); return m; }); }, [groups]);
+  const cur = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+  const marks = useMemo(() => groupMarks.flat(), [groupMarks]);
   const points = useMemo<DayPoint[]>(() => cur.flatMap((x, i) => (marks[i].n && hasPos(x) ? [{ lat: x.lat!, lng: x.lng!, n: marks[i].n, title: x.title }, ...(x.arrive ? [{ lat: x.arrive.lat, lng: x.arrive.lng, n: marks[i].n, title: `${x.arrive.name || "도착"} (도착)` }] : [])] : [])), [cur, marks]);
   const onPin = useCallback((n: number) => {
-    const i = numbering(colsRef.current[sel] ?? []).findIndex((m) => m.n === n);
-    const id = colsRef.current[sel]?.[i]?.id;
+    const list = sel === ALL ? colsRef.current.flat() : colsRef.current[sel] ?? [];
+    const i = numbering(list).findIndex((m) => m.n === n);
+    const id = list[i]?.id;
     const el = id ? rows.current.get(id) : null;
     if (!el) return;
     scrollTo({ top: Math.max(el.getBoundingClientRect().top + scrollY - (nav.current?.offsetHeight ?? 0) - 24, sheetTop()), behavior: "smooth" });
@@ -262,20 +267,20 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   }, [sel]);
 
   /* 장소 사이 거리 : 앞쪽에서 가장 가까운 위치 있는 장소와 (위치 없는 곳, 메모는 건너뜀) */
-  const gapBefore = (i: number) => {
-    const x = cur[i];
+  const gapBefore = (list: Item[], i: number) => {
+    const x = list[i];
     if (!hasPos(x) || x.category === "메모") return null;
-    for (let j = i - 1; j >= 0; j--) { const p = cur[j]; if (p.category !== "메모" && hasPos(p)) return distText(km(p, x)); }
+    for (let j = i - 1; j >= 0; j--) { const p = list[j]; if (p.category !== "메모" && hasPos(p)) return distText(km(p, x)); }
     return null;
   };
 
-  const d = sel === U ? null : addDays(start, sel);
+  const d = sel === U || sel === ALL ? null : addDays(start, sel);
   const chip = (c: number, label: string) => {
     const on = sel === c, over = overCol === c;
-    const empty = c !== U && !cols[c]?.length; // 빈 날은 흐린 점선 칩 (2026-11-16 마루님 "빈 날 접기")
+    const empty = c !== U && c !== ALL && !cols[c]?.length; // 빈 날은 흐린 점선 칩 (2026-11-16 마루님 "빈 날 접기")
     return (
       <button key={c} type="button" data-col={c} onClick={() => pickDay(c)} aria-current={on ? "true" : undefined}
-        aria-label={c === U ? `날짜 미정 ${cols[U].length}곳` : `${c + 1}일차, ${md(addDays(start, c))} ${weekday(addDays(start, c))}요일`}
+        aria-label={c === ALL ? "전체 일정" : c === U ? `날짜 미정 ${cols[U].length}곳` : `${c + 1}일차, ${md(addDays(start, c))} ${weekday(addDays(start, c))}요일`}
         className={"press flex h-10 flex-none items-center rounded-full px-4 text-sub font-bold transition-colors " +
           (over ? "bg-point-soft text-point-text ring-2 ring-point" : on ? "bg-btn text-on-btn" : dragId ? "border border-dashed border-point bg-surface text-ink" : empty ? "border border-dashed border-line-strong bg-transparent text-ink-sub/70" : "border border-line-strong bg-surface text-ink-sub")}>
         {label}
@@ -289,7 +294,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     for (const it of cur) if (it.cost != null && it.cur) sum.set(it.cur, (sum.get(it.cur) ?? 0) + it.cost);
     return [...sum].map(([c, n]) => formatMoney(n, c)).join(", ");
   })();
-  const dayDate = sel === U ? null : addDays(start, sel);
+
 
   return (
     <>
@@ -311,10 +316,11 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         <nav ref={nav} aria-label="날짜" className="sticky top-0 z-20 flex items-center gap-1 rounded-t-[28px] bg-bg py-3 pl-1 pr-3">
           {/* 칩 줄 양 끝은 바탕으로 부드럽게 사라지게 (2026-11-16 마루님 "칼같이 잘린다"). 여백을 안쪽에 두어 처음과 끝 칩은 흐려지지 않는다 */}
           <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-28px),transparent)]">
+            {len > 1 && chip(ALL, "전체")}
             {days.map((_, c) => chip(c, `${c + 1}일차`))}
             {showUndated && chip(U, `미정 ${cols[U].length}`)}
           </div>
-          {editable && (
+          {editable && sel !== ALL && (
             <button type="button" onClick={() => setEditing((v) => !v)} aria-pressed={editing}
               className={"press inline-flex h-10 flex-none items-center gap-1 rounded-full px-3.5 text-sub font-bold " + (editing ? "bg-point text-white" : "border border-line-strong bg-surface text-ink")}>
               {editing ? <><Icon name="check" size={16} />완료</> : <><Icon name="grip" size={16} />편집</>}
@@ -325,18 +331,18 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
         <div className="flex items-end justify-between gap-2 px-5 pb-3 pt-1">
           <h2 className="min-w-0 truncate text-title font-extrabold text-ink">
-            {sel === U ? "날짜 미정" : <>{sel + 1}일차 <span className="font-semibold text-ink-sub">{md(d!)} ({weekday(d!)})</span></>}
-            {sel !== U && days[sel]?.title && <span className="block truncate text-sub font-semibold text-ink-sub">{days[sel].title}</span>}
-            {dayCost && <span className="mt-0.5 block truncate text-tiny font-semibold text-ink-sub">이날 예상 비용 <span className="font-bold text-ink tabular-nums">{dayCost}</span></span>}
+            {sel === ALL ? <>전체 일정 <span className="font-semibold text-ink-sub">{len}일</span></> : sel === U ? "날짜 미정" : <>{sel + 1}일차 <span className="font-semibold text-ink-sub">{md(d!)} ({weekday(d!)})</span></>}
+            {sel !== U && sel !== ALL && days[sel]?.title && <span className="block truncate text-sub font-semibold text-ink-sub">{days[sel].title}</span>}
+            {dayCost && <span className="mt-0.5 block truncate text-tiny font-semibold text-ink-sub">{sel === ALL ? "전체" : "이날"} 예상 비용 <span className="font-bold text-ink tabular-nums">{dayCost}</span></span>}
           </h2>
           <div className="flex flex-none gap-1.5">
-            {editable && sel !== U && movableOf(cur) >= 2 && (
+            {editable && sel !== U && sel !== ALL && movableOf(cur) >= 2 && (
               <button type="button" onClick={() => sortRoute(sel)} disabled={!!dragId} aria-label={`${sel + 1}일차 동선 정리`}
                 className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
                 <Icon name="refresh" size={15} />동선 정리
               </button>
             )}
-            {user && FEATURES.diary && sel !== U && (
+            {user && FEATURES.diary && sel !== U && sel !== ALL && (
               <Link href={`/trips/${tripId}/diary?day=${sel + 1}`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
                 <Icon name="book" size={15} />일기
               </Link>
@@ -345,20 +351,31 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         </div>
 
         <div className="px-5">
-          {cur.length ? (
-            <ol className="flex flex-col" aria-label={sel === U ? "날짜 미정 장소" : `${sel + 1}일차 장소`}>
-              {cur.map((it, i) => {
-                const gap = gapBefore(i);
+          {groups.map((g, gi) => {
+            const list = g.items, gm = groupMarks[gi];
+            const dayDate = g.c === U ? null : addDays(start, g.c);
+            return (
+          <section key={g.c} aria-label={g.c === U ? "날짜 미정" : `${g.c + 1}일차`} className={sel === ALL && gi > 0 ? "mt-4" : ""}>
+          {/* 전체 : 날마다 머리글 (2026-11-16 마루님) */}
+          {sel === ALL && (
+            <h3 className="mb-3 flex items-baseline gap-1.5 text-body font-extrabold text-ink">
+              {g.c === U ? "날짜 미정" : <>{g.c + 1}일차 <span className="text-sub font-semibold text-ink-sub">{md(dayDate!)} ({weekday(dayDate!)})</span></>}
+            </h3>
+          )}
+          {list.length ? (
+            <ol className="flex flex-col" aria-label={g.c === U ? "날짜 미정 장소" : `${g.c + 1}일차 장소`}>
+              {list.map((it, i) => {
+                const gap = gapBefore(list, i);
                 return (
-                  <li key={it.id ?? `${sel}-${i}`} ref={(el) => { if (el && it.id) rows.current.set(it.id, el); }}
+                  <li key={it.id ?? `${g.c}-${i}`} ref={(el) => { if (el && it.id) rows.current.set(it.id, el); }}
                     className={"flex flex-col transition-transform " + (dragId === it.id ? "relative z-10 scale-[1.02] opacity-90 drop-shadow-lg" : "")}>
                     {gap && !dragId && (
                       <span className="-mt-2 mb-1 -ml-1 w-fit rounded-full border border-line bg-bg px-2 py-0.5 text-tiny font-bold leading-4 text-ink-sub">{gap}</span>
                     )}
                     <div className="flex items-start gap-1">
                       <div className="min-w-0 flex-1">
-                        <PinCard index={marks[i].n} mark={marks[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
-                          desc={it.desc ?? ""} editedBy={it.editedBy} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === cur.length - 1}
+                        <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
+                          desc={it.desc ?? ""} editedBy={it.editedBy} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === list.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined}
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
                           corner={!editing && it.category !== "메모" && canMap(it) ? (
@@ -388,10 +405,13 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               })}
             </ol>
           ) : (
-            <div className="flex min-h-16 items-center rounded-pin border-2 border-dashed border-line px-4 py-3">
-              <span className="text-sub text-ink-sub">{sel === U ? "날짜를 못 정한 장소가 없어요" : "아직 장소가 없어요"}</span>
+            <div className={"flex items-center rounded-pin border-2 border-dashed border-line px-4 " + (sel === ALL ? "min-h-12 py-2" : "min-h-16 py-3")}>
+              <span className="text-sub text-ink-sub">{g.c === U ? "날짜를 못 정한 장소가 없어요" : "아직 장소가 없어요"}</span>
             </div>
           )}
+          </section>
+            );
+          })}
         </div>
       </section>
 
@@ -407,7 +427,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
       {asking && <AlertDialog title={asking.category === "메모" ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
         confirmLabel="삭제" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
-      {canAdd && !dragId && <BottomDock align="end"><AddFab user={user} base={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}`} /></BottomDock>}
+      {canAdd && !dragId && <BottomDock align="end"><AddFab user={user} base={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel === ALL ? 1 : sel + 1}`} /></BottomDock>}
     </>
   );
 }
