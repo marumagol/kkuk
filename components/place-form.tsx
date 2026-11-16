@@ -7,7 +7,7 @@
 */
 import { LeaveGuard } from "@/components/leave-guard";
 import { useRef, useState, useTransition } from "react";
-import { Button, Field, Icon } from "@/components/kit";
+import { Button, Field, FormCard, Icon } from "@/components/kit";
 import { createClient } from "@/lib/supabase/client";
 import { shrinkImage } from "@/lib/image";
 import { AlertDialog } from "@/components/gate";
@@ -115,17 +115,18 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
 
   return (
     <LeaveGuard>
-      <div className="flex flex-1 flex-col gap-6 px-5 pt-6">
+      <div className="flex flex-1 flex-col gap-3 px-5 pt-5">
         {/* 날짜 : 여행 기간의 날을 칩으로 골라요 (2026-11-16 마루님). 화면 맨 위, 넘치면 다음 줄로 (가로 스크롤 없음) */}
+        <FormCard title={isMemo ? "날짜" : "날짜와 시간"}>
         <fieldset className="flex min-w-0 flex-col gap-2">
-          <legend className="mb-2 text-sub font-bold text-ink-sub">날짜</legend>
+          <legend className="sr-only">날짜</legend>
           <div className="flex flex-wrap gap-2">
             {[...Array.from({ length: ctx.days }, (_, i) => String(i)), "none"].map((v) => {
               const on = dayValue === v;
               const d = v === "none" ? null : addDays(ctx.start, Number(v));
               return (
                 <button key={v} type="button" aria-pressed={on} disabled={busy} onClick={() => setDayValue(v)}
-                  className={"press flex h-14 flex-none flex-col items-center justify-center rounded-field px-3.5 " + (on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
+                  className={"press flex h-14 flex-none flex-col items-center justify-center rounded-field px-3.5 " + (on ? "bg-btn text-on-btn" : "bg-bg text-ink")}>
                   {d ? <>
                     <span className="text-sub font-bold">{Number(v) + 1}일차</span>
                     <span className={"text-tiny " + (on ? "opacity-75" : "text-ink-sub")}>{md(d)} ({weekday(d)})</span>
@@ -135,61 +136,15 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             })}
           </div>
         </fieldset>
-        <Field label={isMemo ? "메모 제목" : "장소 이름"} name="title" placeholder={isMemo ? "예 : 체크아웃 전에 짐 맡기기" : "예 : 오타루 운하"} value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
-          onChange={(e) => { setTitle(e.target.value); setError(""); }} autoFocus={!p}
-          error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
-        {ctx.searchable && !isLinked && !isMemo && (
-          <PlaceSuggest query={title} kind="place" bias={ctx.bias} disabled={busy}
-            onPick={(d: Picked) => {
-              setTitle(d.name.slice(0, MAX_PLACE_TITLE)); if (d.address) setAddress(d.address.slice(0, 200)); setLinked({ id: d.id, lat: d.lat, lng: d.lng });
-              // 구글 장소 종류로 분류(와 이동 수단)를 골라 둔다. 직접 고른 분류는 그대로
-              const g = catTouched.current ? null : guessCategory(d.types);
-              if (g) { setCategory(g.category); if (g.mode) setExtra((x) => ({ ...x, mode: x.mode || g.mode! })); }
-            }} />
-        )}
-        {isLinked && !isMemo && (
-          <div className="-mt-4 flex items-center gap-2 text-tiny text-ink-sub">
-            <Icon name="map" size={14} />지도에 위치가 연결된 장소예요
-            <button type="button" onClick={() => setLinked(null)} disabled={busy} className="press ml-auto h-9 px-2 font-semibold text-ink underline underline-offset-2">연결 끊기</button>
-          </div>
-        )}
-
-        <fieldset className="flex min-w-0 flex-col gap-2">
-          <legend className="mb-2 text-sub font-bold text-ink-sub">분류</legend>
-          <div className="flex flex-wrap gap-2">
-            {CATS.map((c) => (
-              <label key={c.code} className={"press inline-flex h-11 cursor-pointer items-center rounded-full px-4 text-sub font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30 " +
-                (category === c.code ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
-                <input type="radio" name="category" value={c.code} checked={category === c.code} onChange={() => { catTouched.current = true; setCategory(c.code); if (c.code === "transport" && time && !extra.depart) setExtra((x) => ({ ...x, depart: time })); }} className="sr-only" disabled={busy} />
-                {c.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        {category === "transport" && (
-          <fieldset className="-mt-2 flex flex-col gap-2">
-            <legend className="mb-2 text-sub font-bold text-ink-sub">이동 수단 (선택)</legend>
-            <div className="flex flex-wrap gap-2">
-              {MODES.map((m) => (
-                <button key={m.code} type="button" aria-pressed={extra.mode === m.code} disabled={busy}
-                  onClick={() => setExtra((x) => ({ ...x, mode: x.mode === m.code ? "" : m.code }))}
-                  className={"press inline-flex h-10 items-center rounded-full px-3.5 text-sub font-semibold " + (extra.mode === m.code ? "bg-point-soft text-point-text ring-1 ring-point" : "bg-surface text-ink")}>
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        )}
-
+        {!isMemo && <div className="border-t border-line" />}
         {/* 시간 : 기본은 "시간 없음", [시간 정하기] 를 누르면 시간 칸이 열린다 (2026-11-16 마루님) */}
         {!isMemo && <fieldset className="flex min-w-0 flex-col gap-2">
-          <legend className="mb-2 text-sub font-bold text-ink-sub">시간</legend>
+          <legend className="mb-2 text-tiny font-bold text-ink-sub">시간</legend>
           <div className="flex flex-wrap items-center gap-2">
             {[false, true].map((on) => (
               <button key={String(on)} type="button" aria-pressed={timed === on} disabled={busy}
                 onClick={() => { if (on) startTiming(); else { setTimed(false); setTime(""); } }}
-                className={"press inline-flex h-11 items-center rounded-full px-4 text-sub font-semibold " + (timed === on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
+                className={"press inline-flex h-11 items-center rounded-full px-4 text-sub font-semibold " + (timed === on ? "bg-btn text-on-btn" : "bg-bg text-ink")}>
                 {on ? "시간 정하기" : "시간 없음"}
               </button>
             ))}
@@ -220,7 +175,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             <div className="flex flex-wrap gap-2" aria-label="시간 빠르게 바꾸기">
               {[-30, 30, 60].map((m) => (
                 <button key={m} type="button" disabled={busy} onClick={() => setCurTime(addMin(curTime || lastTime || "09:00", m))}
-                  className="press inline-flex h-9 items-center rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                  className="press inline-flex h-9 items-center rounded-full bg-bg px-3 text-tiny font-bold text-ink">
                   {m < 0 ? "-30분" : m === 30 ? "+30분" : "+1시간"}
                 </button>
               ))}
@@ -228,12 +183,63 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             </div>
           )}
         </fieldset>}
+        </FormCard>
 
-        {/* 예약, 비용, 주소, 메모, 사진은 늘 펼쳐 둔다 (2026-11-16 마루님 "더 적기는 별로") */}
-        <div className="flex flex-col gap-6">
+        <FormCard title={isMemo ? "메모" : "장소"}>
+        <Field label={isMemo ? "메모 제목" : "장소 이름"} name="title" placeholder={isMemo ? "예 : 체크아웃 전에 짐 맡기기" : "예 : 오타루 운하"} value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
+          onChange={(e) => { setTitle(e.target.value); setError(""); }} autoFocus={!p}
+          error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
+        {ctx.searchable && !isLinked && !isMemo && (
+          <PlaceSuggest query={title} kind="place" bias={ctx.bias} disabled={busy}
+            onPick={(d: Picked) => {
+              setTitle(d.name.slice(0, MAX_PLACE_TITLE)); if (d.address) setAddress(d.address.slice(0, 200)); setLinked({ id: d.id, lat: d.lat, lng: d.lng });
+              // 구글 장소 종류로 분류(와 이동 수단)를 골라 둔다. 직접 고른 분류는 그대로
+              const g = catTouched.current ? null : guessCategory(d.types);
+              if (g) { setCategory(g.category); if (g.mode) setExtra((x) => ({ ...x, mode: x.mode || g.mode! })); }
+            }} />
+        )}
+        {isLinked && !isMemo && (
+          <div className="-mt-1.5 flex items-center gap-2 text-tiny text-ink-sub">
+            <Icon name="map" size={14} />지도에 위치가 연결된 장소예요
+            <button type="button" onClick={() => setLinked(null)} disabled={busy} className="press ml-auto h-9 px-2 font-semibold text-ink underline underline-offset-2">연결 끊기</button>
+          </div>
+        )}
+
+        <fieldset className="flex min-w-0 flex-col gap-2">
+          <legend className="mb-2 text-tiny font-bold text-ink-sub">분류</legend>
+          <div className="flex flex-wrap gap-2">
+            {CATS.map((c) => (
+              <label key={c.code} className={"press inline-flex h-11 cursor-pointer items-center rounded-full px-4 text-sub font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30 " +
+                (category === c.code ? "bg-btn text-on-btn" : "bg-bg text-ink")}>
+                <input type="radio" name="category" value={c.code} checked={category === c.code} onChange={() => { catTouched.current = true; setCategory(c.code); if (c.code === "transport" && time && !extra.depart) setExtra((x) => ({ ...x, depart: time })); }} className="sr-only" disabled={busy} />
+                {c.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {category === "transport" && (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-2 text-tiny font-bold text-ink-sub">이동 수단 (선택)</legend>
+            <div className="flex flex-wrap gap-2">
+              {MODES.map((m) => (
+                <button key={m.code} type="button" aria-pressed={extra.mode === m.code} disabled={busy}
+                  onClick={() => setExtra((x) => ({ ...x, mode: x.mode === m.code ? "" : m.code }))}
+                  className={"press inline-flex h-10 items-center rounded-full px-3.5 text-sub font-semibold " + (extra.mode === m.code ? "bg-point-soft text-point-text ring-1 ring-point" : "bg-bg text-ink")}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
+          {!isMemo && <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
+            onChange={(e) => setAddress(e.target.value)} disabled={busy} />}
+        </FormCard>
+
+        {/* 예약, 비용, 주소, 메모, 사진은 늘 펼쳐 둔다 (2026-11-16 마루님 "더 적기는 별로"). 카드로 묶음 (0.57.2) */}
           {/* 맞춤 칸 + 예약 필요를 한 카드에 (예약번호 옆에 예약 체크) */}
           {!isMemo && (
-            <div className="flex flex-col gap-3 rounded-card bg-surface-soft p-4">
+            <FormCard title="예약과 비용">
                 {fields.length > 0 && <div className="grid grid-cols-2 gap-3">
                 {fields.map((f) => (
                   <label key={f.key} className={"flex min-w-0 flex-col gap-1.5 " + (f.half ? "" : "col-span-2")}>
@@ -255,16 +261,14 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                 ))}
               </div>}
 
-              <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-field bg-surface px-4 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30">
+              <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-field bg-bg px-4 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30">
                 <input type="checkbox" checked={reserve} onChange={(e) => setReserve(e.target.checked)} disabled={busy} className="size-5 accent-[var(--btn)]" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-body font-semibold text-ink">예약 필요</span>
                   <span className="block text-tiny text-ink-sub">체크하면 준비 탭 예약 목록에 들어가요</span>
                 </span>
               </label>
-            </div>
-          )}
-          {!isMemo && <div className="flex items-end gap-2">
+          <div className="flex items-end gap-2">
             <div className="min-w-0 flex-1">
               <Field label="예상 비용 (선택)" name="cost" inputMode={decimalsOf(currency) ? "decimal" : "numeric"} placeholder="0" value={cost}
                 onChange={(e) => { setCost(e.target.value.replace(/[^\d.,]/g, "")); setError(""); }} disabled={busy} />
@@ -276,13 +280,14 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                 {currencies.map((c) => <option key={c} value={c}>{CUR_NAME[c] ?? c}</option>)}
               </select>
             </label>
-          </div>}
+          </div>
+            </FormCard>
+          )}
 
-          {!isMemo && <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
-            onChange={(e) => setAddress(e.target.value)} disabled={busy} />}
 
+          <FormCard title={isMemo ? "내용" : "메모와 첨부 파일"} desc={isMemo ? undefined : "함께하는 사람만 볼 수 있어요"}>
           <label className="flex flex-col gap-2">
-            <span className="text-sub font-bold text-ink-sub">{isMemo ? "내용 (선택)" : "메모 (선택)"}</span>
+            <span className="text-tiny font-bold text-ink-sub">{isMemo ? "내용 (선택)" : "메모 (선택)"}</span>
             <textarea value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={MAX_PLACE_MEMO} rows={4} disabled={busy}
               placeholder={isMemo ? "그날 기억할 것, 할 일 등" : "가는 방법, 챙길 것 등"}
               className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
@@ -291,7 +296,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           {/* 첨부 파일 : 예약 화면과 같은 모양 (2026-11-16 마루님). PDF 는 카드에 그림 없이 개수에만 */}
           {!isMemo && <section className="flex flex-col gap-2" aria-label="첨부 파일">
             <div className="flex items-end justify-between">
-              <h2 className="text-sub font-semibold text-ink">첨부 파일 (선택)</h2>
+              <h3 className="text-tiny font-bold text-ink-sub">첨부 파일 (선택)</h3>
               <span className="text-tiny text-ink-sub">{photos.length}/{MAX_PLACE_PHOTOS}</span>
             </div>
             {photos.length > 0 && (
@@ -316,15 +321,14 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             )}
             <input ref={fileRef} type="file" accept="image/*,application/pdf" multiple className="hidden"
               onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ""; void addPhotos(fs); }} />
-            <p className="text-tiny text-ink-sub">함께하는 사람만 볼 수 있어요. 사진은 올릴 때 크기를 줄여요</p>
+            <p className="text-tiny text-ink-sub">사진은 올릴 때 크기를 줄여요</p>
           </section>}
-
-        </div>
+          </FormCard>
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
 
         {p && (
           /* 삭제는 작은 글자 버튼 (2026-11-16 마루님 "삭제 버튼 너무 커") */
-          <div className="flex justify-center">
+          <div className="mt-3 flex justify-center">
             <button type="button" onClick={() => setConfirm(true)} disabled={busy}
               className="press inline-flex h-10 items-center gap-1 rounded-full px-3 text-sub font-semibold text-point-text"><Icon name="trash" size={16} />{isMemo ? "메모 삭제" : "장소 삭제"}</button>
           </div>
