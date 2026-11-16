@@ -6,7 +6,7 @@
   사진은 최대 5장 (2026-11-14). 고르는 즉시 줄여서 비공개 저장소 place-photos/<여행 id>/ 에 올리고, 저장할 때 위치 목록을 함께 저장
 */
 import { LeaveGuard } from "@/components/leave-guard";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Button, Field, Icon } from "@/components/kit";
 import { createClient } from "@/lib/supabase/client";
 import { shrinkImage } from "@/lib/image";
@@ -58,11 +58,6 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const [photos, setPhotos] = useState<{ path: string; url: string }[]>(ctx.photos ?? []);
   const [uploading, setUploading] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
-  const dayRow = useRef<HTMLDivElement>(null);
-  useEffect(() => { // 고른 날 칩이 보이게 가로로만 옮긴다 (화면은 그대로)
-    const row = dayRow.current, el = row?.querySelector<HTMLElement>("[aria-pressed=true]");
-    if (row && el) row.scrollLeft = el.offsetLeft - (row.clientWidth - el.offsetWidth) / 2;
-  }, []);
 
   async function addPhotos(files: File[]) {
     setError("");
@@ -105,6 +100,25 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   return (
     <LeaveGuard>
       <div className="flex flex-1 flex-col gap-6 px-5 pt-6">
+        {/* 날짜 : 여행 기간의 날을 칩으로 골라요 (2026-11-16 마루님). 화면 맨 위, 넘치면 다음 줄로 (가로 스크롤 없음) */}
+        <fieldset className="flex min-w-0 flex-col gap-2">
+          <legend className="mb-2 text-sub font-bold text-ink-sub">날짜</legend>
+          <div className="flex flex-wrap gap-2">
+            {[...Array.from({ length: ctx.days }, (_, i) => String(i)), "none"].map((v) => {
+              const on = dayValue === v;
+              const d = v === "none" ? null : addDays(ctx.start, Number(v));
+              return (
+                <button key={v} type="button" aria-pressed={on} disabled={busy} onClick={() => setDayValue(v)}
+                  className={"press flex h-14 flex-none flex-col items-center justify-center rounded-field px-3.5 " + (on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
+                  {d ? <>
+                    <span className="text-sub font-bold">{Number(v) + 1}일차</span>
+                    <span className={"text-tiny " + (on ? "opacity-75" : "text-ink-sub")}>{md(d)} ({weekday(d)})</span>
+                  </> : <span className="text-sub font-bold">날짜 미정</span>}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
         <Field label={isMemo ? "메모 제목" : "장소 이름"} name="title" placeholder={isMemo ? "예 : 체크아웃 전에 짐 맡기기" : "예 : 오타루 운하"} value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
           onChange={(e) => { setTitle(e.target.value); setError(""); }} autoFocus={!p}
           error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
@@ -178,25 +192,6 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           </div>
         )}
 
-        {/* 날짜 : 여행 기간의 날을 칩으로 골라요 (2026-11-16 마루님). 고른 날이 보이게 가운데로 */}
-        <fieldset className="flex min-w-0 flex-col gap-2">
-          <legend className="mb-2 text-sub font-bold text-ink-sub">날짜</legend>
-          <div ref={dayRow} className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-            {[...Array.from({ length: ctx.days }, (_, i) => String(i)), "none"].map((v) => {
-              const on = dayValue === v;
-              const d = v === "none" ? null : addDays(ctx.start, Number(v));
-              return (
-                <button key={v} type="button" aria-pressed={on} disabled={busy} onClick={() => setDayValue(v)}
-                  className={"press flex h-14 flex-none flex-col items-center justify-center rounded-field px-3.5 " + (on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
-                  {d ? <>
-                    <span className="text-sub font-bold">{Number(v) + 1}일차</span>
-                    <span className={"text-tiny " + (on ? "opacity-75" : "text-ink-sub")}>{md(d)} ({weekday(d)})</span>
-                  </> : <span className="text-sub font-bold">날짜 미정</span>}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
         {/* 시간 : 기본은 "시간 없음", [시간 정하기] 를 누르면 시간 칸이 열린다 (2026-11-16 마루님) */}
         {!isMemo && <fieldset className="flex min-w-0 flex-col gap-2">
           <legend className="mb-2 text-sub font-bold text-ink-sub">시간</legend>
