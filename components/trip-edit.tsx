@@ -7,7 +7,7 @@
 */
 import { LeaveGuard } from "@/components/leave-guard";
 import { useState, useTransition } from "react";
-import { Button, Field } from "@/components/kit";
+import { Button, Field, Icon } from "@/components/kit";
 import { AlertDialog } from "@/components/gate";
 import { RangeCalendar } from "@/components/range-calendar";
 import { CityEditor, useCityDraft, type City } from "@/components/city-editor";
@@ -92,7 +92,7 @@ export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) 
 
         {trip.role === "owner" && (
           <section className="flex flex-col gap-2 border-t border-line pt-6">
-            <Button type="button" variant="secondary" full onClick={remove} disabled={busy}>여행 삭제</Button>
+            <div className="flex justify-center"><button type="button" onClick={remove} disabled={busy} className="press inline-flex h-10 items-center gap-1 rounded-full px-3 text-sub font-semibold text-point-text"><Icon name="trash" size={16} />여행 삭제</button></div>
             <p className="text-center text-tiny text-ink-sub">여행 삭제는 여행 주인만 할 수 있어요</p>
           </section>
         )}

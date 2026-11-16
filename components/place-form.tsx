@@ -323,8 +323,10 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
 
         {p && (
-          <div className="border-t border-line pt-6">
-            <Button type="button" variant="secondary" full onClick={() => setConfirm(true)} disabled={busy}>{isMemo ? "메모 삭제" : "장소 삭제"}</Button>
+          /* 삭제는 작은 글자 버튼 (2026-11-16 마루님 "삭제 버튼 너무 커") */
+          <div className="flex justify-center">
+            <button type="button" onClick={() => setConfirm(true)} disabled={busy}
+              className="press inline-flex h-10 items-center gap-1 rounded-full px-3 text-sub font-semibold text-point-text"><Icon name="trash" size={16} />{isMemo ? "메모 삭제" : "장소 삭제"}</button>
           </div>
         )}
       </div>
