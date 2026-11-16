@@ -151,14 +151,22 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
       <section className="relative -mt-4 flex flex-col gap-5 rounded-t-[28px] bg-surface px-5 pb-8 pt-6">
         {/* 다음 여행 카드 (2026-11-16 마루님). 여행 중이면 오늘 일정으로 */}
         {nextTrip && (
-          <Link href={`/trips/${nextTrip.id}`} className="press flex items-center gap-3 rounded-card bg-deep px-5 py-4 text-on-deep">
-            <span className="min-w-0 flex-1">
-              <span className="block text-tiny font-semibold opacity-80">{nextTrip.status === "ongoing" ? "지금 여행 중이에요" : "다음 여행"}</span>
-              <span className="mt-0.5 block truncate text-title font-extrabold">{nextTrip.title}</span>
-              <span className="mt-1 block text-sub font-semibold opacity-80">{nextTrip.status === "ongoing" ? "오늘 일정 보기" : nextTrip.row.sub}</span>
+          /* 티켓 모양 (2026-11-16 마루님 "티켓 느낌") : 왼쪽 정보 | 점선 절취선과 위아래 반원 홈 | 오른쪽 D-day 스텁 */
+          <Link href={`/trips/${nextTrip.id}`} className="press relative flex items-stretch rounded-card bg-deep text-on-deep">
+            <span className="min-w-0 flex-1 py-4 pl-5 pr-4">
+              <span className="flex items-center gap-1.5 text-tiny font-semibold text-on-deep-sub"><Icon name="plane" size={14} />{nextTrip.status === "ongoing" ? "지금 여행 중" : "다음 여행"}</span>
+              <span className="mt-1 block truncate text-title font-extrabold">{nextTrip.title}</span>
+              <span className="mt-1 block truncate text-tiny font-semibold text-on-deep-sub">{nextTrip.row.sub}</span>
             </span>
-            {nextTrip.status !== "ongoing" && nextTrip.row.badge && <span className="flex-none text-[28px] font-extrabold tabular-nums">{nextTrip.row.badge}</span>}
-            <Icon name="right" size={18} className="flex-none opacity-80" />
+            <span aria-hidden className="relative w-0 border-l-2 border-dashed border-on-deep-sub/40">
+              <span className="absolute -left-[11px] -top-[10px] size-5 rounded-full bg-surface" />
+              <span className="absolute -bottom-[10px] -left-[11px] size-5 rounded-full bg-surface" />
+            </span>
+            <span className="flex w-[92px] flex-none flex-col items-center justify-center gap-0.5 px-2 py-4 text-center">
+              {nextTrip.status === "ongoing"
+                ? <><span className="text-tiny font-semibold text-on-deep-sub">오늘 일정</span><span className="flex items-center text-body font-extrabold">보기<Icon name="right" size={16} /></span></>
+                : <><span className="text-tiny font-semibold text-on-deep-sub">출발까지</span><span className="text-[26px] font-extrabold leading-tight tabular-nums">{nextTrip.row.badge}</span></>}
+            </span>
           </Link>
         )}
         {/* 목록은 다가오는 여행 / 다녀온 여행 탭으로 나눠 본다 (2026-11-16 마루님). 점 색은 지도 핀 색과 같다 */}
