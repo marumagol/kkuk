@@ -173,13 +173,13 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, mark, time, category, title, desc, detail, editedBy, last, href, photo, photoCount, warn, footer }: {
+export function PinCard({ index, mark, time, category, title, desc, detail, editedBy, last, href, photo, photoCount, warn, corner }: {
   index: number; mark?: "plane" | "dot"; /* 비행기(공항, 항공) / 점(메모) : 번호 대신 (2026-11-16) */ time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
-  warn?: string /* 영업시간 경고 */; footer?: ReactNode /* 카드 아래 줄 (길찾기). 링크 밖이라 따로 눌린다 */;
+  warn?: string /* 영업시간 경고 */; corner?: ReactNode /* 오른쪽 위 작은 버튼 (길찾기). 링크 밖에 겹쳐 두어 따로 눌린다 (2026-11-16 마루님 "카드가 길어지지 않게") */;
 }) {
   const Box = ({ children }: { children: ReactNode }) => {
     const inner = href ? <Link href={href} className="press block px-4 py-3.5">{children}</Link> : <div className="px-4 py-3.5">{children}</div>;
-    return <article className="mb-3 min-w-0 flex-1 overflow-hidden rounded-pin bg-surface">{inner}{footer && <div className="flex flex-wrap items-center gap-1.5 border-t border-line px-3 py-2">{footer}</div>}</article>;
+    return <article className="relative mb-3 min-w-0 flex-1 overflow-hidden rounded-pin bg-surface">{inner}{corner && <div className="absolute right-2.5 top-2.5">{corner}</div>}</article>;
   };
   return (
     <div className="flex gap-3">
@@ -191,7 +191,7 @@ export function PinCard({ index, mark, time, category, title, desc, detail, edit
         {!last && <span className="w-0 flex-1 border-l-2 border-dashed border-line-strong/60" />}
       </div>
       <Box>
-        <div className="flex items-center justify-between gap-2">
+        <div className={"flex min-h-7 items-center justify-between gap-2 " + (corner ? "pr-[72px]" : "")}>
           <div className="flex items-center gap-2">
             {time && <span className="text-sub font-bold text-ink">{time}</span>}
             {category !== "메모" && <CategoryChip category={category} />}

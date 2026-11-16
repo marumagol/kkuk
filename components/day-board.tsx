@@ -19,7 +19,7 @@ import { reorderPlaces, moveItem, deletePlace, fillTripCoords, setItemTimes } fr
 import { useRouter } from "next/navigation";
 import { safeCall } from "@/lib/safe-call";
 import { addDays, md, weekday, type Item } from "@/lib/mock";
-import { mapsDirUrl, mapsViewUrl, canMap } from "@/lib/maps-link";
+import { mapsDirUrl, canMap } from "@/lib/maps-link";
 import { formatMoney } from "@/lib/countries";
 import { hoursWarning } from "@/lib/hours";
 
@@ -361,10 +361,10 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                           desc={it.desc ?? ""} editedBy={it.editedBy} photo={it.photos?.[0]?.url} photoCount={it.photos?.length} last={i === cur.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined}
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
-                          footer={!editing && it.category !== "메모" && canMap(it) ? <>
-                            <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer" className="press inline-flex h-8 items-center gap-1 rounded-full bg-bg px-3 text-tiny font-bold text-ink"><Icon name="pin" size={14} className="text-point" />길찾기</a>
-                            <a href={mapsViewUrl(it)} target="_blank" rel="noopener noreferrer" className="press inline-flex h-8 items-center rounded-full px-2 text-tiny font-semibold text-ink-sub">구글 지도에서 보기</a>
-                          </> : undefined} />
+                          corner={!editing && it.category !== "메모" && canMap(it) ? (
+                            <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer" aria-label={`${it.title} 길찾기 (구글 지도)`}
+                              className="press inline-flex h-7 items-center gap-1 rounded-full bg-bg px-2.5 text-tiny font-bold text-ink"><Icon name="pin" size={13} className="text-point" />길찾기</a>
+                          ) : undefined} />
                       </div>
                       {editing && editable && it.id && (
                         <div className="flex flex-none flex-col items-center">
