@@ -124,7 +124,7 @@ export type BadgeTone = "hot" | "near" | "far";
 const BADGE: Record<BadgeTone, string> = {
   hot: "bg-[#C23A18] text-white",
   near: "bg-point-soft text-point-text",
-  far: "bg-surface-soft text-ink", // ink-sub 는 이 바탕에서 4.45 : 1 이라 ink
+  far: "bg-ink/10 text-ink", // 2026-11-17 마루님 "너무 흐려" : 카드 바탕과 구분되게 글자색을 10% 깔아 진하게 (다크에서도 같이 맞음)
 };
 
 export function TripRow({ href, title, sub, meta, badge, badgeTone = "near", country, icon }: { href: string; title: string; sub: string; meta: string; badge?: string; badgeTone?: BadgeTone; country?: string; icon?: string }) {
