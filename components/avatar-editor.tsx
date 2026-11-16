@@ -1,11 +1,11 @@
 "use client";
-/* 설정 > 프로필 사진. 누르면 사진 고르기 → 512px 로 줄여 공개 저장소 avatars/<내 id>/ 에 올리고 saveAvatar 로 저장 */
+/* 설정 > 프로필 사진. 누르면 사진 고르기 → 자르기 창(원형 틀, 2026-11-16) → 512px 정사각형으로 공개 저장소 avatars/<내 id>/ 에 올리고 saveAvatar 로 저장 */
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/screen";
 import { Icon } from "@/components/kit";
 import { createClient } from "@/lib/supabase/client";
-import { shrinkImage } from "@/lib/image";
+import { AvatarCropper } from "@/components/avatar-cropper";
 import { saveAvatar } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 
@@ -13,15 +13,15 @@ export function AvatarEditor({ initial, src, userId }: { initial: string; src: s
   const file = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [picked, setPicked] = useState<File | null>(null); // 자르기 창에 띄운 사진
   const router = useRouter();
 
-  async function upload(f: File) {
-    if (!f.type.startsWith("image/")) return setError("그림 파일만 올릴 수 있어요");
+  async function upload(blob: Blob) {
+    setPicked(null);
     const sb = createClient();
     if (!sb) return;
     setBusy(true); setError("");
     try {
-      const blob = await shrinkImage(f, 512, 0.85);
       const path = `${userId}/${crypto.randomUUID()}.jpg`;
       const { error: e } = await sb.storage.from("avatars").upload(path, blob, { contentType: "image/jpeg" });
       if (e) throw e;
@@ -49,7 +49,8 @@ export function AvatarEditor({ initial, src, userId }: { initial: string; src: s
       {src && <button type="button" disabled={busy} onClick={remove} className="press h-8 px-1 text-tiny font-semibold text-ink-sub underline underline-offset-2">사진 빼기</button>}
       {busy && <span className="text-tiny text-ink-sub" role="status">저장하는 중</span>}
       {error && <span role="alert" className="max-w-24 text-center text-tiny font-semibold text-point-text">{error}</span>}
-      <input ref={file} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f); }} />
+      <input ref={file} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; if (!f.type.startsWith("image/")) return setError("그림 파일만 올릴 수 있어요"); setError(""); setPicked(f); }} />
+      {picked && <AvatarCropper file={picked} onCancel={() => setPicked(null)} onDone={(b) => void upload(b)} />}
     </div>
   );
 }
