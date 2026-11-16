@@ -13,8 +13,12 @@ import { createClient } from "@/lib/supabase/client";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const WAIT = 60; // 다시 보내기까지 초
 
+const OFFLINE = "인터넷 연결을 확인하고 다시 시도해 주세요";
+const offline = (e: { status?: number } | null) => (typeof navigator !== "undefined" && navigator.onLine === false) || e?.status === 0;
+
 function sendError(e: { status?: number; code?: string } | null) {
   if (!e) return "";
+  if (offline(e)) return OFFLINE;
   if (e.status === 429 || e.code === "over_email_send_rate_limit") return "잠시 뒤에 다시 보내 주세요. 짧은 시간에 너무 많이 보냈어요";
   return "코드를 보내지 못했어요. 이메일 주소를 확인하고 다시 시도해 주세요";
 }
@@ -46,7 +50,7 @@ export function LoginForm({ next, configured, googleFailed }: { next: string; co
     if (!sb) return;
     setBusy(true); setGError("");
     const back = `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-    const { error: e } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: back } });
+    const { error: e } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: back } }).catch(() => ({ error: { status: 0 } }));
     // 성공하면 구글 화면으로 넘어가므로 여기는 실패할 때만 온다
     if (e) { setBusy(false); setGError("구글 로그인을 열지 못했어요. 잠시 뒤에 다시 시도해 주세요"); }
   };
@@ -57,14 +61,18 @@ export function LoginForm({ next, configured, googleFailed }: { next: string; co
     return () => clearTimeout(t);
   }, [left]);
 
+  /* 보냈으면 true. 인터넷이 끊겨 요청이 아예 실패해도 안내만 하고 멈추지 않는다 */
   const send = async () => {
     const sb = createClient();
-    if (!sb) return;
+    if (!sb) return false;
     setBusy(true); setError(""); setNotice("");
-    const { error: e } = await sb.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
+    let e: { status?: number; code?: string } | null = null;
+    try { ({ error: e } = await sb.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } })); }
+    catch { e = { status: 0 }; }
     setBusy(false);
-    if (e) return setError(sendError(e));
+    if (e) { setError(sendError(e)); return false; }
     setStep("code"); setCode(""); setLeft(WAIT);
+    return true;
   };
 
   const onEmail = (ev: React.FormEvent) => {
@@ -79,11 +87,13 @@ export function LoginForm({ next, configured, googleFailed }: { next: string; co
     const sb = createClient();
     if (!sb) return;
     setBusy(true); setError("");
-    const { error: e } = await sb.auth.verifyOtp({ email: email.trim(), token: code, type: "email" });
+    let e: { status?: number } | null = null;
+    try { ({ error: e } = await sb.auth.verifyOtp({ email: email.trim(), token: code, type: "email" })); }
+    catch { e = { status: 0 }; }
     if (e) {
       setBusy(false);
       // Supabase 는 틀린 코드와 시간이 지난 코드를 같은 오류로 알려 줘서 한 문장으로 안내한다
-      return setError(e.status === 429 ? "너무 여러 번 시도했어요. 잠시 뒤에 다시 해 주세요" : "코드가 맞지 않거나 시간이 지났어요. 다시 확인하거나 새 코드를 받아 주세요");
+      return setError(offline(e) ? OFFLINE : e.status === 429 ? "너무 여러 번 시도했어요. 잠시 뒤에 다시 해 주세요" : "코드가 맞지 않거나 시간이 지났어요. 다시 확인하거나 새 코드를 받아 주세요");
     }
     router.replace(next);
     router.refresh();
@@ -115,7 +125,7 @@ export function LoginForm({ next, configured, googleFailed }: { next: string; co
       <Button full type="submit" disabled={busy || code.length < 6}>{busy ? "확인하는 중" : "로그인"}</Button>
       <div className="flex items-center justify-between">
         <button type="button" onClick={() => { setStep("email"); setError(""); }} className="press h-11 px-1 text-sub font-semibold text-ink-sub underline underline-offset-4">이메일 바꾸기</button>
-        <button type="button" disabled={left > 0 || busy} onClick={async () => { await send(); setNotice("새 코드를 보냈어요"); }}
+        <button type="button" disabled={left > 0 || busy} onClick={async () => { if (await send()) setNotice("새 코드를 보냈어요"); }}
           className="press h-11 px-1 text-sub font-bold text-ink disabled:text-ink-sub">
           {left > 0 ? `다시 보내기 (${left}초)` : "코드 다시 보내기"}
         </button>

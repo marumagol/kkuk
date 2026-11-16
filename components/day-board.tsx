@@ -91,9 +91,10 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const [finding, setFinding] = useState(false);
   const noPin = cols.flat().filter((x) => x.id && x.lat == null && x.category !== "이동" && x.category !== "메모" && !/→|->/.test(x.title)).length;
   const findCoords = async () => {
+    if (finding) return;
     setFinding(true); setUndo(null); setMsg("");
-    const r = (await safeCall(() => fillTripCoords(tripId))) as Awaited<ReturnType<typeof fillTripCoords>> | undefined;
-    setFinding(false);
+    let r: Awaited<ReturnType<typeof fillTripCoords>> | undefined;
+    try { r = (await safeCall(() => fillTripCoords(tripId))) as typeof r; } catch { r = undefined; } finally { setFinding(false); }
     if (!r || r.error) { setMsg(r?.error ?? "위치를 찾지 못했어요"); return; }
     const parts = [`${r.filled ?? 0}곳 위치를 찾았어요`];
     if (r.missed) parts.push(`${r.missed}곳은 못 찾았어요`);
@@ -102,6 +103,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     router.refresh();
   };
   const sortRoute = (c: number) => {
+    if (busy.current) return; // 앞의 저장이 끝나기 전에 또 누르면 무시
     const cur = colsRef.current[c];
     const next = routeOrder(cur);
     if (!next) { setUndo(null); setMsg("순서를 바꿀 수 있는 관광, 쇼핑 장소가 2곳 이상이어야 해요. 지도 위치가 없으면 [위치 찾기] 를 먼저 눌러 주세요"); return; }
@@ -111,6 +113,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
   /* 목록에서 바로 지우기 (확인 창 한 번). 실패하면 되돌리고 안내 */
   const remove = async (it: Item) => {
+    if (busy.current) return;
     const prev = colsRef.current;
     const next = prev.map((c) => c.filter((x) => x.id !== it.id));
     setCols(next); colsRef.current = next; setMsg(""); busy.current = true;
@@ -387,7 +390,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         {msg && (
           <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-deep py-2 pl-4 pr-2 text-tiny font-semibold text-on-deep shadow-float">
             <span className="min-w-0">{msg}</span>
-            {undo && <button type="button" onClick={() => { const u = undo; void applyDay(u.c, u.items, "원래 순서로 돌렸어요", null); }}
+            {undo && <button type="button" onClick={() => { if (busy.current) return; const u = undo; void applyDay(u.c, u.items, "원래 순서로 돌렸어요", null); }}
               className="press h-8 flex-none rounded-full bg-deep-soft px-3 font-bold">되돌리기</button>}
           </p>
         )}

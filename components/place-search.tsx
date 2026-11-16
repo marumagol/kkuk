@@ -40,6 +40,7 @@ export function PlaceSuggest({ query, kind, bias, onPick, disabled }: {
     try {
       const d = await pickPlace(s.id, session.current);
       if (d) { skip.current = d.name || s.main; onPick(d); }
+    } catch { /* 인터넷이 끊기면 후보만 닫는다. 적은 이름은 그대로 저장할 수 있다 */
     } finally { session.current = ""; setList([]); setBusy(false); }
   };
   return (

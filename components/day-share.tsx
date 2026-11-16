@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/kit";
 import { makeDayShare, revokeDayShare } from "@/app/actions";
+import { safeCall } from "@/lib/safe-call";
 import type { DayShare } from "@/lib/trips";
 
 type Day = { index: number; label: string; sub: string; count: number };
@@ -30,9 +31,9 @@ export function DayShareForm({ tripId, days, shares }: { tripId: string; days: D
   };
   const make = (ds: number[] | null) => start(async () => {
     setError(""); setMsg("");
-    const r = await makeDayShare(tripId, ds);
-    if (r.error) return setError(r.error);
-    if (r.token) { setList((l) => [{ token: r.token!, days: ds, createdAt: new Date().toISOString() }, ...l]); setPicked([]); await copy(r.token); }
+    const r = await safeCall(() => makeDayShare(tripId, ds));
+    if ("error" in r && r.error) return setError(r.error);
+    if ("token" in r && r.token) { setList((l) => [{ token: r.token!, days: ds, createdAt: new Date().toISOString() }, ...l]); setPicked([]); await copy(r.token); }
   });
   const toggle = (i: number) => setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : [...p, i].sort((a, b) => a - b)));
 
@@ -83,7 +84,8 @@ export function DayShareForm({ tripId, days, shares }: { tripId: string; days: D
                   {canShare && <Button size="md" onClick={() => send(s.token)} disabled={busy}>보내기</Button>}
                   <Button size="md" variant="secondary" onClick={() => copy(s.token)} disabled={busy}>복사</Button>
                   <Button size="md" variant="ghost" disabled={busy} onClick={() => start(async () => {
-                    const r = await revokeDayShare(tripId, s.token);
+                    setError(""); setMsg("");
+                    const r = await safeCall(() => revokeDayShare(tripId, s.token));
                     if (r.error) return setError(r.error);
                     setList((l) => l.filter((x) => x.token !== s.token)); setMsg("링크를 끊었어요. 이제 그 링크로는 볼 수 없어요");
                   })}>끊기</Button>

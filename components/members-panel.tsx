@@ -19,7 +19,10 @@ export function MembersPanel({ view }: { view: MembersView }) {
   const [error, setError] = useState("");
   const [ask, setAsk] = useState<Ask | null>(null);
   const [busy, start] = useTransition();
-  const url = token ? `${typeof window === "undefined" ? "" : window.location.origin}/invite/${token}` : "";
+  // 주소 앞부분은 브라우저에서만 안다. 서버 화면과 어긋나지 않게 그린 뒤에 채운다
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
+  const url = token ? `${origin}/invite/${token}` : "";
 
   const run = (fn: () => Promise<{ error?: string; token?: string } | undefined | void>, done?: string) => start(async () => {
     setError(""); setMsg("");

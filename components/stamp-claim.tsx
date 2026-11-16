@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Icon, StampFace } from "@/components/kit";
 import { claimStamp, type ClaimResult } from "@/app/actions";
+import { safeCall } from "@/lib/safe-call";
 
 type State = { kind: "idle" } | { kind: "denied" } | { kind: "error"; text: string } | { kind: "done"; r: Extract<ClaimResult, { ok: true }> };
 
@@ -19,9 +20,10 @@ export function StampClaim({ tripId, inset = true }: { tripId: string; inset?: b
       (pos) => {
         setLocating(false);
         start(async () => {
-          const r = await claimStamp(tripId, pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-          setState(r.ok ? { kind: "done", r } : { kind: "error", text: r.error });
-          if (r.ok && r.status !== "already" && "vibrate" in navigator) navigator.vibrate?.(40);
+          const r = await safeCall(() => claimStamp(tripId, pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy));
+          if (!("ok" in r) || !r.ok) return setState({ kind: "error", text: r.error });
+          setState({ kind: "done", r });
+          if (r.status !== "already" && "vibrate" in navigator) navigator.vibrate?.(40);
         });
       },
       (e) => {
