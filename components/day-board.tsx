@@ -12,7 +12,6 @@ import { FEATURES } from "@/lib/features";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon, PinCard } from "@/components/kit";
-import { SwipeRow } from "@/components/swipe-row";
 import { GateButton, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
 import { DayMap, type DayPoint } from "@/components/day-map";
@@ -59,6 +58,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const [dragId, setDragId] = useState<string | null>(null);
   const [sel, setSel] = useState(jumpUndated && undated.length ? U : initialDay === 0 ? ALL : Math.min(Math.max(initialDay, 1), len) - 1); // ALL = 전체 (2026-11-16 마루님)
   const [editing, setEditing] = useState(false);
+  const swipe = useRef<{ x: number; y: number } | null>(null); // 일정 좌우로 밀어 날짜 넘기기 (2026-11-16 마루님)
   const [overCol, setOverCol] = useState<number | null>(null); // 끄는 중 날짜 칩 위
   const [msg, setMsg] = useState("");
   const colsRef = useRef(cols);
@@ -133,40 +133,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   };
 
   /* 목록에서 바로 지우기 (확인 창 한 번). 실패하면 되돌리고 안내 */
-  /*
-    밀어서 삭제 (2026-11-16 마루님) : 목록에서 바로 빼고 5초 동안 [되돌리기]. 5초가 지나거나 다른 줄을 또 지우거나 화면을 떠나면 실제로 삭제
-  */
-  const pendingDel = useRef<{ it: Item; c: number; i: number; timer: number } | null>(null);
-  const [delUndo, setDelUndo] = useState(false);
-  const commitDel = (p: { it: Item; timer: number }) => {
-    clearTimeout(p.timer);
-    void safeCall(() => deletePlace(tripId, p.it.id!)).then((r) => { if (r?.error) { setMsg(r.error); setCols(fromProps()); } });
-  };
-  const flushDel = () => { const p = pendingDel.current; pendingDel.current = null; setDelUndo(false); if (p) commitDel(p); };
-  const swipeDelete = (it: Item) => {
-    if (busy.current || !it.id) return;
-    flushDel();
-    const prev = colsRef.current;
-    const at = where(prev, it.id);
-    if (!at) return;
-    const next = prev.map((c) => c.filter((x) => x.id !== it.id));
-    setCols(next); colsRef.current = next; setUndo(null);
-    pendingDel.current = { it, ...at, timer: window.setTimeout(flushDel, 5000) };
-    setDelUndo(true); setMsg(`"${it.title}"을(를) 삭제했어요`);
-  };
-  const undoDel = () => {
-    const p = pendingDel.current;
-    if (!p) return;
-    clearTimeout(p.timer); pendingDel.current = null; setDelUndo(false);
-    const next = colsRef.current.map((c, ci) => (ci === p.c ? [...c.slice(0, p.i), p.it, ...c.slice(p.i)] : c));
-    setCols(next); colsRef.current = next; setMsg("되돌렸어요");
-  };
-  useEffect(() => {
-    const leave = () => flushDel();
-    addEventListener("pagehide", leave);
-    return () => { removeEventListener("pagehide", leave); flushDel(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const remove = async (it: Item) => {
     if (busy.current) return;
     const prev = colsRef.current;
@@ -178,7 +144,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   };
 
   // 저장 뒤나 다른 사람이 고쳐서 새 목록이 오면 맞춘다 (끄는 중, 저장 중에는 그대로)
-  useEffect(() => { if (!dragId && !busy.current) { const pid = pendingDel.current?.it.id; setCols(fromProps().map((c) => (pid ? c.filter((x) => x.id !== pid) : c))); } }, [fromProps]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!dragId && !busy.current) setCols(fromProps()); }, [fromProps]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* 고른 날 : 칩을 가운데로, 주소에 남기기 */
   useEffect(() => {
@@ -404,7 +370,21 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           </div>
         </div>
 
-        <div className="px-5">
+        <div className="px-5"
+          onTouchStart={(e) => {
+            const t = e.touches[0];
+            swipe.current = e.touches.length === 1 && !(e.target as Element).closest("input, textarea, select, [data-grip]") ? { x: t.clientX, y: t.clientY } : null;
+          }}
+          onTouchEnd={(e) => {
+            const s = swipe.current, t = e.changedTouches[0];
+            swipe.current = null;
+            if (!s || !t || sel === ALL || dragId || editing) return;
+            const dx = t.clientX - s.x, dy = t.clientY - s.y;
+            if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // 세로 스크롤과 헷갈리지 않게 가로로 충분히 밀었을 때만
+            const last = showUndated ? U : len - 1;
+            const next = dx < 0 ? (sel === U ? -2 : sel + 1) : sel === U ? len - 1 : sel - 1;
+            if (next >= 0 && next <= last) pickDay(next);
+          }}>
           {groups.map((g, gi) => {
             const list = g.items, gm = groupMarks[gi];
             const dayDate = g.c === U ? null : addDays(start, g.c);
@@ -426,9 +406,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                     {gap && !dragId && (
                       <span className="-mt-2 mb-1 -ml-1 w-fit rounded-full border border-line bg-bg px-2 py-0.5 text-tiny font-bold leading-4 text-ink-sub">{gap}</span>
                     )}
-                    <SwipeRow disabled={!editable || editing || !it.id || !!dragId}
-                      onDelete={editable && it.id ? () => swipeDelete(it) : undefined}
-                      onLongPress={editable && canSort && sel !== ALL && it.id ? (y) => { flushDel(); before.current = colsRef.current; lastY.current = y; setDragId(it.id!); setMsg(""); } : undefined}>
                     <div className="flex items-start gap-1">
                       <div className="min-w-0 flex-1">
                         <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
@@ -440,15 +417,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                               className="press flex size-8 items-center justify-center rounded-full bg-bg"><Icon name="pin" size={16} className="text-point" /></a>
                           ) : undefined} />
                       </div>
-                      {/* 옮기기 손잡이 (2026-11-16 마루님 "꾹 눌러 순서변경이 잘 안 돼") : 누르는 즉시 끌기 시작. 스크롤과 안 겹치게 touch-none */}
-                      {!editing && editable && canSort && sel !== ALL && it.id && (
-                        <button type="button" data-grip aria-label={`${it.title} 옮기기. 위아래 화살표로 순서와 날짜를 바꿔요`}
-                          className="mt-2 flex h-12 w-7 flex-none cursor-grab touch-none items-center justify-center text-ink-sub/70 active:cursor-grabbing"
-                          onKeyDown={(e) => onKey(e, it.id!)}
-                          onPointerDown={(e) => { e.preventDefault(); flushDel(); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); navigator.vibrate?.(10); }}>
-                          <Icon name="grip" size={18} />
-                        </button>
-                      )}
                       {editing && editable && it.id && (
                         <div className="flex flex-none flex-col items-center">
                           {canSort && (
@@ -466,7 +434,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                         </div>
                       )}
                     </div>
-                    </SwipeRow>
                   </li>
                 );
               })}
@@ -486,7 +453,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         {msg && (
           <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-deep py-2 pl-4 pr-2 text-tiny font-semibold text-on-deep shadow-float">
             <span className="min-w-0">{msg}</span>
-            {delUndo && <button type="button" onClick={undoDel} className="press h-8 flex-none rounded-full bg-deep-soft px-3 font-bold">되돌리기</button>}
             {undo && <button type="button" onClick={() => { if (busy.current) return; const u = undo; void applyDay(u.c, u.items, "원래 순서로 돌렸어요", null); }}
               className="press h-8 flex-none rounded-full bg-deep-soft px-3 font-bold">되돌리기</button>}
           </p>
