@@ -237,7 +237,7 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
 
   // 영업시간 (2026-11-16) : 구글 장소가 새로 이어질 때만 한 번 받는다. 하루 상한(전체, 사람별)을 넘으면 받지 않는다
   const { data: prev } = placeId
-    ? await sb.from("itinerary_items").select("day_index, google_place_id, details").eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).maybeSingle()
+    ? await sb.from("itinerary_items").select("day_index, google_place_id, details, photos").eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).maybeSingle()
     : { data: null };
   if (placeId && !prev) return { error: "이 장소를 찾을 수 없어요. 이미 삭제됐을 수 있어요" };
   const gpid = isMemo ? null : input?.place === undefined ? (prev?.google_place_id as string | null | undefined) ?? null : ((row as { google_place_id?: string | null }).google_place_id ?? null);
@@ -254,6 +254,9 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
     const patch = prev.day_index === day ? row : { ...row, sort_order: await lastOrder() };
     const { data, error } = await sb.from("itinerary_items").update(patch).eq("trip_id", tripId).eq("id", placeId).select("id");
     if (error || !data?.length) return { error: "저장하지 못했어요. 수정할 권한이 없거나 잠시 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요" };
+    // 뺀 첨부 파일은 저장소에서도 지운다 (2026-11-17 마루님 "같이 삭제"). 실패해도 저장은 끝난 것으로 본다
+    const gone = ((prev.photos ?? []) as string[]).filter((x) => !photos.includes(x));
+    if (gone.length) await sb.storage.from("place-photos").remove(gone).catch(() => undefined);
   }
   let savedId = placeId;
   if (!placeId) {

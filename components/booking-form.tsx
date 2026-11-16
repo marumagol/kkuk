@@ -103,7 +103,7 @@ export function BookingForm({ view }: { view: BookingView }) {
             <h3 className="text-tiny font-bold text-ink-sub">첨부 파일 (선택)</h3>
             <span className="text-tiny text-ink-sub">{files.length}/{MAX_FILES}</span>
           </div>
-          <FileList files={files} onRemove={busy ? undefined : (p) => setFiles((x) => x.filter((f) => f.path !== p))} />
+          <FileList files={files} onRemove={busy ? undefined : (p) => { setFiles((x) => x.filter((f) => f.path !== p)); if (!view.files.some((f) => f.path === p)) void createClient()?.storage.from("trip-files").remove([p]); /* 새로 올린 것은 바로 지운다. 원래 있던 것은 저장할 때 서버가 */ }} />
           {files.length < MAX_FILES && (
             <button type="button" disabled={busy || uploading > 0} onClick={() => fileRef.current?.click()}
               className="press flex min-h-14 items-center justify-center gap-1.5 rounded-card border-2 border-dashed border-line-strong text-sub font-bold text-ink-sub">

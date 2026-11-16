@@ -104,6 +104,11 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     }));
   }
 
+  /* 빼기 (2026-11-17 마루님 "같이 삭제") : 이번에 새로 올린 파일은 바로 저장소에서 지운다. 원래 있던 파일은 저장할 때 서버가 지운다 */
+  const dropPhoto = (path: string) => {
+    setPhotos((l) => l.filter((x) => x.path !== path));
+    if (!(ctx.photos ?? []).some((x) => x.path === path)) void createClient()?.storage.from("place-photos").remove([path]);
+  };
   const currencies = [...new Set([ctx.currency, startCur, "KRW", "USD"])];
   const titleLen = [...title.trim()].length;
   const autoName = [extra.from, extra.to].map((x) => x?.trim()).filter(Boolean).join(" → ");
@@ -288,13 +293,13 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                       <span className="relative flex">
                         <input type="text" inputMode="numeric" pattern="[0-9]*" value={(extra[f.key] ?? "").replace(/\D/g, "")} placeholder={f.placeholder} maxLength={3} disabled={busy}
                           onChange={(e) => { const n = e.target.value.replace(/\D/g, "").slice(0, 3); setExtra((x) => ({ ...x, [f.key]: n ? `${Number(n)}${f.unit}` : "" })); setError(""); }}
-                          className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-3 pr-9 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                          className="h-14 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-3 pr-9 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
                         <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-body text-ink-sub">{f.unit}</span>
                       </span>
                     ) : (
                       <input type={f.type ?? "text"} value={extra[f.key] ?? ""} placeholder={f.placeholder} maxLength={f.max ?? 60} disabled={busy}
                         onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [f.key]: v })); setError(""); }}
-                        className="block h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                        className="block h-14 w-full min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
                     )}
                   </label>
                 ))}
@@ -347,7 +352,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                       ? <a href={ph.url} target="_blank" rel="noopener noreferrer" className="flex size-full flex-col items-center justify-center gap-1 text-tiny font-bold text-ink-sub"><Icon name="book" size={22} />PDF</a>
                       // eslint-disable-next-line @next/next/no-img-element
                       : <img src={ph.url} alt={`첨부 ${i + 1}`} className="size-full object-cover" />}
-                    <button type="button" aria-label={`첨부 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== ph))}
+                    <button type="button" aria-label={`첨부 ${i + 1} 빼기`} disabled={busy} onClick={() => dropPhoto(ph.path)}
                       className="press absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-black/60 text-white"><Icon name="x" size={14} /></button>
                   </li>
                 ))}
@@ -402,7 +407,7 @@ function MoveStop({ label, placeholder, value, linked, searchable, bias, disable
       <label className="flex min-w-0 flex-col gap-1.5">
         <span className="text-tiny font-bold text-ink-sub">{label}</span>
         <input type="text" value={value} placeholder={placeholder} maxLength={60} disabled={disabled} onChange={(e) => { setTyped(true); onChange({ name: e.target.value }); }}
-          className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+          className="h-14 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
       </label>
       {linked ? (
         <div className="flex items-center gap-2 text-tiny text-ink-sub">
@@ -426,6 +431,6 @@ function TimeInput({ value, onChange, disabled, autoFocus }: { value: string; on
   // 화살표는 globals.css 의 날짜/시간 칸 공통 규칙이 그린다
   return (
     <input type="time" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} autoFocus={autoFocus}
-      className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-4 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />
+      className="h-14 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-4 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />
   );
 }
