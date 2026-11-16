@@ -9,7 +9,7 @@ const KEY = () => process.env.GOOGLE_MAPS_SERVER_KEY || "";
 export const placesEnabled = () => KEY().length > 0;
 
 export type Suggestion = { id: string; main: string; sub: string };
-export type PlaceDetail = { id: string; name: string; address: string; lat: number; lng: number; country: string | null };
+export type PlaceDetail = { id: string; name: string; address: string; lat: number; lng: number; country: string | null; types?: string[] /* 구글 장소 종류 (분류 자동 고르기, 2026-11-16) */ };
 
 export async function autocomplete(input: string, session: string, kind: "place" | "city", bias?: { lat: number; lng: number } | null): Promise<Suggestion[]> {
   if (!placesEnabled()) return [];
@@ -36,7 +36,7 @@ export async function details(id: string, session?: string): Promise<PlaceDetail
   if (!placesEnabled() || !/^[A-Za-z0-9_-]{10,255}$/.test(id)) return null;
   const q = new URLSearchParams({ languageCode: "ko", ...(session ? { sessionToken: session } : {}) });
   const res = await fetch(`https://places.googleapis.com/v1/places/${id}?${q}`, {
-    headers: { "X-Goog-Api-Key": KEY(), "X-Goog-FieldMask": "id,displayName,formattedAddress,location,addressComponents" }, cache: "no-store",
+    headers: { "X-Goog-Api-Key": KEY(), "X-Goog-FieldMask": "id,displayName,formattedAddress,location,addressComponents,types,primaryType" }, cache: "no-store",
   }).catch((e) => { console.error("[places] details 연결 실패", String(e).slice(0, 200)); return null; });
   if (!res?.ok) {
     if (res) console.error("[places] details", res.status, (await res.text().catch(() => "")).slice(0, 400));
@@ -44,11 +44,12 @@ export async function details(id: string, session?: string): Promise<PlaceDetail
   }
   const j = (await res.json()) as {
     id: string; displayName?: { text: string }; formattedAddress?: string; location?: { latitude: number; longitude: number };
-    addressComponents?: { shortText?: string; types?: string[] }[];
+    addressComponents?: { shortText?: string; types?: string[] }[]; types?: string[]; primaryType?: string;
   };
   if (!j.location) return null;
   const country = j.addressComponents?.find((c) => c.types?.includes("country"))?.shortText ?? null;
-  return { id: j.id, name: j.displayName?.text ?? "", address: j.formattedAddress ?? "", lat: j.location.latitude, lng: j.location.longitude, country: country && /^[A-Z]{2}$/.test(country) ? country : null };
+  return { id: j.id, name: j.displayName?.text ?? "", address: j.formattedAddress ?? "", lat: j.location.latitude, lng: j.location.longitude, country: country && /^[A-Z]{2}$/.test(country) ? country : null,
+    types: [...new Set([j.primaryType, ...(j.types ?? [])].filter((t): t is string => !!t))].slice(0, 12) };
 }
 
 /* 이름으로 장소 하나 찾기 (2026-11-15 "위치 찾기") : Text Search 한 번에 좌표까지. 못 찾으면 null */

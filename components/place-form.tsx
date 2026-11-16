@@ -18,12 +18,18 @@ import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
 import { PlaceSuggest, type Picked } from "@/components/place-search";
-import { fieldsOf, MODES, MOVE_TIME_KEYS, type Details } from "@/lib/place-fields";
+import { fieldsOf, guessCategory, MODES, MOVE_TIME_KEYS, type Details } from "@/lib/place-fields";
 
 const CATS = [
   { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
   { code: "stay", label: "숙소" }, { code: "transport", label: "이동" },
 ]; // 메모는 components/memo-form.tsx 에서 (2026-11-16)
+/* "09:30" + 분 → "10:00" (23:59 를 넘지 않게) */
+const addMin = (t: string, m: number) => {
+  const [h, mm] = t.split(":").map(Number);
+  const v = Math.min(23 * 60 + 59, Math.max(0, h * 60 + mm + m));
+  return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`;
+};
 const CUR_NAME: Record<string, string> = { KRW: "원", JPY: "엔", USD: "달러", EUR: "유로", TWD: "대만 달러", CNY: "위안", THB: "바트", VND: "동", HKD: "홍콩 달러", GBP: "파운드" };
 
 export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceContext; day: number | null; memo?: boolean }) {
@@ -55,6 +61,10 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [busy, startBusy] = useTransition();
+  const catTouched = useRef(!!p); // 분류를 직접 골랐으면 검색해도 바꾸지 않는다
+  // 더 적기 (2026-11-16 마루님) : 처음엔 날짜, 이름, 분류, 시간만. 고칠 때 선택 칸에 값이 있으면 펼친 채로
+  const [more, setMore] = useState(() => !!p && (p.estimated_cost != null || !!p.address || !!p.memo || (ctx.photos?.length ?? 0) > 0 || ctx.reserved
+    || Object.entries(p.details ?? {}).some(([k, v]) => v && k !== "mode" && !MOVE_TIME_KEYS.includes(k))));
   const [photos, setPhotos] = useState<{ path: string; url: string }[]>(ctx.photos ?? []);
   const [uploading, setUploading] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -83,12 +93,17 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const currencies = [...new Set([ctx.currency, startCur, "KRW", "USD"])];
   const titleLen = [...title.trim()].length;
   const dayNum = dayValue === "none" ? null : Number(dayValue);
+  // 시간 빠른 고르기 : [시간 정하기] 를 누르면 그날 가장 늦은 장소 + 1시간을 미리 채운다
+  const lastTime = ctx.lastTimes[dayNum ?? ctx.days] ?? null;
+  const curTime = isMove ? extra.depart ?? "" : time;
+  const setCurTime = (v: string) => (isMove ? setExtra((x) => ({ ...x, depart: v })) : setTime(v));
+  const startTiming = () => { setTimed(true); if (!curTime && lastTime) setCurTime(addMin(lastTime, 60)); };
 
-  const save = () => {
+  const save = (again = false) => {
     setError("");
     if (!titleLen) return setError(isMemo ? "메모 제목을 적어 주세요" : "장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo || !timed ? "" : isMove ? extra.depart ?? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: isMove && !timed ? { ...extra, depart: "", arrive: "" } : extra, reserve, ...(linked !== undefined ? { place: linked } : {}) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo || !timed ? "" : isMove ? extra.depart ?? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: isMove && !timed ? { ...extra, depart: "", arrive: "" } : extra, reserve, again, ...(linked !== undefined ? { place: linked } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -124,7 +139,12 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
         {ctx.searchable && !isLinked && !isMemo && (
           <PlaceSuggest query={title} kind="place" bias={ctx.bias} disabled={busy}
-            onPick={(d: Picked) => { setTitle(d.name.slice(0, MAX_PLACE_TITLE)); if (d.address) setAddress(d.address.slice(0, 200)); setLinked({ id: d.id, lat: d.lat, lng: d.lng }); }} />
+            onPick={(d: Picked) => {
+              setTitle(d.name.slice(0, MAX_PLACE_TITLE)); if (d.address) setAddress(d.address.slice(0, 200)); setLinked({ id: d.id, lat: d.lat, lng: d.lng });
+              // 구글 장소 종류로 분류(와 이동 수단)를 골라 둔다. 직접 고른 분류는 그대로
+              const g = catTouched.current ? null : guessCategory(d.types);
+              if (g) { setCategory(g.category); if (g.mode) setExtra((x) => ({ ...x, mode: x.mode || g.mode! })); }
+            }} />
         )}
         {isLinked && !isMemo && (
           <div className="-mt-4 flex items-center gap-2 text-tiny text-ink-sub">
@@ -139,22 +159,13 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             {CATS.map((c) => (
               <label key={c.code} className={"press inline-flex h-11 cursor-pointer items-center rounded-full px-4 text-sub font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30 " +
                 (category === c.code ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
-                <input type="radio" name="category" value={c.code} checked={category === c.code} onChange={() => { setCategory(c.code); if (c.code === "transport" && time && !extra.depart) setExtra((x) => ({ ...x, depart: time })); }} className="sr-only" disabled={busy} />
+                <input type="radio" name="category" value={c.code} checked={category === c.code} onChange={() => { catTouched.current = true; setCategory(c.code); if (c.code === "transport" && time && !extra.depart) setExtra((x) => ({ ...x, depart: time })); }} className="sr-only" disabled={busy} />
                 {c.label}
               </label>
             ))}
           </div>
         </fieldset>
 
-        {!isMemo && (
-          <label className="-mt-2 flex min-h-12 cursor-pointer items-center gap-3 rounded-field bg-surface px-4 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30">
-            <input type="checkbox" checked={reserve} onChange={(e) => setReserve(e.target.checked)} disabled={busy} className="size-5 accent-[var(--btn)]" />
-            <span className="min-w-0 flex-1">
-              <span className="block text-body font-semibold text-ink">예약 필요</span>
-              <span className="block text-tiny text-ink-sub">체크하면 준비 탭 예약 목록에 들어가요</span>
-            </span>
-          </label>
-        )}
         {category === "transport" && (
           <fieldset className="-mt-2 flex flex-col gap-2">
             <legend className="mb-2 text-sub font-bold text-ink-sub">이동 수단 (선택)</legend>
@@ -169,28 +180,6 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             </div>
           </fieldset>
         )}
-        {fields.length > 0 && (
-          <div className="-mt-2 grid grid-cols-2 gap-3 rounded-card bg-surface-soft p-4">
-            {fields.map((f) => (
-              <label key={f.key} className={"flex min-w-0 flex-col gap-1.5 " + (f.half ? "" : "col-span-2")}>
-                <span className="text-tiny font-bold text-ink-sub">{f.label}</span>
-                {f.unit ? (
-                  // 숫자만 적으면 단위(명)가 붙어 저장된다 (2026-11-16 마루님)
-                  <span className="relative flex">
-                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={(extra[f.key] ?? "").replace(/\D/g, "")} placeholder={f.placeholder} maxLength={3} disabled={busy}
-                      onChange={(e) => { const n = e.target.value.replace(/\D/g, "").slice(0, 3); setExtra((x) => ({ ...x, [f.key]: n ? `${Number(n)}${f.unit}` : "" })); setError(""); }}
-                      className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-3 pr-9 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
-                    <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-body text-ink-sub">{f.unit}</span>
-                  </span>
-                ) : (
-                  <input type={f.type ?? "text"} value={extra[f.key] ?? ""} placeholder={f.placeholder} maxLength={f.max ?? 60} disabled={busy}
-                    onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [f.key]: v })); setError(""); }}
-                    className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
-                )}
-              </label>
-            ))}
-          </div>
-        )}
 
         {/* 시간 : 기본은 "시간 없음", [시간 정하기] 를 누르면 시간 칸이 열린다 (2026-11-16 마루님) */}
         {!isMemo && <fieldset className="flex min-w-0 flex-col gap-2">
@@ -198,7 +187,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           <div className="flex flex-wrap items-center gap-2">
             {[false, true].map((on) => (
               <button key={String(on)} type="button" aria-pressed={timed === on} disabled={busy}
-                onClick={() => { setTimed(on); if (!on) setTime(""); }}
+                onClick={() => { if (on) startTiming(); else { setTimed(false); setTime(""); } }}
                 className={"press inline-flex h-11 items-center rounded-full px-4 text-sub font-semibold " + (timed === on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
                 {on ? "시간 정하기" : "시간 없음"}
               </button>
@@ -226,60 +215,117 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
               ))}
             </div>
           )}
+          {timed && (
+            <div className="flex flex-wrap gap-2" aria-label="시간 빠르게 바꾸기">
+              {[-30, 30, 60].map((m) => (
+                <button key={m} type="button" disabled={busy} onClick={() => setCurTime(addMin(curTime || lastTime || "09:00", m))}
+                  className="press inline-flex h-9 items-center rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                  {m < 0 ? "-30분" : m === 30 ? "+30분" : "+1시간"}
+                </button>
+              ))}
+              {lastTime && <span className="self-center text-tiny text-ink-sub">이날 앞 장소 {lastTime}</span>}
+            </div>
+          )}
         </fieldset>}
 
-        {!isMemo && <div className="flex items-end gap-2">
-          <div className="min-w-0 flex-1">
-            <Field label="예상 비용 (선택)" name="cost" inputMode={decimalsOf(currency) ? "decimal" : "numeric"} placeholder="0" value={cost}
-              onChange={(e) => { setCost(e.target.value.replace(/[^\d.,]/g, "")); setError(""); }} disabled={busy} />
-          </div>
-          <label className="flex w-28 flex-none flex-col gap-2">
-            <span className="sr-only">통화</span>
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)} disabled={busy}
-              className="h-14 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15">
-              {currencies.map((c) => <option key={c} value={c}>{CUR_NAME[c] ?? c}</option>)}
-            </select>
+        {/* 더 적기 : 예약, 비용, 주소, 메모, 사진 (2026-11-16 마루님) */}
+        {!isMemo && (
+          <button type="button" aria-expanded={more} onClick={() => setMore((m) => !m)} disabled={busy}
+            className="press -mt-2 flex min-h-12 items-center justify-between rounded-field bg-surface px-4 text-left">
+            <span><span className="block text-body font-semibold text-ink">{more ? "접기" : "더 적기"}</span>
+              {!more && <span className="block text-tiny text-ink-sub">예약, 예상 비용, 주소, 메모, 사진</span>}</span>
+            <Icon name="right" size={18} className={"text-ink-sub transition-transform " + (more ? "-rotate-90" : "rotate-90")} />
+          </button>
+        )}
+        {(more || isMemo) && (
+          <div className="flex flex-col gap-6">
+          {/* 맞춤 칸 + 예약 필요를 한 카드에 (예약번호 옆에 예약 체크) */}
+          {!isMemo && (
+            <div className="flex flex-col gap-3 rounded-card bg-surface-soft p-4">
+                {fields.length > 0 && <div className="grid grid-cols-2 gap-3">
+                {fields.map((f) => (
+                  <label key={f.key} className={"flex min-w-0 flex-col gap-1.5 " + (f.half ? "" : "col-span-2")}>
+                    <span className="text-tiny font-bold text-ink-sub">{f.label}</span>
+                    {f.unit ? (
+                      // 숫자만 적으면 단위(명)가 붙어 저장된다 (2026-11-16 마루님)
+                      <span className="relative flex">
+                        <input type="text" inputMode="numeric" pattern="[0-9]*" value={(extra[f.key] ?? "").replace(/\D/g, "")} placeholder={f.placeholder} maxLength={3} disabled={busy}
+                          onChange={(e) => { const n = e.target.value.replace(/\D/g, "").slice(0, 3); setExtra((x) => ({ ...x, [f.key]: n ? `${Number(n)}${f.unit}` : "" })); setError(""); }}
+                          className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-3 pr-9 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                        <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-body text-ink-sub">{f.unit}</span>
+                      </span>
+                    ) : (
+                      <input type={f.type ?? "text"} value={extra[f.key] ?? ""} placeholder={f.placeholder} maxLength={f.max ?? 60} disabled={busy}
+                        onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [f.key]: v })); setError(""); }}
+                        className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                    )}
+                  </label>
+                ))}
+              </div>}
+
+              <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-field bg-surface px-4 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30">
+                <input type="checkbox" checked={reserve} onChange={(e) => setReserve(e.target.checked)} disabled={busy} className="size-5 accent-[var(--btn)]" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-body font-semibold text-ink">예약 필요</span>
+                  <span className="block text-tiny text-ink-sub">체크하면 준비 탭 예약 목록에 들어가요</span>
+                </span>
+              </label>
+            </div>
+          )}
+          {!isMemo && <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <Field label="예상 비용 (선택)" name="cost" inputMode={decimalsOf(currency) ? "decimal" : "numeric"} placeholder="0" value={cost}
+                onChange={(e) => { setCost(e.target.value.replace(/[^\d.,]/g, "")); setError(""); }} disabled={busy} />
+            </div>
+            <label className="flex w-28 flex-none flex-col gap-2">
+              <span className="sr-only">통화</span>
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)} disabled={busy}
+                className="h-14 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15">
+                {currencies.map((c) => <option key={c} value={c}>{CUR_NAME[c] ?? c}</option>)}
+              </select>
+            </label>
+          </div>}
+
+          {!isMemo && <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
+            onChange={(e) => setAddress(e.target.value)} disabled={busy} />}
+
+          <label className="flex flex-col gap-2">
+            <span className="text-sub font-bold text-ink-sub">{isMemo ? "내용 (선택)" : "메모 (선택)"}</span>
+            <textarea value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={MAX_PLACE_MEMO} rows={4} disabled={busy}
+              placeholder={isMemo ? "그날 기억할 것, 할 일 등" : "가는 방법, 챙길 것 등"}
+              className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
           </label>
-        </div>}
 
-        {!isMemo && <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
-          onChange={(e) => setAddress(e.target.value)} disabled={busy} />}
-
-        <label className="flex flex-col gap-2">
-          <span className="text-sub font-bold text-ink-sub">{isMemo ? "내용 (선택)" : "메모 (선택)"}</span>
-          <textarea value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={MAX_PLACE_MEMO} rows={4} disabled={busy}
-            placeholder={isMemo ? "그날 기억할 것, 할 일 등" : "가는 방법, 챙길 것 등"}
-            className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
-        </label>
-
-        {!isMemo && <div className="flex flex-col gap-2">
-          <span className="text-sub font-bold text-ink-sub">사진 (선택, {photos.length}/{MAX_PLACE_PHOTOS})</span>
-          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-            {photos.map((ph, i) => (
-              <span key={ph.path} className="relative flex-none">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ph.url} alt={`사진 ${i + 1}`} width={88} height={88} className="size-22 rounded-field object-cover" />
-                <button type="button" aria-label={`사진 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== ph))}
-                  className="press absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-btn text-on-btn">
-                  <Icon name="x" size={14} />
+          {!isMemo && <div className="flex flex-col gap-2">
+            <span className="text-sub font-bold text-ink-sub">사진 (선택, {photos.length}/{MAX_PLACE_PHOTOS})</span>
+            <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+              {photos.map((ph, i) => (
+                <span key={ph.path} className="relative flex-none">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={ph.url} alt={`사진 ${i + 1}`} width={88} height={88} className="size-22 rounded-field object-cover" />
+                  <button type="button" aria-label={`사진 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== ph))}
+                    className="press absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-btn text-on-btn">
+                    <Icon name="x" size={14} />
+                  </button>
+                </span>
+              ))}
+              {Array.from({ length: uploading }, (_, i) => (
+                <span key={`up${i}`} className="flex size-22 flex-none items-center justify-center rounded-field bg-surface text-tiny text-ink-sub">올리는 중</span>
+              ))}
+              {photos.length + uploading < MAX_PLACE_PHOTOS && (
+                <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}
+                  className="press flex size-22 flex-none flex-col items-center justify-center gap-1 rounded-field border border-dashed border-line-strong bg-surface text-tiny font-semibold text-ink-sub">
+                  <Icon name="camera" size={22} />사진 추가
                 </button>
-              </span>
-            ))}
-            {Array.from({ length: uploading }, (_, i) => (
-              <span key={`up${i}`} className="flex size-22 flex-none items-center justify-center rounded-field bg-surface text-tiny text-ink-sub">올리는 중</span>
-            ))}
-            {photos.length + uploading < MAX_PLACE_PHOTOS && (
-              <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}
-                className="press flex size-22 flex-none flex-col items-center justify-center gap-1 rounded-field border border-dashed border-line-strong bg-surface text-tiny font-semibold text-ink-sub">
-                <Icon name="camera" size={22} />사진 추가
-              </button>
-            )}
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
-            onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ""; void addPhotos(fs); }} />
-          <p className="text-tiny text-ink-sub">함께하는 사람만 볼 수 있어요. 올릴 때 크기를 줄여요</p>
-        </div>}
+              )}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+              onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ""; void addPhotos(fs); }} />
+            <p className="text-tiny text-ink-sub">함께하는 사람만 볼 수 있어요. 올릴 때 크기를 줄여요</p>
+          </div>}
 
+          </div>
+        )}
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
 
         {p && (
@@ -289,8 +335,11 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
         )}
       </div>
 
-      <div className="sticky bottom-0 mt-6 bg-bg px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
-        <Button full onClick={save} disabled={busy || !titleLen || uploading > 0}>{busy ? "저장하는 중" : uploading ? "사진 올리는 중" : p ? "저장" : isMemo ? "메모 추가" : "장소 추가"}</Button>
+      <div className="sticky bottom-0 mt-6 flex gap-2 bg-bg px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
+        {!p && !isMemo && (
+          <Button variant="secondary" onClick={() => save(true)} disabled={busy || !titleLen || uploading > 0} className="flex-none">이어서 추가</Button>
+        )}
+        <Button full onClick={() => save()} disabled={busy || !titleLen || uploading > 0}>{busy ? "저장하는 중" : uploading ? "사진 올리는 중" : p ? "저장" : isMemo ? "메모 추가" : "장소 추가"}</Button>
       </div>
 
       {confirm && <AlertDialog title={isMemo ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${p?.title}"이(가) 일정에서 사라져요`} confirmLabel="삭제"

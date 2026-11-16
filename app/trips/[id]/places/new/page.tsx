@@ -9,9 +9,9 @@ import { loadPlaceContext } from "@/lib/trips";
 
 export const metadata = { title: "장소 추가" };
 
-export default async function NewPlace({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; kind?: string }> }) {
+export default async function NewPlace({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; kind?: string; added?: string }> }) {
   const { id } = await params;
-  const { day, kind } = await searchParams;
+  const { day, kind, added } = await searchParams;
   const memo = kind === "memo";
   const v = await getViewer();
   if (v.kind === "guest") redirect(`/login?next=/trips/${id}`);
@@ -23,7 +23,9 @@ export default async function NewPlace({ params, searchParams }: { params: Promi
   if (memo) return <AppShell bottomGap={false}><MemoForm ctx={ctx} day={start} back={back} /></AppShell>;
   return (
     <PlaceShell tripId={id} title={memo ? "메모 추가" : "장소 추가"} back={`/trips/${id}${start == null ? "" : `?day=${start + 1}`}`}>
-      <PlaceForm ctx={ctx} day={start} memo={memo} />
+      {/* 이어서 추가 : 저장 뒤 같은 날로 다시 열린다. key 로 칸을 비운다 */}
+      {added && <p role="status" className="mx-5 mt-4 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">장소를 추가했어요. 이어서 다음 장소를 적어 주세요</p>}
+      <PlaceForm key={added ?? "first"} ctx={ctx} day={start} memo={memo} />
     </PlaceShell>
   );
 }

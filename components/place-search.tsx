@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/kit";
 import { findPlaces, pickPlace } from "@/app/actions";
 
-export type Picked = { id: string; name: string; address: string; lat: number; lng: number; country: string | null };
+export type Picked = { id: string; name: string; address: string; lat: number; lng: number; country: string | null; types?: string[] };
 type Sug = { id: string; main: string; sub: string };
 
 export function PlaceSuggest({ query, kind, bias, onPick, disabled }: {

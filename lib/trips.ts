@@ -154,6 +154,7 @@ export type PlaceContext = {
   tripId: string; tripTitle: string; start: string; days: number; role: Role; currency: string; place?: PlaceRow; photos?: { path: string; url: string }[];
   searchable: boolean; bias: { lat: number; lng: number } | null; // 장소 검색 (4단계) : 키가 있을 때만, 첫 도시 근처를 먼저
   reserved: boolean; // 준비 탭 예약에 들어가 있는지 (0032)
+  lastTimes: (string | null)[]; // 일차별 가장 늦은 장소 시간 (시간 빠른 고르기, 2026-11-16). 지금 고치는 장소는 뺀다. 마지막 칸 = 날짜 미정
 };
 export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?: string): Promise<PlaceContext | null> => {
   if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
@@ -177,7 +178,9 @@ export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?
   const place = (placeRow ?? undefined) as PlaceRow | undefined;
   const t = r.trip;
   const photos = placeId ? [...t.days.flatMap((d) => d.items), ...t.undated].find((it) => it.id === placeId)?.photos : undefined;
-  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos, searchable: placesEnabled(), bias, reserved: !!rsv };
+  const latest = (items: Item[]) => items.filter((it) => it.id !== placeId && it.time).map((it) => it.time!).sort().pop() ?? null;
+  const lastTimes = [...t.days.map((d) => latest(d.items)), latest(t.undated)];
+  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos, searchable: placesEnabled(), bias, reserved: !!rsv, lastTimes };
 });
 
 /* 함께하는 사람 화면 (2단계) : 목록, 내 권한, (주인이면) 살아 있는 초대 링크 */

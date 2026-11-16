@@ -174,6 +174,7 @@ export type PlaceInput = {
   place?: { id: string; lat: number; lng: number } | null; // 장소 검색으로 고른 구글 장소 (4단계). null 이면 연결 끊기, 없으면 그대로
   details?: Record<string, string>; // 분류별 맞춤 칸 (0030). 고른 분류의 칸만 저장
   reserve?: boolean; // 예약 필요 → 준비 탭 예약 목록에 (0032). 없으면 그대로
+  again?: boolean; // 새 장소 저장 뒤 같은 날로 장소 추가 화면을 다시 연다 (이어서 추가, 2026-11-16)
 };
 const CATEGORIES = ["transport", "food", "sight", "shopping", "stay", "memo"]; // memo = 일정 사이 메모 (0031)
 const placeCols = (pl: PlaceInput["place"]) => {
@@ -247,6 +248,7 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   }
   if (input?.reserve !== undefined && savedId) await syncReservation(sb, auth.user.id, tripId, savedId, !isMemo && !!input.reserve, title, day);
   revalidatePath("/", "layout");
+  if (input?.again && !placeId) redirect(`/trips/${tripId}/places/new?day=${day == null ? "none" : day + 1}&added=${Date.now().toString(36)}`);
   redirect(`/trips/${tripId}?${day == null ? "undated=1#undated" : `day=${day + 1}`}`);
 }
 

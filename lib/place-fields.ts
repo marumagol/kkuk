@@ -107,3 +107,22 @@ export function detailLine(category: string, d?: Details | null): string {
   }
   return parts.filter(Boolean).join(" · ");
 }
+
+/*
+  구글 장소 종류로 분류 고르기 (2026-11-16 마루님 "검색으로 고르면 분류 자동") : 맞는 게 없으면 null (분류는 그대로)
+  이동이면 수단도 같이 (공항 = 비행기, 역 = 기차, 버스 터미널 = 버스, 항구 = 배)
+*/
+export function guessCategory(types?: string[]): { category: string; mode?: string } | null {
+  if (!types?.length) return null;
+  const has = (re: RegExp) => types.some((t) => re.test(t));
+  if (has(/^airport$|^international_airport$/)) return { category: "transport", mode: "flight" };
+  if (has(/^(train_station|subway_station|light_rail_station)$/)) return { category: "transport", mode: "train" };
+  if (has(/^bus_station$/)) return { category: "transport", mode: "bus" };
+  if (has(/^ferry_terminal$/)) return { category: "transport", mode: "ship" };
+  if (has(/^transit_station$/)) return { category: "transport" };
+  if (has(/^(lodging|hotel|motel|hostel|resort_hotel|guest_house|bed_and_breakfast|inn|campground)$/)) return { category: "stay" };
+  if (has(/restaurant$|^(cafe|coffee_shop|bakery|bar|pub|food_court|meal_takeaway|meal_delivery|tea_house|dessert_shop|ice_cream_shop|food)$/)) return { category: "food" };
+  if (has(/_store$|^(store|shopping_mall|market|supermarket|department_store|grocery_store)$/)) return { category: "shopping" };
+  if (has(/^(tourist_attraction|museum|park|amusement_park|aquarium|zoo|art_gallery|historical_landmark|church|hindu_temple|buddhist_temple|shinto_shrine|place_of_worship|observation_deck|national_park|hiking_area|beach|garden|landmark|cultural_landmark|spa|natural_feature)$/)) return { category: "sight" };
+  return null;
+}
