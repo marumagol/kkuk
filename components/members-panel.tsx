@@ -2,7 +2,7 @@
 /* 함께하는 사람 화면 내용. 버튼은 권한에 맞게만 보이고, 실제 검사는 DB 함수가 한다
    초대 링크는 항상 보기만으로 들어오고, 주인이 들어온 뒤 권한을 바꾼다 (2026-11-14 마루님) */
 import { useEffect, useState, useTransition } from "react";
-import { Button } from "@/components/kit";
+import { Button, Icon } from "@/components/kit";
 import { Avatar } from "@/components/screen";
 import { AlertDialog } from "@/components/gate";
 import { makeInvite, revokeInvite, changeMemberRole, kickMember, giveOwner, leaveTrip } from "@/app/actions";
@@ -45,22 +45,31 @@ export function MembersPanel({ view }: { view: MembersView }) {
   return (
     <div className="flex flex-col gap-5 px-5 pt-5">
       {owner && (
-        <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-labelledby="invite-title">
-          <h2 id="invite-title" className="text-body font-bold text-ink">초대 링크</h2>
-          <p className="text-tiny text-ink-sub">링크로 들어온 사람은 먼저 보기만이에요. 들어온 뒤 아래 목록에서 편집 가능으로 바꿀 수 있어요</p>
+        /* 초대 링크 카드 (2026-11-16 마루님 "한눈에 이해되게") : 주소 한 줄 + 복사, 큰 버튼 하나로 보내기, 링크 끄기는 아래 작은 글자 버튼 */
+        <section className="flex flex-col gap-3 rounded-card bg-surface p-5" aria-labelledby="invite-title">
+          <div className="flex items-center justify-between gap-2">
+            <h2 id="invite-title" className="text-body font-bold text-ink">초대 링크</h2>
+            {token && <span className="flex-none rounded-full bg-accent-soft px-2.5 py-1 text-tiny font-bold text-accent-text">7일 동안 열려 있어요</span>}
+          </div>
+          <p className="text-sub text-ink-sub">링크로 들어온 사람은 보기만으로 시작해요. 아래 목록에서 편집 가능으로 바꿀 수 있어요</p>
           {token ? (
             <>
-              <p className="break-all rounded-field bg-bg px-3 py-2 text-tiny text-ink-sub">{url}</p>
-              {canShare && <Button full onClick={() => share(url)} disabled={busy}>카카오톡 등으로 보내기</Button>}
-              <div className="flex gap-2">
-                <Button full variant={canShare ? "secondary" : undefined} onClick={() => copy(url)} disabled={busy}>링크 복사</Button>
-                <Button variant="secondary" disabled={busy} onClick={() => setAsk({ title: "초대 링크를 끊을까요?", desc: "이 링크로는 더 이상 들어올 수 없어요. 이미 함께하는 사람은 그대로예요", label: "끊기",
-                  run: async () => { const r = await revokeInvite(view.tripId); if (!r?.error) setToken(""); return r; } })}>끊기</Button>
+              <div className="flex min-h-12 items-center gap-2 rounded-field bg-bg py-1.5 pl-3 pr-1.5">
+                <Icon name="link" size={16} className="flex-none text-ink-sub" />
+                <span className="min-w-0 flex-1 truncate text-sub text-ink" title={url}>{url.replace(/^https?:\/\//, "")}</span>
+                <button type="button" onClick={() => copy(url)} disabled={busy}
+                  className="press h-9 flex-none whitespace-nowrap rounded-full bg-surface px-3.5 text-tiny font-bold text-ink ring-1 ring-line">복사</button>
               </div>
-              <p className="text-tiny text-ink-sub">링크는 7일 동안 쓸 수 있어요. 링크를 받은 사람은 누구나 들어올 수 있으니 함께할 사람에게만 보내 주세요</p>
+              <Button full size="lg" onClick={() => (canShare ? share(url) : copy(url))} disabled={busy}>{canShare ? "카카오톡 등으로 보내기" : "링크 복사"}</Button>
+              <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
+                <p className="flex min-w-0 items-start gap-1.5 text-tiny text-ink-sub"><Icon name="lock" size={14} className="mt-px flex-none" />링크를 받은 누구나 들어올 수 있어요. 함께할 사람에게만 보내 주세요</p>
+                <button type="button" disabled={busy} onClick={() => setAsk({ title: "초대 링크를 끌까요?", desc: "이 링크로는 더 이상 들어올 수 없어요. 이미 함께하는 사람은 그대로예요. 필요하면 새 링크를 다시 만들 수 있어요", label: "링크 끄기",
+                  run: async () => { const r = await revokeInvite(view.tripId); if (!r?.error) setToken(""); return r; } })}
+                  className="press h-9 flex-none whitespace-nowrap rounded-full px-2 text-tiny font-bold text-point-text">링크 끄기</button>
+              </div>
             </>
           ) : (
-            <Button full disabled={busy} onClick={() => run(async () => {
+            <Button full size="lg" disabled={busy} onClick={() => run(async () => {
               const r = await makeInvite(view.tripId, "viewer");
               if (r.token) await copy(`${window.location.origin}/invite/${r.token}`);
               return r;
@@ -70,7 +79,7 @@ export function MembersPanel({ view }: { view: MembersView }) {
       )}
 
       <section className="flex flex-col gap-2" aria-labelledby="member-title">
-        <h2 id="member-title" className="text-body font-bold text-ink">함께하는 사람 {view.members.length}명</h2>
+        <h2 id="member-title" className="px-1 text-body font-bold text-ink">함께하는 사람 {view.members.length}명</h2>
         <ul className="divide-y divide-line rounded-card bg-surface">
           {view.members.map((m) => (
             <MemberRow key={m.id} m={m} owner={owner} busy={busy}
