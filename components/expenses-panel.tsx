@@ -22,14 +22,14 @@ const CUR_NAME: Record<string, string> = { KRW: "원", JPY: "엔", USD: "달러"
 const QUICK = ["식사", "카페", "교통", "숙소", "쇼핑", "입장료"];
 type Draft = Partial<Expense> & { fromPlace?: boolean };
 
-export function ExpensesPanel({ view, budget }: { view: ExpensesView; budget?: React.ReactNode }) {
+export function ExpensesPanel({ view, budget, openAdd }: { view: ExpensesView; budget?: React.ReactNode; openAdd?: boolean }) {
   const canEdit = view.role !== "viewer";
   const person = (id: string) => view.people.find((p) => p.userId === id);
   const nameOf = (id: string) => (id === view.me ? "나" : person(id)?.name ?? "나간 사람");
   const transfers = useMemo(() => settle(view.expenses), [view.expenses]);
   const mine = useMemo(() => balances(view.expenses).filter((b) => b.userId === view.me && (b.paid || b.share)), [view.expenses, view.me]);
   const active = view.people.filter((p) => p.active);
-  const [sheet, setSheet] = useState<Draft | null>(null);
+  const [sheet, setSheet] = useState<Draft | null>(openAdd && view.role !== "viewer" ? {} : null); // 홈 [+ 경비] 로 오면 바로 입력 창
   const [picking, setPicking] = useState(false);
 
   const groups = useMemo(() => {

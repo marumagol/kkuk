@@ -14,21 +14,13 @@ import { getViewer } from "@/lib/viewer";
 import { loadStamps, type StampCard } from "@/lib/trips";
 import { flagOf, countryOf } from "@/lib/countries";
 import { addDays, daysBetween, md, todayKST } from "@/lib/mock";
+import { GOALS, type Goal } from "@/lib/stamp-goals";
 
 export const metadata = { title: "도장" };
 
 const dot = (d?: string) => (d ? d.slice(2).replaceAll("-", ".") : undefined);
 const tiltOf = (name: string) => ([...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 17) - 8;
 
-type Goal = { key: string; label: string; need: number; of: "stamp" | "country" };
-const GOALS: Goal[] = [
-  { key: "first", label: "첫 도장", need: 1, of: "stamp" },
-  { key: "s5", label: "도장 5개", need: 5, of: "stamp" },
-  { key: "c3", label: "나라 3곳", need: 3, of: "country" },
-  { key: "s10", label: "도장 10개", need: 10, of: "stamp" },
-  { key: "c5", label: "나라 5곳", need: 5, of: "country" },
-  { key: "s30", label: "도장 30개", need: 30, of: "stamp" },
-];
 
 function status(x: StampCard, today: string) {
   const n = x.next;
