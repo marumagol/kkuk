@@ -20,6 +20,13 @@ const COMMON_MOVE: FieldDef[] = [
   { key: "arrive", label: "도착 시간", type: "time", half: true },
 ];
 
+/* 이동의 출발/도착 시간은 맞춤 칸 묶음이 아니라 "시간" 자리에 보인다 (2026-11-16 마루님). 출발 시간 = 장소 시간(정렬 기준) */
+export const MOVE_TIME_KEYS = ["depart", "arrive"];
+const MOVE_TIMES: FieldDef[] = [
+  { key: "depart", label: "출발 시간", type: "time", half: true },
+  { key: "arrive", label: "도착 시간", type: "time", half: true },
+];
+
 export function fieldsOf(category: string, mode?: string): FieldDef[] {
   switch (category) {
     case "transport":
@@ -38,7 +45,7 @@ export function fieldsOf(category: string, mode?: string): FieldDef[] {
         { key: "booking", label: "예약번호", max: 40 },
       ];
       if (mode) return [...COMMON_MOVE, { key: "booking", label: "예약번호", half: true, max: 40 }];
-      return [];
+      return MOVE_TIMES; // 수단을 안 골라도 출발/도착 시간은 남긴다
     case "stay": return [
       { key: "booking", label: "예약번호", placeholder: "예 : 1234567890", max: 40 },
       { key: "checkin", label: "체크인", type: "time", half: true },
@@ -88,7 +95,7 @@ export function detailLine(category: string, d?: Details | null): string {
   const parts: string[] = [];
   if (category === "transport") {
     const mode = MODES.find((m) => m.code === d.mode)?.label;
-    parts.push([mode, d.code].filter(Boolean).join(" "), route, d.depart && d.arrive ? `${d.depart}~${d.arrive}` : d.depart ? `${d.depart} 출발` : d.arrive ? `${d.arrive} 도착` : "", d.seat ? `좌석 ${d.seat}` : "", book);
+    parts.push([mode, d.code].filter(Boolean).join(" "), route, d.arrive ? `${d.arrive} 도착` : "", /* 출발 시간은 카드 왼쪽 시간으로 보인다 */ d.seat ? `좌석 ${d.seat}` : "", book);
   } else if (category === "stay") {
     parts.push(d.checkin ? `체크인 ${d.checkin}` : "", d.checkout ? `체크아웃 ${d.checkout}` : "", book);
   } else if (category === "food") {

@@ -18,7 +18,7 @@ import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
 import { PlaceSuggest, type Picked } from "@/components/place-search";
-import { fieldsOf, MODES, type Details } from "@/lib/place-fields";
+import { fieldsOf, MODES, MOVE_TIME_KEYS, type Details } from "@/lib/place-fields";
 
 const CATS = [
   { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
@@ -33,15 +33,21 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const [category, setCategory] = useState(p?.category ?? (startMemo ? "memo" : "sight"));
   const isMemo = category === "memo";
   const [time, setTime] = useState(p?.start_time?.slice(0, 5) ?? "");
-  const [timed, setTimed] = useState(!!p?.start_time);
+  const [timed, setTimed] = useState(!!p?.start_time || (p?.category === "transport" && !!(p.details?.depart || p.details?.arrive)));
   const [address, setAddress] = useState(p?.address ?? "");
   const [currency, setCurrency] = useState(startCur);
   const [cost, setCost] = useState(p?.estimated_cost != null ? String(p.estimated_cost / 10 ** decimalsOf(startCur)) : "");
   const [memo, setMemo] = useState(p?.memo ?? "");
   // 분류별 맞춤 칸 (편명, 예약번호 등). 분류를 바꿔도 적은 값은 남겨 두고, 저장할 때 고른 분류의 칸만 보낸다
-  const [extra, setExtra] = useState<Details>(p?.details ?? {});
+  // 예전 이동 장소는 출발 시간 칸이 없어서 장소 시간을 출발 시간으로 연다
+  const [extra, setExtra] = useState<Details>(() => {
+    const d = { ...(p?.details ?? {}) };
+    if (p?.category === "transport" && !d.depart && p.start_time) d.depart = p.start_time.slice(0, 5);
+    return d;
+  });
   const [reserve, setReserve] = useState(ctx.reserved);
-  const fields = fieldsOf(category, extra.mode);
+  const isMove = category === "transport";
+  const fields = fieldsOf(category, extra.mode).filter((f) => !(isMove && MOVE_TIME_KEYS.includes(f.key)));
   // 장소 검색으로 고른 구글 장소. undefined = 건드리지 않음, null = 연결 끊음
   const [linked, setLinked] = useState<{ id: string; lat: number; lng: number } | null | undefined>(undefined);
   const isLinked = linked === undefined ? !!p?.google_place_id : !!linked;
@@ -87,7 +93,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     setError("");
     if (!titleLen) return setError(isMemo ? "메모 제목을 적어 주세요" : "장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo || !timed ? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: extra, reserve, ...(linked !== undefined ? { place: linked } : {}) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo || !timed ? "" : isMove ? extra.depart ?? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: isMove && !timed ? { ...extra, depart: "", arrive: "" } : extra, reserve, ...(linked !== undefined ? { place: linked } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -119,7 +125,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             {CATS.map((c) => (
               <label key={c.code} className={"press inline-flex h-11 cursor-pointer items-center rounded-full px-4 text-sub font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink/30 " +
                 (category === c.code ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
-                <input type="radio" name="category" value={c.code} checked={category === c.code} onChange={() => setCategory(c.code)} className="sr-only" disabled={busy} />
+                <input type="radio" name="category" value={c.code} checked={category === c.code} onChange={() => { setCategory(c.code); if (c.code === "transport" && time && !extra.depart) setExtra((x) => ({ ...x, depart: time })); }} className="sr-only" disabled={busy} />
                 {c.label}
               </label>
             ))}
@@ -202,9 +208,21 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                 {on ? "시간 정하기" : "시간 없음"}
               </button>
             ))}
-            {timed && <input type="time" aria-label="시간" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} autoFocus={!p?.start_time}
+            {timed && !isMove && <input type="time" aria-label="시간" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} autoFocus={!p?.start_time}
               className="h-11 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />}
           </div>
+          {/* 이동은 시간 칸 대신 출발/도착 시간. 출발 시간이 일정의 시간(정렬 기준)이 된다 */}
+          {timed && isMove && (
+            <div className="grid grid-cols-2 gap-3">
+              {(["depart", "arrive"] as const).map((k) => (
+                <label key={k} className="flex min-w-0 flex-col gap-1.5">
+                  <span className="text-tiny font-bold text-ink-sub">{k === "depart" ? "출발 시간" : "도착 시간"}</span>
+                  <input type="time" value={extra[k] ?? ""} disabled={busy} onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [k]: v })); setError(""); }}
+                    className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                </label>
+              ))}
+            </div>
+          )}
         </fieldset>}
 
         {!isMemo && <div className="flex items-end gap-2">
