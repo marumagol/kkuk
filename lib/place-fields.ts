@@ -1,6 +1,6 @@
 /*
   분류별 맞춤 칸 (2026-11-15 여행 메뉴 개편, migration 0030 itinerary_items.details)
-  - 이동 : 수단(비행기/기차/버스/배/차)을 고르면 그에 맞는 칸. 비행기는 편명, 출발/도착 공항, 출발/도착 시간 (출발 시간 2026-11-16), 좌석, 예약번호
+  - 이동 : 수단(비행기/기차/버스/배/자동차/도보)을 고르면 그에 맞는 칸. 비행기는 편명, 출발/도착 공항, 출발/도착 시간 (출발 시간 2026-11-16), 좌석, 예약번호
   - 숙소 : 예약번호, 체크인/체크아웃 시간, 예약한 곳, 연락처
   - 식사 : 예약번호, 인원, 먹을 메뉴 / 관광 : 예약·입장권 번호, 운영 시간 / 쇼핑 : 살 것
   저장할 때는 고른 분류(와 수단)의 칸만 남긴다. 공개 공유 링크에는 나가지 않는다
@@ -8,10 +8,13 @@
 export type Details = Record<string, string>;
 export type FieldDef = { key: string; label: string; placeholder?: string; type?: "text" | "time"; half?: boolean; max?: number; unit?: string /* 숫자만 받고 뒤에 단위를 붙인다 (예 : 명) */ };
 
+/* 수단마다 아이콘 (2026-11-17 마루님 : 일정에서 번호 대신 수단 아이콘, "차" → "자동차", 도보 추가) */
 export const MODES = [
-  { code: "flight", label: "비행기" }, { code: "train", label: "기차" }, { code: "bus", label: "버스" },
-  { code: "ship", label: "배" }, { code: "car", label: "차" },
+  { code: "flight", label: "비행기", icon: "plane" }, { code: "train", label: "기차", icon: "train" }, { code: "bus", label: "버스", icon: "bus" },
+  { code: "ship", label: "배", icon: "ship" }, { code: "car", label: "자동차", icon: "car" }, { code: "walk", label: "도보", icon: "foot" },
 ] as const;
+export type ModeCode = (typeof MODES)[number]["code"];
+export const modeIcon = (code?: string) => MODES.find((m) => m.code === code)?.icon;
 
 const COMMON_MOVE: FieldDef[] = [
   { key: "from", label: "출발", placeholder: "예 : 인천", half: true },
@@ -128,8 +131,8 @@ export function detailLine(category: string, d?: Details | null, skipRoute = fal
   const book = d.site ? `${d.site} 예약` : ""; // 목록에는 예약번호 대신 예약한 곳 (2026-11-16 마루님). 없으면 비움
   const parts: string[] = [];
   if (category === "transport") {
-    const mode = MODES.find((m) => m.code === d.mode)?.label;
-    parts.push([mode, d.code].filter(Boolean).join(" "), route, d.arrive ? `${d.arrive} 도착` : "", /* 출발 시간은 카드 왼쪽 시간으로 보인다 */ d.seat ? `좌석 ${d.seat}` : "", book);
+    // 수단 이름은 카드에 쓰지 않는다. 일정 왼쪽 수단 아이콘으로 보인다 (2026-11-17 마루님)
+    parts.push(d.code ?? "", route, d.arrive ? `${d.arrive} 도착` : "", /* 출발 시간은 카드 왼쪽 시간으로 보인다 */ d.seat ? `좌석 ${d.seat}` : "", book);
   } else if (category === "stay") {
     parts.push(d.checkin ? `체크인 ${d.checkin}` : "", d.checkout ? `체크아웃 ${d.checkout}` : "", book);
   } else if (category === "food") {

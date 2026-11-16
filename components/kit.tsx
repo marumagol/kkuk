@@ -12,10 +12,15 @@ const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).jo
 /* ---------- 아이콘 (선 1.75, 둥근 끝) ---------- */
 type IconName =
   | "plus" | "bell" | "home" | "cal" | "map" | "user" | "arrow" | "camera"
-  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin" | "share" | "list" | "globe" | "trash" | "plane" | "more" | "chevron-down" | "star" | "menu" | "swap";
+  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin" | "share" | "list" | "globe" | "trash" | "plane" | "more" | "chevron-down" | "star" | "menu" | "swap" | "train" | "bus" | "ship" | "car" | "foot";
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
   menu: <path d="M5 7h14M5 12h14M5 17h14" />,
+  train: <><rect x="6" y="3.5" width="12" height="13" rx="3" /><path d="M6 10.5h12M9.5 13.5h.01M14.5 13.5h.01M9 16.5 7 20.5M15 16.5l2 4" /></>,
+  bus: <><rect x="4.5" y="4" width="15" height="13" rx="2.5" /><path d="M4.5 11h15M8.5 14h.01M15.5 14h.01M7.5 17v2.5M16.5 17v2.5" /></>,
+  ship: <><path d="M3.5 15.5 5 19.5h14l1.5-4L12 12.5z" /><path d="M7 14V8.5h10V14M12 5v3.5" /><path d="M3 21c1.5 0 1.5-.8 3-.8s1.5.8 3 .8 1.5-.8 3-.8 1.5.8 3 .8 1.5-.8 3-.8 1.5.8 3 .8" /></>,
+  car: <><path d="M5 16.5V12l2-4.5h10l2 4.5v4.5" /><path d="M3.5 12h17v4.5h-17zM7 16.5V19M17 16.5V19" /><path d="M7.5 14.3h.01M16.5 14.3h.01" /></>,
+  foot: <><path d="M8 4c1.6 0 2.5 1.9 2.5 4.2S9.7 12.5 8 12.5 5.5 10.5 5.5 8.2 6.4 4 8 4z" /><path d="M6 14.5h4l-.3 2.3a1.8 1.8 0 0 1-3.4 0z" /><path d="M16 7.5c1.6 0 2.5 1.9 2.5 4.2s-.8 4.3-2.5 4.3-2.5-2-2.5-4.3.9-4.2 2.5-4.2z" /><path d="M14 18h4l-.3 2.3a1.8 1.8 0 0 1-3.4 0z" /></>,
   swap: <><path d="M8 4v16M4 8l4-4 4 4" /><path d="M16 20V4M12 16l4 4 4-4" /></>,
   bell: <><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7z" /><path d="M10 19a2 2 0 0 0 4 0" /></>,
   home: <path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1v-8z" />,
@@ -177,7 +182,7 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 
 /* 일정의 장소 카드 (피그마 PinCard) */
 export function PinCard({ index, mark, time, category, title, desc, detail, editedBy, editedFace, editedAgo, last, href, photo, photoCount, warn, corner }: {
-  index: number; mark?: "plane" | "dot"; /* 비행기(공항, 항공) / 점(메모) : 번호 대신 (2026-11-16) */ time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; editedFace?: string; editedAgo?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
+  index: number; mark?: "dot" | "plane" | "train" | "bus" | "ship" | "car" | "foot"; /* 이동 수단 아이콘(비행기는 공항 이름 포함, 2026-11-17 모든 수단) / 점(메모) : 번호 대신 */ time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; editedFace?: string; editedAgo?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
   warn?: string /* 영업시간 경고 */; corner?: ReactNode /* 오른쪽 위 작은 버튼 (길찾기). 링크 밖에 겹쳐 두어 따로 눌린다 (2026-11-16 마루님 "카드가 길어지지 않게") */;
 }) {
   /* 누가 고쳤는지 (2026-11-16 마루님 "더 간략하게") : 카드 오른쪽 아래 작은 얼굴만. 머리 줄 오른쪽(길찾기 왼쪽). 누르면 "○○님 · 2시간 전 수정" (다른 사람이 24시간 안에 고친 것만) */
@@ -197,7 +202,7 @@ export function PinCard({ index, mark, time, category, title, desc, detail, edit
   return (
     <div className="flex gap-3">
       <div className="flex w-7 flex-none flex-col items-center gap-1 pt-3.5">
-        {mark === "plane" ? <span className="flex size-7 items-center justify-center rounded-full bg-deep text-on-deep"><Icon name="plane" size={15} strokeWidth={2} /></span>
+        {mark && mark !== "dot" ? <span className="flex size-7 items-center justify-center rounded-full bg-deep text-on-deep"><Icon name={mark} size={15} strokeWidth={2} /></span>
           : mark === "dot" ? <span className="mt-2.5 size-2.5 rounded-full bg-ink-sub" />
           : index > 0 ? <span className="flex size-7 items-center justify-center rounded-full bg-point text-tiny font-extrabold text-white ring-2 ring-surface">{index}</span> /* 지도 핀과 같은 주황 (2026-11-16 마루님) */
           : <span className="mt-2 size-3 rounded-full border-2 border-line-strong bg-surface" />}

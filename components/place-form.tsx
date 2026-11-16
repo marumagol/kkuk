@@ -236,8 +236,8 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
               {MODES.map((m) => (
                 <button key={m.code} type="button" aria-pressed={extra.mode === m.code} disabled={busy}
                   onClick={() => setExtra((x) => ({ ...x, mode: x.mode === m.code ? "" : m.code }))}
-                  className={"press inline-flex h-10 items-center rounded-full px-3.5 text-sub font-semibold " + (extra.mode === m.code ? "bg-point-soft text-point-text ring-1 ring-point" : "bg-bg text-ink")}>
-                  {m.label}
+                  className={"press inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sub font-semibold " + (extra.mode === m.code ? "bg-point-soft text-point-text ring-1 ring-point" : "bg-bg text-ink")}>
+                  <Icon name={m.icon} size={16} />{m.label}
                 </button>
               ))}
             </div>

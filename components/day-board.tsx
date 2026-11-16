@@ -22,6 +22,7 @@ import { addDays, md, weekday, type Item } from "@/lib/mock";
 import { mapsDirUrl, canMap } from "@/lib/maps-link";
 import { formatMoney } from "@/lib/countries";
 import { hoursWarning } from "@/lib/hours";
+import { modeIcon } from "@/lib/place-fields";
 
 type Props = {
   tripId: string; start: string; days: { title?: string; items: Item[] }[]; undated: Item[];
@@ -36,11 +37,12 @@ type Props = {
 const AIRPORT = /(공항|airport|空港|機場|机场)(\s*(국제선|국내선|제?\s*\d\s*(여객)?터미널|터미널\s*\d?|T\d|terminal\s*\d?|ターミナル))?$/i;
 const isFlight = (x: Item) => AIRPORT.test(x.title.trim()) || (x.category === "이동" && (x.detail ?? "").startsWith("비행기"));
 const hasPos = (x: Item) => x.lat != null && x.lng != null;
-/* 번호 : 위치가 있는 장소만, 메모와 공항·항공은 빼고 1부터. 지도 핀과 같은 번호 */
+/* 번호 : 위치가 있는 장소만, 메모와 이동(수단 아이콘)·공항은 빼고 1부터. 지도 핀과 같은 번호 */
+const modeMark = (x: Item) => (isFlight(x) ? "plane" : x.category === "이동" ? modeIcon(x.mode) : undefined);
 const ALL = -1; // 날짜 칩 [전체]
 function numbering(items: Item[], from = 0) {
   let n = from;
-  return items.map((x) => (x.category === "메모" ? { mark: "dot" as const, n: 0 } : isFlight(x) ? { mark: "plane" as const, n: 0 } : hasPos(x) ? { n: ++n } : { n: 0 }));
+  return items.map((x) => { const m = modeMark(x); return x.category === "메모" ? { mark: "dot" as const, n: 0 } : m ? { mark: m, n: 0 } : hasPos(x) ? { n: ++n } : { n: 0 }; });
 }
 function km(a: Item, b: Item) {
   const R = 6371, r = Math.PI / 180;
