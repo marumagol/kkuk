@@ -7,6 +7,7 @@ import { after } from "next/server";
 import { Icon } from "@/components/kit";
 import { AppShell, MockNote } from "@/components/screen";
 import { DayBoard } from "@/components/day-board";
+import { OfflineSaver } from "@/components/offline-saver";
 import { LiveRefresh } from "@/components/live-refresh";
 import { TripTabs, TripHeader } from "@/components/trip-tabs";
 import { StampClaim } from "@/components/stamp-claim";
@@ -85,6 +86,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
       <DayBoard tripId={trip.id} start={trip.start} days={trip.days.slice(0, len)} undated={trip.undated}
         editable={editable} canAdd={canEdit} user={viewer.kind === "user"} initialDay={day}
         jump={(valid && asked > 1) || (!valid && ongoing && day > 1)} jumpUndated={!!sp.undated} />
+      {viewer.kind === "user" && statusOf(trip, today) !== "past" && <OfflineSaver tripId={trip.id} days={len} />}
     </AppShell>
   );
 }

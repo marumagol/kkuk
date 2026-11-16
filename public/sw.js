@@ -55,6 +55,23 @@ self.addEventListener("fetch", (e) => {
   })());
 });
 
+/* 여행 통째로 저장 (2026-11-16, components/offline-saver.tsx) : 받은 주소들의 화면을 미리 받아 둔다. 끝나면 알려 준다 */
+self.addEventListener("message", (e) => {
+  if (e.data?.type !== "save-pages" || !Array.isArray(e.data.urls)) return;
+  const urls = e.data.urls.filter((u) => typeof u === "string" && u.startsWith("/") && KEEP.test(u.split("?")[0])).slice(0, 40);
+  e.waitUntil((async () => {
+    const c = await caches.open(PAGES);
+    let ok = 0;
+    for (const u of urls) {
+      try {
+        const res = await fetch(u, { credentials: "same-origin", headers: { accept: "text/html" } });
+        if (res.ok && !res.redirected) { await c.put(new Request(new URL(u, location.origin).href), res); ok++; }
+      } catch {}
+    }
+    e.source?.postMessage({ type: "pages-saved", ok });
+  })());
+});
+
 /* 휴대폰 푸시 (5단계 7번) : push 함수가 보낸 알림을 띄우고, 누르면 알림 화면으로 */
 self.addEventListener("push", (e) => {
   let d = { title: "꾹", body: "새 알림이 있어요", url: "/notifications" };
