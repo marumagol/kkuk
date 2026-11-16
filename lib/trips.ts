@@ -215,6 +215,7 @@ export type PrepView = {
   items: PrepItem[]; budget: { currency: string; total: number } | null;
   spent: number; // 예산 통화로 적은 장소 예상 비용 합 (최소 단위)
   byCategory: { category: Category; amount: number }[]; // 분류별 예상 비용 (많은 순)
+  krw: number | null; // 예산 통화 1 단위 = 원화 (참고용, lib/fx.ts). 원화거나 못 받으면 null
   people: { userId: string; name: string }[];
 };
 export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepView | null> => {
@@ -239,12 +240,14 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
   }
   const byCategory = [...byCat].map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
   const spent = byCategory.reduce((n, c) => n + c.amount, 0);
+  const { krwPer } = await import("@/lib/fx");
+  const krw = await krwPer(budget?.currency ?? currency);
   return {
     tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency,
     items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null; item_id: string | null; booking_code: string | null; files: string[] | null }[])
       .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at, itemId: x.item_id, code: x.booking_code ?? undefined, files: x.files?.length ?? 0 })),
     budget: budget ? { currency: budget.currency, total: Number(budget.total) } : null,
-    spent, byCategory,
+    spent, byCategory, krw,
     people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name }] : [])),
   };
 });

@@ -44,6 +44,7 @@ function Budget({ view, canEdit, busy, run }: { view: PrepView; canEdit: boolean
   const [amount, setAmount] = useState(view.budget ? String(view.budget.total / 10 ** d) : "");
   const total = view.budget?.total ?? 0;
   const left = total - view.spent;
+  const won = (minor: number) => `₩${Math.round((minor / 10 ** d) * (view.krw ?? 0)).toLocaleString("ko-KR")}`;
   const pct = total ? Math.min(100, Math.round((view.spent / total) * 100)) : 0;
   const editBtn = canEdit && (
     <button type="button" onClick={() => setEdit(true)} className="press inline-flex h-8 items-center rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">{view.budget ? "예산 수정" : "예산 정하기"}</button>
@@ -71,6 +72,8 @@ function Budget({ view, canEdit, busy, run }: { view: PrepView; canEdit: boolean
         <span className="text-number font-extrabold tabular-nums">{formatMoney(view.budget ? left : view.spent, cur)}</span>
         {view.budget && <span className="text-sub text-on-deep-sub">/ {formatMoney(total, cur)}</span>}
       </p>
+      {/* 원화 환산 (참고용, 2026-11-16 마루님) */}
+      {view.krw && <p className="-mt-2 text-sub font-semibold text-on-deep-sub tabular-nums">약 {won(view.budget ? left : view.spent)}{view.budget && <> / {won(total)}</>}</p>}
       <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-deep-soft" role="img"
         aria-label={view.budget ? `예산의 ${pct}% 사용` : "분류별 예상 비용"}>
         {view.byCategory.map((c) => (
@@ -89,7 +92,7 @@ function Budget({ view, canEdit, busy, run }: { view: PrepView; canEdit: boolean
       ) : (
         <p className="text-tiny text-on-deep-sub">장소에 예상 비용을 적으면 분류별로 여기에 모여요</p>
       )}
-      <p className="text-tiny text-on-deep-sub">{cur} 로 적은 장소 예상 비용만 더해요</p>
+      <p className="text-tiny text-on-deep-sub">{cur} 로 적은 장소 예상 비용만 더해요{view.krw ? `. 원화는 1 ${cur} = ${view.krw < 10 ? view.krw.toFixed(2) : Math.round(view.krw).toLocaleString("ko-KR")}원 기준 참고용이에요` : ""}</p>
       {/* 경비와 정산은 따로 줄을 두지 않고 예산 카드 안에서 들어간다 (2026-11-16 마루님) */}
       <Link href={`/trips/${view.tripId}/expenses`} className="press -mx-5 -mb-5 mt-1 flex min-h-12 items-center justify-between gap-2 border-t border-deep-soft px-5 py-3 text-sub font-bold text-on-deep">
         경비와 정산 보기<Icon name="right" size={18} className="text-on-deep-sub" />
