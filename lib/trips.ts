@@ -57,10 +57,15 @@ export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {
   const rows = (data ?? []) as unknown as Row[];
   if (!rows.length) return [];
   // 장소 수만 따로 센다 (trip_id 조건 명시)
-  const { data: items } = await sb.from("itinerary_items").select("trip_id").in("trip_id", rows.map((r) => r.id)).is("removed_at", null);
+  // 장소 수와 프로필 사진(홈 다가오는 여행 카드 등, 2026-11-16 마루님)은 서로 기다리지 않고 같이 묻는다
+  const trips = rows.map(base);
+  const [{ data: items }, face] = await Promise.all([
+    sb.from("itinerary_items").select("trip_id").in("trip_id", rows.map((r) => r.id)).is("removed_at", null),
+    faces(sb, [...new Set(trips.flatMap((t) => t.members.flatMap((m) => (m.userId ? [m.userId] : []))))]),
+  ]);
   const count = new Map<string, number>();
   (items ?? []).forEach((i: { trip_id: string }) => count.set(i.trip_id, (count.get(i.trip_id) ?? 0) + 1));
-  return rows.map((r) => ({ ...base(r), places: count.get(r.id) ?? 0 }));
+  return trips.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m, avatar: m.userId ? face.get(m.userId) : undefined })), places: count.get(t.id) ?? 0 }));
 });
 
 export type Role = "owner" | "editor" | "viewer";
@@ -216,7 +221,7 @@ export type PrepView = {
   spent: number; // 예산 통화로 적은 장소 예상 비용 합 (최소 단위)
   byCategory: { category: Category; amount: number }[]; // 분류별 예상 비용 (많은 순)
   krw: number | null; // 예산 통화 1 단위 = 원화 (참고용, lib/fx.ts). 원화거나 못 받으면 null
-  people: { userId: string; name: string }[];
+  people: { userId: string; name: string; avatar?: string }[];
 };
 export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepView | null> => {
   if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
@@ -248,7 +253,7 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
       .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at, itemId: x.item_id, code: x.booking_code ?? undefined, files: x.files?.length ?? 0 })),
     budget: budget ? { currency: budget.currency, total: Number(budget.total) } : null,
     spent, byCategory, krw,
-    people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name }] : [])),
+    people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name, avatar: m.avatar }] : [])),
   };
 });
 

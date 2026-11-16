@@ -160,7 +160,8 @@ function List({ title, kind, view, canEdit, busy, run, placeholder }: {
 }
 
 function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn }) {
-  const name = view.people.find((p) => p.userId === it.assignee)?.name;
+  const who = view.people.find((p) => p.userId === it.assignee);
+  const name = who?.name;
   const [edit, setEdit] = useState(false);
   const [title, setTitle] = useState(it.title);
   const [due, setDue] = useState(it.due ?? "");
@@ -203,7 +204,8 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
         ) : it.itemId && <Link href={`/trips/${view.tripId}/places/${it.itemId}`} className="inline-flex items-center gap-0.5 text-tiny text-ink-sub underline underline-offset-2"><Icon name="pin" size={12} />일정 장소</Link>}
       </div>
       {it.due && <span className={"flex-none rounded-full px-2.5 py-1 text-tiny font-semibold " + (it.done ? "bg-surface-soft text-ink" : "bg-warn-soft text-warn-text")}>{md(it.due)}</span>}
-      {name && <span title={`담당 ${name}`} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span>}
+      {who?.avatar ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={who.avatar} alt="" title={`담당 ${name}`} width={32} height={32} className="size-8 flex-none rounded-full object-cover" />
+        : name && <span title={`담당 ${name}`} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span>}
       {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} onEdit={() => setEdit(true)} />}
     </li>
   );

@@ -291,7 +291,7 @@ export function Stamp({ name, country, date, earned = true, tilt = -6, fluid }: 
 
 /* ---------- 탑승권 카드 (다가오는 여행) ---------- */
 export function TicketCard({ dday, title, period, stops, pinCount, ready, members }: {
-  dday: string; title: string; period: string; stops: string[]; pinCount: number; ready?: number; members: { initial: string; tone: "point" | "accent" }[];
+  dday: string; title: string; period: string; stops: string[]; pinCount: number; ready?: number; members: { initial: string; tone: "point" | "accent"; avatar?: string }[];
 }) {
   return (
     <article className="relative overflow-hidden rounded-deep bg-deep text-on-deep">
@@ -299,7 +299,10 @@ export function TicketCard({ dday, title, period, stops, pinCount, ready, member
         <div className="flex items-center justify-between">
           <Chip tone="deep">다가오는 여행</Chip>
           <div className="flex -space-x-1.5">
-            {members.map((m, i) => (
+            {members.map((m, i) => m.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={i} src={m.avatar} alt="" width={32} height={32} className="size-8 rounded-full border-2 border-deep object-cover" />
+            ) : (
               <span key={i} className={cx("flex size-8 items-center justify-center rounded-full border-2 border-deep text-tiny font-bold",
                 m.tone === "point" ? "bg-point-soft text-point-text" : "bg-accent-soft text-accent-text")}>{m.initial}</span>
             ))}
