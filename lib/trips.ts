@@ -8,7 +8,7 @@
 import { cache } from "react";
 import type { Category } from "@/components/kit";
 import { createClient } from "@/lib/supabase/server";
-import { TRIPS, getTrip, daysBetween, addDays, type Trip, type Item } from "@/lib/mock";
+import { TRIPS, getTrip, daysBetween, addDays, todayKST, type Trip, type Item } from "@/lib/mock";
 import { currencyOf, formatMoney, iconUrl } from "@/lib/countries";
 import { avatarUrl } from "@/lib/storage";
 import { placesEnabled, details } from "@/lib/places";
@@ -370,17 +370,24 @@ export const loadEntryContext = cache(async (v: Viewer, tripId: string, kind: "d
 export type StampCard = {
   cityId: number | null; name: string; country: string; earned: boolean;
   firstDate?: string; visits: number; trips: { id: string; title: string; verifiedBy: string | null }[];
+  /* 아직 못 받은 도장 : 이 도시가 든 내 여행 중 가장 가까운 것 (여행 중 > 다가오는 > 지난) */
+  next?: { tripId: string; title: string; start: string; end: string };
 };
 export type StampsView = { earned: StampCard[]; missing: StampCard[]; cityCount: number; countryCount: number };
 
 const PREVIEW_STAMPS: StampsView = {
   earned: [
-    { cityId: null, name: "삿포로", country: "JP", earned: true, firstDate: "2026-12-28", visits: 1, trips: [] },
-    { cityId: null, name: "오타루", country: "JP", earned: true, firstDate: "2026-12-29", visits: 1, trips: [] },
+    { cityId: null, name: "후쿠오카", country: "JP", earned: true, firstDate: "2026-11-13", visits: 1, trips: [] },
+    { cityId: null, name: "타이베이", country: "TW", earned: true, firstDate: "2026-03-14", visits: 1, trips: [] },
+    { cityId: null, name: "오사카", country: "JP", earned: true, firstDate: "2025-11-09", visits: 1, trips: [] },
     { cityId: null, name: "교토", country: "JP", earned: true, firstDate: "2025-11-08", visits: 2, trips: [] },
   ],
-  missing: [{ cityId: null, name: "도쿄", country: "JP", earned: false, visits: 0, trips: [] }],
-  cityCount: 3, countryCount: 1,
+  missing: [
+    { cityId: null, name: "삿포로", country: "JP", earned: false, visits: 0, trips: [], next: { tripId: "sapporo", title: "삿포로 겨울 여행", start: "2026-12-28", end: "2027-01-02" } },
+    { cityId: null, name: "오타루", country: "JP", earned: false, visits: 0, trips: [], next: { tripId: "sapporo", title: "삿포로 겨울 여행", start: "2026-12-28", end: "2027-01-02" } },
+    { cityId: null, name: "방콕", country: "TH", earned: false, visits: 0, trips: [], next: { tripId: "bkk", title: "방콕 여름 휴가", start: "2026-07-10", end: "2026-07-14" } },
+  ],
+  cityCount: 4, countryCount: 2,
 };
 
 export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
@@ -389,7 +396,7 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
   const sb = (await createClient())!;
   const [{ data: grants }, { data: myCities }, { data: catalog }] = await Promise.all([
     sb.from("stamp_grants").select("trip_id, city_id, granted_at, cities(name, country_code)").eq("user_id", v.id).order("granted_at"),
-    sb.from("trip_cities").select("name, country_code, trips!inner(removed_at)").is("trips.removed_at", null),
+    sb.from("trip_cities").select("name, country_code, trips!inner(id, title, start_date, end_date, removed_at)").is("trips.removed_at", null),
     sb.from("cities").select("id, name, country_code"),
   ]);
   type G = { trip_id: string; city_id: number; granted_at: string; cities: { name: string; country_code: string } | null };
@@ -419,12 +426,25 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
   const earned = [...byCity.values()];
   const have = new Set(earned.map((s) => `${s.country}:${s.name}`));
   const known = new Map((catalog ?? []).map((c: { id: number; name: string; country_code: string }) => [`${c.country_code}:${c.name}`, c.id]));
-  const missing: StampCard[] = [];
-  for (const c of (myCities ?? []) as { name: string; country_code: string | null }[]) {
+  const today = todayKST();
+  const rank = (t: { start_date: string; end_date: string }) =>
+    t.start_date <= today && today <= t.end_date ? 0 : t.start_date > today ? 1 : 2;
+  const better = (a: { start_date: string; end_date: string }, b: { start_date: string; end_date: string }) =>
+    rank(a) !== rank(b) ? rank(a) < rank(b) : rank(a) === 2 ? a.end_date > b.end_date : a.start_date < b.start_date;
+  type MC = { name: string; country_code: string | null; trips: { id: string; title: string; start_date: string; end_date: string } | null };
+  const pick = new Map<string, MC>();
+  for (const c of (myCities ?? []) as unknown as MC[]) {
     const key = `${c.country_code}:${c.name}`;
-    if (!c.country_code || have.has(key) || !known.has(key) || missing.some((m) => `${m.country}:${m.name}` === key)) continue;
-    missing.push({ cityId: known.get(key)!, name: c.name, country: c.country_code, earned: false, visits: 0, trips: [] });
+    if (!c.country_code || !c.trips || have.has(key) || !known.has(key)) continue;
+    const cur = pick.get(key);
+    if (!cur || better(c.trips, cur.trips!)) pick.set(key, c);
   }
+  const missing: StampCard[] = [...pick.entries()].map(([key, c]) => ({
+    cityId: known.get(key)!, name: c.name, country: c.country_code!, earned: false, visits: 0, trips: [],
+    next: { tripId: c.trips!.id, title: c.trips!.title, start: c.trips!.start_date, end: c.trips!.end_date },
+  }));
+  missing.sort((a, b) => (better({ start_date: a.next!.start, end_date: a.next!.end }, { start_date: b.next!.start, end_date: b.next!.end }) ? -1 : 1));
+  earned.sort((a, b) => (b.firstDate ?? "").localeCompare(a.firstDate ?? ""));
   return { earned, missing, cityCount: earned.length, countryCount: new Set(earned.map((s) => s.country)).size };
 });
 
