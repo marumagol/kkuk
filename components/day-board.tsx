@@ -355,7 +355,13 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           <h2 className="min-w-0 truncate text-title font-extrabold text-ink">
             {sel === ALL ? <>전체 일정 <span className="font-semibold text-ink-sub">{len}일</span></> : sel === U ? "날짜 미정" : <>{sel + 1}일차 <span className="font-semibold text-ink-sub">{md(d!)} ({weekday(d!)})</span></>}
             {sel !== U && sel !== ALL && days[sel]?.title && <span className="block truncate text-sub font-semibold text-ink-sub">{days[sel].title}</span>}
-            {dayCost && <span className="mt-0.5 block truncate text-tiny font-semibold text-ink-sub">{sel === ALL ? "전체" : "이날"} 예상 비용 <span className="font-bold text-ink tabular-nums">{dayCost}</span></span>}
+            {/* 예상 비용 알약 (2026-11-17 마루님 "이날" 빼고 다듬기) */}
+            {dayCost && (
+              <span className="mt-1.5 flex w-fit max-w-full items-center gap-1 rounded-full bg-surface-soft py-1 pl-2 pr-2.5 text-tiny font-semibold text-ink-sub">
+                <Icon name="won" size={13} className="flex-none" />예상 비용
+                <span className="min-w-0 truncate font-extrabold text-ink tabular-nums">{dayCost}</span>
+              </span>
+            )}
           </h2>
           <div className="flex flex-none gap-1.5">
             {editable && sel !== U && sel !== ALL && movableOf(cur) >= 2 && (

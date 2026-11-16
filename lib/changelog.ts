@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 07:45", version: "0.64.4", items: ["일정의 날짜별 예상 비용을 알약 모양으로 다듬었어요"] },
   { at: "2026-11-17 07:40", version: "0.64.3", items: ["일정 편집 버튼을 연필 아이콘으로 바꿨어요"] },
   { at: "2026-11-17 07:35", version: "0.64.2", items: ["프로필 사진을 누르면 사진 수정과 삭제를 고르는 메뉴가 떠요"] },
   { at: "2026-11-17 07:30", version: "0.64.1", items: ["여행 한 권에서 일기 부분을 뺐어요"] },
