@@ -62,12 +62,12 @@ export function fieldsOf(category: string, mode?: string): FieldDef[] {
       ];
       if (mode) return [...COMMON_MOVE, { key: "booking", label: "예약번호", half: true, max: 40 }];
       return MOVE_TIMES; // 수단을 안 골라도 출발/도착 시간은 남긴다
-    case "stay": return [
+    case "stay": return [ // 예약한 곳, 연락처를 예약번호 위로 (2026-11-16 마루님)
+      { key: "site", label: "예약한 곳", placeholder: "예 : 아고다", half: true, max: 30 },
+      { key: "phone", label: "연락처", placeholder: "예 : +81 11-000-0000", half: true, max: 30 },
       { key: "booking", label: "예약번호", placeholder: "예 : 1234567890", max: 40 },
       { key: "checkin", label: "체크인", type: "time", half: true },
       { key: "checkout", label: "체크아웃", type: "time", half: true },
-      { key: "site", label: "예약한 곳", placeholder: "예 : 아고다", half: true, max: 30 },
-      { key: "phone", label: "연락처", placeholder: "예 : +81 11-000-0000", half: true, max: 30 },
     ];
     case "food": return [
       { key: "booking", label: "예약번호", half: true, max: 40 },
