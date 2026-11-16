@@ -6,7 +6,7 @@
 */
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
-import { Button, Field, Icon } from "@/components/kit";
+import { Button, Field, FormCard, Icon } from "@/components/kit";
 import { LeaveGuard } from "@/components/leave-guard";
 import { createClient } from "@/lib/supabase/client";
 import { shrinkImage } from "@/lib/image";
@@ -81,23 +81,26 @@ export function BookingForm({ view }: { view: BookingView }) {
 
   return (
     <LeaveGuard>
-      <div className="flex flex-col gap-6 px-5 pt-6 pb-10">
+      <div className="flex flex-col gap-3 px-5 pt-5 pb-10">
+        <FormCard title="예약 정보">
         <Field label="예약 이름" name="title" value={title} maxLength={80} disabled={busy} onChange={(e) => setTitle(e.target.value)} />
         <Field label="날짜 (선택)" name="due" type="date" value={due} disabled={busy} onChange={(e) => setDue(e.target.value)} />
         <div className="flex flex-col gap-2">
           <Field label="예약번호 (선택)" name="code" value={code} maxLength={60} disabled={busy} placeholder="예 : ABC123" autoComplete="off"
             onChange={(e) => setCode(e.target.value)} />
-          {code.trim() && <button type="button" onClick={copy} className="press inline-flex h-9 items-center gap-1 self-start rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+          {code.trim() && <button type="button" onClick={copy} className="press inline-flex h-9 items-center gap-1 self-start rounded-full bg-bg px-3 text-tiny font-bold text-ink">
             <Icon name={copied ? "check" : "link"} size={14} />{copied ? "복사했어요" : "예약번호 복사"}</button>}
         </div>
+        </FormCard>
+        <FormCard title="메모와 첨부 파일" desc="함께하는 사람만 볼 수 있어요">
         <label className="flex flex-col gap-2">
-          <span className="text-sub font-semibold text-ink">메모 (선택)</span>
+          <span className="text-tiny font-bold text-ink-sub">메모 (선택)</span>
           <textarea name="note" value={note} maxLength={500} rows={3} disabled={busy} onChange={(e) => setNote(e.target.value)} placeholder="예 : 체크인 15시, 조식 포함"
             className="rounded-card border border-line-strong bg-surface px-4 py-4 text-[16px] text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
         </label>
         <section className="flex flex-col gap-2" aria-label="첨부 파일">
           <div className="flex items-end justify-between">
-            <h2 className="text-sub font-semibold text-ink">첨부 파일 (선택)</h2>
+            <h3 className="text-tiny font-bold text-ink-sub">첨부 파일 (선택)</h3>
             <span className="text-tiny text-ink-sub">{files.length}/{MAX_FILES}</span>
           </div>
           <FileList files={files} onRemove={busy ? undefined : (p) => setFiles((x) => x.filter((f) => f.path !== p))} />
@@ -110,9 +113,10 @@ export function BookingForm({ view }: { view: BookingView }) {
           <input ref={fileRef} type="file" accept="image/*,application/pdf" multiple hidden
             onChange={(e) => { const l = [...(e.target.files ?? [])]; e.target.value = ""; void addFiles(l); }} />
         </section>
+        </FormCard>
         {view.itemId && <Link href={`/trips/${view.tripId}/places/${view.itemId}`} className="inline-flex items-center gap-1 text-tiny text-ink-sub underline underline-offset-2"><Icon name="pin" size={12} />일정 장소 보기</Link>}
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
-        <Button type="button" size="lg" disabled={busy || uploading > 0 || !title.trim()} onClick={save}>{busy ? "저장 중" : "저장"}</Button>
+        <Button type="button" size="lg" className="mt-3" disabled={busy || uploading > 0 || !title.trim()} onClick={save}>{busy ? "저장하는 중" : "저장"}</Button>
       </div>
     </LeaveGuard>
   );
