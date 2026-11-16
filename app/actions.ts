@@ -203,8 +203,8 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   if (day != null && (!Number.isInteger(day) || day < 0 || day >= MAX_TRIP_DAYS)) return { error: "날짜를 다시 골라 주세요" };
   if (!/^[A-Z]{3}$/.test(currency)) return { error: "통화를 다시 골라 주세요" };
   const photos = (Array.isArray(input?.photos) ? input.photos : []).map(String);
-  if (photos.length > MAX_PLACE_PHOTOS) return { error: `사진은 ${MAX_PLACE_PHOTOS}장까지 올릴 수 있어요` };
-  if (photos.some((x) => !new RegExp(`^${tripId}/[0-9a-f-]{36}\\.(jpg|png|webp)$`).test(x))) return { error: "사진을 다시 올려 주세요" };
+  if (photos.length > MAX_PLACE_PHOTOS) return { error: `첨부 파일은 ${MAX_PLACE_PHOTOS}개까지 넣을 수 있어요` };
+  if (photos.some((x) => !new RegExp(`^${tripId}/[0-9a-f-]{36}\\.(jpg|png|webp|pdf)$`).test(x))) return { error: "첨부 파일을 다시 올려 주세요" };
   const extra = cleanDetails(input.category, input?.details);
   if (!extra) return { error: "맞춤 칸(편명, 예약번호, 시간)을 다시 확인해 주세요" };
   let cost: number | null = null;

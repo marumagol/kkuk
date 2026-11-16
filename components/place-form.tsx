@@ -70,19 +70,23 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     setError("");
     const room = MAX_PLACE_PHOTOS - photos.length;
     if (files.length > room) setError(`사진은 ${MAX_PLACE_PHOTOS}장까지 올릴 수 있어요`);
-    const pick = files.slice(0, Math.max(0, room)).filter((f) => f.type.startsWith("image/"));
+    // 첨부 파일 (2026-11-16 마루님) : 그림은 줄여서, PDF 는 그대로 10MB 까지
+    const pick = files.slice(0, Math.max(0, room)).filter((f) => f.type.startsWith("image/") || f.type === "application/pdf");
+    if (pick.length < Math.min(files.length, room)) setError("그림이나 PDF 파일만 넣을 수 있어요");
     const sb = createClient();
     if (!sb || !pick.length) return;
     setUploading((n) => n + pick.length);
     await Promise.all(pick.map(async (f) => {
       try {
-        const blob = await shrinkImage(f);
-        const path = `${ctx.tripId}/${crypto.randomUUID()}.jpg`;
-        const { error: e } = await sb.storage.from("place-photos").upload(path, blob, { contentType: "image/jpeg" });
+        const pdf = f.type === "application/pdf";
+        if (pdf && f.size > 10 * 1024 * 1024) { setError("PDF 는 10MB 까지 넣을 수 있어요"); return; }
+        const blob = pdf ? f : await shrinkImage(f);
+        const path = `${ctx.tripId}/${crypto.randomUUID()}.${pdf ? "pdf" : "jpg"}`;
+        const { error: e } = await sb.storage.from("place-photos").upload(path, blob, { contentType: pdf ? "application/pdf" : "image/jpeg" });
         if (e) throw e;
         setPhotos((p) => (p.length < MAX_PLACE_PHOTOS ? [...p, { path, url: URL.createObjectURL(blob) }] : p));
       } catch {
-        setError("사진을 올리지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요");
+        setError("파일을 올리지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요");
       } finally { setUploading((n) => n - 1); }
     }));
   }
@@ -284,33 +288,36 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
               className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
           </label>
 
-          {!isMemo && <div className="flex flex-col gap-2">
-            <span className="text-sub font-bold text-ink-sub">사진 (선택, {photos.length}/{MAX_PLACE_PHOTOS})</span>
-            <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-              {photos.map((ph, i) => (
-                <span key={ph.path} className="relative flex-none">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={ph.url} alt={`사진 ${i + 1}`} width={88} height={88} className="size-22 rounded-field object-cover" />
-                  <button type="button" aria-label={`사진 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== ph))}
-                    className="press absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-btn text-on-btn">
-                    <Icon name="x" size={14} />
-                  </button>
-                </span>
-              ))}
-              {Array.from({ length: uploading }, (_, i) => (
-                <span key={`up${i}`} className="flex size-22 flex-none items-center justify-center rounded-field bg-surface text-tiny text-ink-sub">올리는 중</span>
-              ))}
-              {photos.length + uploading < MAX_PLACE_PHOTOS && (
-                <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}
-                  className="press flex size-22 flex-none flex-col items-center justify-center gap-1 rounded-field border border-dashed border-line-strong bg-surface text-tiny font-semibold text-ink-sub">
-                  <Icon name="camera" size={22} />사진 추가
-                </button>
-              )}
+          {/* 첨부 파일 : 예약 화면과 같은 모양 (2026-11-16 마루님). PDF 는 카드에 그림 없이 개수에만 */}
+          {!isMemo && <section className="flex flex-col gap-2" aria-label="첨부 파일">
+            <div className="flex items-end justify-between">
+              <h2 className="text-sub font-semibold text-ink">첨부 파일 (선택)</h2>
+              <span className="text-tiny text-ink-sub">{photos.length}/{MAX_PLACE_PHOTOS}</span>
             </div>
-            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+            {photos.length > 0 && (
+              <ul className="grid grid-cols-3 gap-2">
+                {photos.map((ph, i) => (
+                  <li key={ph.path} className="relative aspect-square overflow-hidden rounded-field bg-surface ring-1 ring-line">
+                    {ph.path.endsWith(".pdf")
+                      ? <a href={ph.url} target="_blank" rel="noopener noreferrer" className="flex size-full flex-col items-center justify-center gap-1 text-tiny font-bold text-ink-sub"><Icon name="book" size={22} />PDF</a>
+                      // eslint-disable-next-line @next/next/no-img-element
+                      : <img src={ph.url} alt={`첨부 ${i + 1}`} className="size-full object-cover" />}
+                    <button type="button" aria-label={`첨부 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== ph))}
+                      className="press absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-black/60 text-white"><Icon name="x" size={14} /></button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {photos.length < MAX_PLACE_PHOTOS && (
+              <button type="button" disabled={busy || uploading > 0} onClick={() => fileRef.current?.click()}
+                className="press flex min-h-14 items-center justify-center gap-1.5 rounded-card border-2 border-dashed border-line-strong text-sub font-bold text-ink-sub">
+                <Icon name="plus" size={16} />{uploading ? "올리는 중" : "사진이나 PDF 넣기"}
+              </button>
+            )}
+            <input ref={fileRef} type="file" accept="image/*,application/pdf" multiple className="hidden"
               onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ""; void addPhotos(fs); }} />
-            <p className="text-tiny text-ink-sub">함께하는 사람만 볼 수 있어요. 올릴 때 크기를 줄여요</p>
-          </div>}
+            <p className="text-tiny text-ink-sub">함께하는 사람만 볼 수 있어요. 사진은 올릴 때 크기를 줄여요</p>
+          </section>}
 
         </div>
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}

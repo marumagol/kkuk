@@ -358,7 +358,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                     <div className="flex items-start gap-1">
                       <div className="min-w-0 flex-1">
                         <PinCard index={marks[i].n} mark={marks[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
-                          desc={it.desc ?? ""} editedBy={it.editedBy} photo={it.photos?.[0]?.url} photoCount={it.photos?.length} last={i === cur.length - 1}
+                          desc={it.desc ?? ""} editedBy={it.editedBy} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === cur.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined}
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
                           corner={!editing && it.category !== "메모" && canMap(it) ? (

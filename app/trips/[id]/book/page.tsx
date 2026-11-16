@@ -83,7 +83,7 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
             </p>
           );
           const d = b.d, day = trip.days[d], entries = dayEntries(d);
-          const photos = [...entries.flatMap((e) => e.photos.map((p) => p.url)), ...day.items.flatMap((it) => (it.photos ?? []).map((p) => p.url))].filter(Boolean);
+          const photos = [...entries.flatMap((e) => e.photos.map((p) => p.url)), ...day.items.flatMap((it) => (it.photos ?? []).filter((p) => !p.path.endsWith(".pdf")).map((p) => p.url))].filter(Boolean);
           return (
             <section key={d} className="flex flex-col gap-3 rounded-card bg-surface p-4 break-inside-avoid-page print:break-before-page print:bg-transparent print:p-0">
               <PhotoStack urls={photos} label={day.items[0]?.title} />
