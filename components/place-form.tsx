@@ -294,7 +294,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                     ) : (
                       <input type={f.type ?? "text"} value={extra[f.key] ?? ""} placeholder={f.placeholder} maxLength={f.max ?? 60} disabled={busy}
                         onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [f.key]: v })); setError(""); }}
-                        className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                        className="block h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
                     )}
                   </label>
                 ))}

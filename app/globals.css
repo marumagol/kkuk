@@ -253,6 +253,7 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
   background-size: 18px;
   padding-right: 44px !important;
   text-align: left;
+  min-width: 0; /* 아이폰은 날짜/시간 칸이 제 너비를 고집해서 옆 칸과 너비가 달라진다 */
 }
 input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator, input[type="month"]::-webkit-calendar-picker-indicator {

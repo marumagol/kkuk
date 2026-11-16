@@ -69,10 +69,10 @@ export function fieldsOf(category: string, mode?: string): FieldDef[] {
       { key: "checkin", label: "체크인", type: "time", half: true },
       { key: "checkout", label: "체크아웃", type: "time", half: true },
     ];
-    case "food": return [
+    case "food": return [ // 먹을 메뉴 → 예약번호, 인원 (2026-11-16 마루님)
+      { key: "menu", label: "먹을 메뉴", placeholder: "예 : 징기스칸, 수프카레", max: 60 },
       { key: "booking", label: "예약번호", half: true, max: 40 },
       { key: "people", label: "인원", placeholder: "예 : 2", half: true, max: 10, unit: "명" },
-      { key: "menu", label: "먹을 메뉴", placeholder: "예 : 징기스칸, 수프카레", max: 60 },
     ];
     case "sight": return [
       { key: "booking", label: "예약/입장권 번호", half: true, max: 40 },

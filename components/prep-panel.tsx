@@ -228,7 +228,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
                   <SwipeRow rounded="" bg="bg-surface" disabled={!canEdit || busy || !!dragId}
                     onDelete={canEdit ? () => onSwipe(it) : undefined}
                     onLongPress={canEdit && items.length > 1 ? () => setDragId(it.id) : undefined}>
-                    <Row it={it} view={view} canEdit={canEdit} busy={busy} run={run} onGrip={canEdit && items.length > 1 ? () => setDragId(it.id) : undefined} />
+                    <Row it={it} view={view} canEdit={canEdit} busy={busy} run={run} />
                   </SwipeRow>
                 </li>
               ))}
@@ -268,7 +268,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
   );
 }
 
-function Row({ it, view, canEdit, busy, run, onGrip }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; onGrip?: () => void }) {
+function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn }) {
   const router = useRouter();
   // 예약은 [수정] 을 누르면 예약 화면(예약번호, 메모, 첨부 파일)으로 (2026-11-16 마루님 "목록에 뿌리지 말고 수정에서")
   const openEdit = () => (it.kind === "reservation" ? router.push(`/trips/${view.tripId}/bookings/${it.id}`) : setEdit(true));
@@ -295,59 +295,36 @@ function Row({ it, view, canEdit, busy, run, onGrip }: { it: PrepItem; view: Pre
     </div>
   );
   return (
-    /* 이름이 넓게 (2026-11-16 마루님 "요소가 많아 글자 칸이 좁아") : 이름은 줄바꿈으로 다 보이고, 날짜·예약번호·담당은 둘째 줄 작은 글씨 */
-    <div className="flex min-h-14 items-start gap-2.5 py-2.5 pl-4 pr-2">
+    <div className="flex min-h-14 items-center gap-3 px-4 py-2">
       <button type="button" role="checkbox" aria-checked={it.done} aria-label={`${it.title} ${it.done ? "끝냄" : "안 끝냄"}`} disabled={!canEdit || busy}
         onClick={() => run(() => updatePrepItem(view.tripId, it.id, { done: !it.done }))}
-        className={"press mt-px flex size-6 flex-none items-center justify-center rounded-full border-2 " + (it.done ? "border-btn bg-btn text-on-btn" : "border-line-strong text-transparent")}>
-        <Icon name="check" size={13} strokeWidth={2.5} />
+        className={"press flex size-7 flex-none items-center justify-center rounded-full border-2 " + (it.done ? "border-btn bg-btn text-on-btn" : "border-line-strong text-transparent")}>
+        <Icon name="check" size={14} strokeWidth={2.5} />
       </button>
       <div className="min-w-0 flex-1">
         {canEdit ? (
           <button type="button" onClick={openEdit} disabled={busy} aria-label={`${it.title} 수정`}
-            className={"block w-full break-words text-left text-body leading-snug " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</button>
-        ) : <p className={"break-words text-body leading-snug " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</p>}
-        {(it.due || name || it.code || (it.files ?? 0) > 0 || (it.kind === "item" && it.itemId)) && (
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-tiny text-ink-sub">
-            {it.due && <span className={"rounded-full px-2 py-0.5 font-semibold " + (it.done ? "bg-surface-soft text-ink" : "bg-warn-soft text-warn-text")}>{md(it.due)}</span>}
-            {/* 예약 지갑 (0034) : 적어 둔 것만 작게. 넣기는 [수정] 에서 */}
-            {it.kind === "reservation" && it.code && <span className="font-semibold text-ink">{it.code}</span>}
-            {it.kind === "reservation" && (it.files ?? 0) > 0 && <span>파일 {it.files}개</span>}
-            {it.kind === "item" && it.itemId && <Link href={`/trips/${view.tripId}/places/${it.itemId}`} className="inline-flex items-center gap-0.5 underline underline-offset-2"><Icon name="pin" size={12} />일정 장소</Link>}
-            {name && (
-              <span className="inline-flex items-center gap-1" title={`담당 ${name}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {who?.avatar ? <img src={who.avatar} alt="" width={18} height={18} className="size-[18px] rounded-full object-cover" />
-                  : <span className="flex size-[18px] items-center justify-center rounded-full bg-accent-soft text-[10px] font-bold text-accent-text">{[...name][0]}</span>}
-                {name}
-              </span>
-            )}
-          </div>
-        )}
+            className={"block w-full truncate text-left text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.kind === "reservation" && it.important && <span className="mr-1 inline-block -translate-y-px align-middle text-point"><Icon name="star" size={15} className="fill-current" /><span className="sr-only">중요</span></span>}{it.title}</button>
+        ) : <p className={"truncate text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.kind === "reservation" && it.important && <span className="mr-1 inline-block -translate-y-px align-middle text-point"><Icon name="star" size={15} className="fill-current" /><span className="sr-only">중요</span></span>}{it.title}</p>}
+        {it.kind === "reservation" ? (
+          /* 예약 지갑 (0034) : 적어 둔 것만 작게. 넣기는 [수정] 에서 */
+          (it.code || (it.files ?? 0) > 0) && <span className="flex max-w-full items-center gap-1 text-tiny text-ink-sub">
+            {it.code && <span className="truncate font-semibold text-ink">{it.code}</span>}
+            {(it.files ?? 0) > 0 && <span className="flex-none">{it.code ? ", " : ""}파일 {it.files}개</span>}
+          </span>
+        ) : it.itemId && <Link href={`/trips/${view.tripId}/places/${it.itemId}`} className="inline-flex items-center gap-0.5 text-tiny text-ink-sub underline underline-offset-2"><Icon name="pin" size={12} />일정 장소</Link>}
       </div>
-      {/* 예약 중요 표시 (0038) : 별을 켜면 목록 위로 */}
-      {it.kind === "reservation" && (canEdit || it.important) && (
-        <button type="button" aria-pressed={!!it.important} aria-label={`${it.title} 중요 ${it.important ? "끄기" : "켜기"}`} disabled={!canEdit || busy}
-          onClick={() => run(() => updatePrepItem(view.tripId, it.id, { important: !it.important }))}
-          className={"press -my-1.5 flex size-8 flex-none items-center justify-center rounded-full " + (it.important ? "text-point" : "text-ink-sub/50")}>
-          <Icon name="star" size={18} className={it.important ? "fill-current" : ""} />
-        </button>
-      )}
-      {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} onEdit={openEdit} />}
-      {/* 옮기기 손잡이 : 누르는 즉시 끌기 (2026-11-16 마루님) */}
-      {onGrip && (
-        <button type="button" data-grip aria-label={`${it.title} 옮기기`} disabled={busy}
-          onPointerDown={(e) => { e.preventDefault(); navigator.vibrate?.(10); onGrip(); }}
-          className="-my-1.5 flex h-8 w-5 flex-none cursor-grab touch-none items-center justify-center text-ink-sub/60 active:cursor-grabbing">
-          <Icon name="grip" size={18} />
-        </button>
-      )}
+      {it.due && <span className={"flex-none rounded-full px-2.5 py-1 text-tiny font-semibold " + (it.done ? "bg-surface-soft text-ink" : "bg-warn-soft text-warn-text")}>{md(it.due)}</span>}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {who?.avatar ? <img src={who.avatar} alt="" title={`담당 ${name}`} width={32} height={32} className="size-8 flex-none rounded-full object-cover" />
+        : name && <span title={`담당 ${name}`} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span>}
+      {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} />}
     </div>
   );
 }
 
-/* 줄 오른쪽 ⋯ 메뉴 : 담당자 지정, 수정, 삭제 (2026-11-16 마루님 "버튼이 칸을 너무 차지해") */
-function RowMenu({ it, view, busy, run, onEdit }: { it: PrepItem; view: PrepView; busy: boolean; run: RunFn; onEdit: () => void }) {
+/* 줄 오른쪽 ⋯ 메뉴 : 중요 표시(예약), 담당자 지정, 삭제. 수정은 이름을 누르면 (2026-11-16 마루님 "줄에 요소가 많아 복잡해") */
+function RowMenu({ it, view, busy, run }: { it: PrepItem; view: PrepView; busy: boolean; run: RunFn }) {
   const [open, setOpen] = useState<"menu" | "who" | null>(null);
   const close = () => setOpen(null);
   const item = "press flex min-h-11 w-full items-center gap-2.5 px-4 text-left text-body text-ink";
@@ -355,7 +332,7 @@ function RowMenu({ it, view, busy, run, onEdit }: { it: PrepItem; view: PrepView
     <div className="relative flex-none">
       <button type="button" aria-label={`${it.title} 메뉴`} aria-haspopup="menu" aria-expanded={!!open} disabled={busy}
         onClick={() => setOpen(open ? null : "menu")}
-        className="press -my-1.5 flex size-8 items-center justify-center rounded-full text-ink-sub"><Icon name="more" size={18} /></button>
+        className="press flex size-9 items-center justify-center rounded-full text-ink-sub"><Icon name="more" size={20} /></button>
       {open && (
         <>
           <div className="fixed inset-0 z-30" onClick={close} aria-hidden />
@@ -363,8 +340,12 @@ function RowMenu({ it, view, busy, run, onEdit }: { it: PrepItem; view: PrepView
             className="absolute right-0 top-10 z-40 min-w-[168px] overflow-hidden rounded-field bg-surface py-1 shadow-float ring-1 ring-line">
             {open === "menu" ? (
               <>
-                <button type="button" role="menuitem" autoFocus className={item} onClick={() => setOpen("who")}><Icon name="user" size={18} className="text-ink-sub" />담당자 지정</button>
-                <button type="button" role="menuitem" className={item} onClick={() => { close(); onEdit(); }}><Icon name="pencil" size={18} className="text-ink-sub" />수정</button>
+                {it.kind === "reservation" && (
+                  <button type="button" role="menuitem" autoFocus className={item} onClick={() => { close(); run(() => updatePrepItem(view.tripId, it.id, { important: !it.important })); }}>
+                    <Icon name="star" size={18} className={it.important ? "fill-current text-point" : "text-ink-sub"} />{it.important ? "중요 해제" : "중요 표시"}
+                  </button>
+                )}
+                <button type="button" role="menuitem" autoFocus={it.kind !== "reservation"} className={item} onClick={() => setOpen("who")}><Icon name="user" size={18} className="text-ink-sub" />담당자 지정</button>
                 <button type="button" role="menuitem" className={item + " text-point-text"} onClick={() => { close(); run(() => updatePrepItem(view.tripId, it.id, { remove: true })); }}>
                   <Icon name="trash" size={18} />삭제
                 </button>
