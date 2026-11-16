@@ -378,12 +378,13 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           onTouchEnd={(e) => {
             const s = swipe.current, t = e.changedTouches[0];
             swipe.current = null;
-            if (!s || !t || sel === ALL || dragId || editing) return;
+            if (!s || !t || dragId || editing) return;
             const dx = t.clientX - s.x, dy = t.clientY - s.y;
             if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // 세로 스크롤과 헷갈리지 않게 가로로 충분히 밀었을 때만
-            const last = showUndated ? U : len - 1;
-            const next = dx < 0 ? (sel === U ? -2 : sel + 1) : sel === U ? len - 1 : sel - 1;
-            if (next >= 0 && next <= last) pickDay(next);
+            // 칩 순서 그대로 : 전체 → 1일차 → … → 날짜 미정 (2026-11-16 마루님 "1일차에서 넘기면 전체로")
+            const order = [ALL, ...Array.from({ length: len }, (_, i) => i), ...(showUndated ? [U] : [])];
+            const next = order[order.indexOf(sel) + (dx < 0 ? 1 : -1)];
+            if (next !== undefined) pickDay(next);
           }}>
           {groups.map((g, gi) => {
             const list = g.items, gm = groupMarks[gi];
