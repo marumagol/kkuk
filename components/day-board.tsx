@@ -12,7 +12,7 @@ import { FEATURES } from "@/lib/features";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon, PinCard } from "@/components/kit";
-import { GateFab, AlertDialog } from "@/components/gate";
+import { GateButton, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
 import { DayMap, type DayPoint } from "@/components/day-map";
 import { reorderPlaces, moveItem, deletePlace, fillTripCoords, setItemTimes } from "@/app/actions";
@@ -374,16 +374,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               <span className="text-sub text-ink-sub">{sel === U ? "날짜를 못 정한 장소가 없어요" : "아직 장소가 없어요"}</span>
             </div>
           )}
-          {canAdd && !dragId && user && (
-            <div className="mt-1 flex gap-1.5 pl-10">
-              <Link href={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                <Icon name="plus" size={14} />장소 추가
-              </Link>
-              <Link href={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}&kind=memo`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                <Icon name="pencil" size={14} />메모 추가
-              </Link>
-            </div>
-          )}
         </div>
       </section>
 
@@ -399,7 +389,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
       {asking && <AlertDialog title={asking.category === "메모" ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
         confirmLabel="삭제" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
-      {canAdd && <BottomDock align="end"><GateFab href={user ? `/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}` : undefined} /></BottomDock>}
+      {canAdd && !dragId && <BottomDock align="end"><AddFab user={user} base={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}`} /></BottomDock>}
     </>
   );
 }
@@ -453,4 +443,31 @@ function routeOrder(items: Item[]): Item[] | null {
   const out = [...items];
   slots.forEach((slot, k) => { out[slot] = path[k] === items[slot] ? path[k] : { ...path[k], time: items[slot].time }; });
   return out;
+}
+
+/*
+  오른쪽 아래 + 버튼 (2026-11-16 마루님 "날짜별 장소/메모 버튼과 겹친다") : 누르면 [장소] [메모] 를 골라 지금 보는 날에 넣는다
+  로그인 전에는 문지기(로그인 필요 안내)를 거친다
+*/
+function AddFab({ user, base }: { user: boolean; base: string }) {
+  const [open, setOpen] = useState(false);
+  const round = "press flex size-14 items-center justify-center rounded-full bg-btn text-on-btn shadow-float";
+  if (!user) return <GateButton label="장소 추가" className={round}><Icon name="plus" size={26} strokeWidth={2.5} /></GateButton>;
+  const item = "press flex h-12 items-center gap-2.5 rounded-full bg-surface pl-4 pr-5 text-body font-bold text-ink shadow-float";
+  return (
+    <div className="relative flex flex-col items-end gap-2">
+      {open && (
+        <>
+          <div className="fixed inset-0 -z-10" onClick={() => setOpen(false)} aria-hidden />
+          <div role="menu" aria-label="추가할 것" onKeyDown={(e) => e.key === "Escape" && setOpen(false)} className="flex flex-col items-end gap-2">
+            <Link href={base} role="menuitem" autoFocus className={item} onClick={() => setOpen(false)}><Icon name="pin" size={18} className="text-point" />장소</Link>
+            <Link href={`${base}&kind=memo`} role="menuitem" className={item} onClick={() => setOpen(false)}><Icon name="pencil" size={18} className="text-ink-sub" />메모</Link>
+          </div>
+        </>
+      )}
+      <button type="button" aria-label={open ? "닫기" : "장소나 메모 추가"} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className={round}>
+        <Icon name="plus" size={26} strokeWidth={2.5} className={"transition-transform " + (open ? "rotate-45" : "")} />
+      </button>
+    </div>
+  );
 }
