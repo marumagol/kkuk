@@ -170,27 +170,27 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           {/* 이동은 시간 칸 대신 출발/도착 시간. 출발 시간이 일정의 시간(정렬 기준)이 된다 */}
           {/* 다른 분류는 시간 하나. 이동 칸과 같은 모양으로 칩 아래에 (2026-11-16 마루님) */}
           {timed && !isMove && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="-mt-0.5 grid grid-cols-2 gap-2">
               <label className="flex min-w-0 flex-col gap-1.5">
                 <span className="text-tiny font-bold text-ink-sub">시간</span>
                 <input type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} autoFocus={!p?.start_time}
-                  className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                  className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-4 pr-4 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 [&::-webkit-calendar-picker-indicator]:ml-2" />
               </label>
             </div>
           )}
           {timed && isMove && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="-mt-0.5 grid grid-cols-2 gap-2">
               {(["depart", "arrive"] as const).map((k) => (
                 <label key={k} className="flex min-w-0 flex-col gap-1.5">
                   <span className="text-tiny font-bold text-ink-sub">{k === "depart" ? "출발 시간" : "도착 시간"}</span>
                   <input type="time" value={extra[k] ?? ""} disabled={busy} onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [k]: v })); setError(""); }}
-                    className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                    className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-4 pr-4 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15 [&::-webkit-calendar-picker-indicator]:ml-2" />
                 </label>
               ))}
             </div>
           )}
           {timed && (
-            <div className="flex flex-wrap gap-2" aria-label="시간 빠르게 바꾸기">
+            <div className="-mt-0.5 flex flex-wrap gap-2" aria-label="시간 빠르게 바꾸기">
               {[-30, 30, 60].map((m) => (
                 <button key={m} type="button" disabled={busy} onClick={() => setCurTime(addMin(curTime || lastTime || "09:00", m))}
                   className="press inline-flex h-9 items-center rounded-full bg-bg px-3 text-tiny font-bold text-ink">
