@@ -296,8 +296,9 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         <button type="button" onClick={toggleSheet} aria-label="일정 펼치기, 접기" className="flex h-6 w-full flex-none items-end justify-center">
           <span className="h-1 w-10 rounded-full bg-line-strong" />
         </button>
-        <nav ref={nav} aria-label="날짜" className="sticky top-0 z-20 flex items-center gap-2 rounded-t-[28px] bg-bg py-3 pl-5 pr-3">
-          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none]">
+        <nav ref={nav} aria-label="날짜" className="sticky top-0 z-20 flex items-center gap-1 rounded-t-[28px] bg-bg py-3 pl-1 pr-3">
+          {/* 칩 줄 양 끝은 바탕으로 부드럽게 사라지게 (2026-11-16 마루님 "칼같이 잘린다"). 여백을 안쪽에 두어 처음과 끝 칩은 흐려지지 않는다 */}
+          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-28px),transparent)]">
             {days.map((_, c) => chip(c, `${c + 1}일차`))}
             {showUndated && chip(U, `미정 ${cols[U].length}`)}
           </div>
