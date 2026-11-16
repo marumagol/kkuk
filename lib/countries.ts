@@ -58,6 +58,20 @@ const CURRENCY: Record<string, string> = {
   CH: "CHF", AT: "EUR", CZ: "CZK", NL: "EUR", GR: "EUR",
 };
 export const currencyOf = (iso?: string | null) => (iso && CURRENCY[iso]) || "KRW";
+/* 통화 이름 (칩, 고르기 칸) */
+const CUR_NAMES: Record<string, string> = {
+  KRW: "원", JPY: "엔", USD: "달러", EUR: "유로", TWD: "대만 달러", CNY: "위안", THB: "바트", VND: "동", HKD: "홍콩 달러", GBP: "파운드",
+  MOP: "파타카", MNT: "투그릭", PHP: "페소", SGD: "싱가포르 달러", MYR: "링깃", IDR: "루피아", LAK: "킵", INR: "루피", AED: "디르함", TRY: "리라",
+  CAD: "캐나다 달러", AUD: "호주 달러", NZD: "뉴질랜드 달러", CHF: "스위스 프랑", CZK: "코루나",
+};
+export const curName = (c: string) => CUR_NAMES[c] ?? c;
+/* [기타] 에서 고를 수 있는 모든 통화 (이름 순) */
+export const ALL_CURRENCIES = [...new Set([...Object.keys(CUR_NAMES), ...Object.values(CURRENCY)])].sort((a, b) => curName(a).localeCompare(curName(b), "ko"));
+/*
+  여행 통화 칩 순서 (2026-11-17 마루님 추천안) : 여행 도시 통화(방문 순서) → 원 → 달러. 지금 값이 목록에 없으면 앞에 넣는다
+  화면에는 앞 4개만 칩으로, 나머지는 [기타]
+*/
+export const currencyOptions = (trip: string[], current?: string) => [...new Set([...(current && ![...trip, "KRW", "USD"].includes(current) ? [current] : []), ...trip, "KRW", "USD"])];
 /* 통화별 소수 자리 (엔, 원은 0, 달러는 2). DB 에는 최소 단위 정수로 저장 */
 export const decimalsOf = (cur: string) => {
   try { return new Intl.NumberFormat("ko-KR", { style: "currency", currency: cur }).resolvedOptions().maximumFractionDigits ?? 0; }

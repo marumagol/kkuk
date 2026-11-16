@@ -151,6 +151,29 @@ export const loadStampCities = cache(async (): Promise<string[] | null> => {
   return (data ?? []).map((c: { country_code: string; name: string }) => `${c.country_code}|${c.name}`);
 });
 
+/*
+  여행 통화 (2026-11-17 마루님 추천안) : 도시 통화(방문 순서)와 날짜별 기본 통화
+  날짜별 : 그날 첫 위치 있는 장소에서 가장 가까운 여행 도시의 통화. 모르면 null (화면에서 첫 도시 통화)
+*/
+async function tripCurrencies(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, tripId: string, trip: Trip): Promise<{ currencies: string[]; dayCurrency: (string | null)[] }> {
+  const { data: rows } = await sb.from("trip_cities").select("*").eq("trip_id", tripId).order("sort_order");
+  const list = (rows ?? []) as { name: string; country_code: string | null; lat?: number | null; lng?: number | null }[];
+  const currencies = [...new Set(list.flatMap((c) => (c.country_code ? [currencyOf(c.country_code)] : [])))];
+  if (currencies.length < 2) return { currencies, dayCurrency: trip.days.map(() => null) };
+  const need = list.filter((c) => c.lat == null && c.country_code).map((c) => c.name);
+  const { data: cat } = need.length ? await sb.from("cities").select("name, country_code, lat, lng").in("name", need) : { data: [] };
+  const pos = list.flatMap((c) => {
+    const at = c.lat != null && c.lng != null ? { lat: c.lat, lng: c.lng } : ((cat ?? []) as { name: string; country_code: string; lat: number | null; lng: number | null }[]).find((x) => x.name === c.name && x.country_code === c.country_code && x.lat != null);
+    return at && c.country_code ? [{ lat: at.lat!, lng: at.lng!, cur: currencyOf(c.country_code) }] : [];
+  });
+  const dayCurrency = trip.days.map((d) => {
+    const p = d.items.find((x) => x.lat != null && x.lng != null);
+    if (!p || !pos.length) return null;
+    return pos.reduce((best, c) => { const dd = (c.lat - p.lat!) ** 2 + (c.lng - p.lng!) ** 2; return dd < best.d ? { d: dd, cur: c.cur } : best; }, { d: Infinity, cur: pos[0].cur }).cur;
+  });
+  return { currencies, dayCurrency };
+}
+
 /* 여행 정보 수정 화면용 : 도시의 나라 코드와 일차별 장소 수까지 */
 export type TripForEdit = {
   id: string; title: string; start: string; end: string; timeZone: string; role: Role;
@@ -184,6 +207,7 @@ export type PlaceContext = {
   searchable: boolean; bias: { lat: number; lng: number } | null; // 장소 검색 (4단계) : 키가 있을 때만, 첫 도시 근처를 먼저
   reserved: boolean; // 준비 탭 예약에 들어가 있는지 (0032)
   lastTimes: (string | null)[]; // 일차별 가장 늦은 장소 시간 (시간 빠른 고르기, 2026-11-16). 지금 고치는 장소는 뺀다. 마지막 칸 = 날짜 미정
+  currencies: string[]; dayCurrency: (string | null)[]; // 여행 통화 칩, 날짜별 기본 통화 (2026-11-17)
 };
 export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?: string): Promise<PlaceContext | null> => {
   if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId)) return null;
@@ -209,7 +233,8 @@ export const loadPlaceContext = cache(async (v: Viewer, tripId: string, placeId?
   const photos = placeId ? [...t.days.flatMap((d) => d.items), ...t.undated].find((it) => it.id === placeId)?.photos : undefined;
   const latest = (items: Item[]) => items.filter((it) => it.id !== placeId && it.time).map((it) => it.time!).sort().pop() ?? null;
   const lastTimes = [...t.days.map((d) => latest(d.items)), latest(t.undated)];
-  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos, searchable: placesEnabled(), bias, reserved: !!rsv, lastTimes };
+  const fx = await tripCurrencies(sb, tripId, t);
+  return { tripId, tripTitle: t.title, start: t.start, days: t.days.length, role: r.role, currency: currencyOf(city?.country_code), place, photos, searchable: placesEnabled(), bias, reserved: !!rsv, lastTimes, ...fx };
 });
 
 /* 함께하는 사람 화면 (2단계) : 목록, 내 권한, (주인이면) 살아 있는 초대 링크 */
@@ -526,6 +551,7 @@ export type ExpensesView = {
   expenses: Expense[];
   people: { userId: string; name: string; active: boolean; avatar?: string }[]; // 나간 사람도 이름은 남김
   budget: { currency: string; total: number } | null; // 경비 탭 맨 위 "예산 중 얼마 썼어요" (2026-11-16)
+  currencies: string[]; dayCurrency: (string | null)[]; // 여행 통화 칩, 날짜별 기본 통화 (2026-11-17)
   importable: { id: string; title: string; amount: number; currency: string; date: string | null }[]; // 예상 비용이 적힌, 아직 경비로 안 가져온 장소 (0036)
 };
 export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<ExpensesView | null> => {
@@ -550,7 +576,9 @@ export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<Exp
   const expenses = ((rows ?? []) as { id: string; title: string; amount: number; currency: string; paid_by: string; split_with: string[]; spent_on: string | null; item_id: string | null }[])
     .map((e) => ({ id: e.id, title: e.title, amount: Number(e.amount), currency: e.currency, paidBy: e.paid_by, splitWith: e.split_with, spentOn: e.spent_on, itemId: e.item_id }));
   const taken = new Set(expenses.flatMap((e) => (e.itemId ? [e.itemId] : [])));
+  const fx = await tripCurrencies(sb, tripId, r.trip);
   return {
+    ...fx,
     tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency: budget?.currency ?? currencyOf(city?.country_code), me: v.id,
     expenses,
     people: [...people.values()].map((p) => ({ ...p, avatar: face.get(p.userId) })),

@@ -13,7 +13,7 @@ import { shrinkImage } from "@/lib/image";
 import { AlertDialog } from "@/components/gate";
 import { savePlace, removePlace } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
-import { decimalsOf } from "@/lib/countries";
+import { decimalsOf, curName, currencyOptions, ALL_CURRENCIES } from "@/lib/countries";
 import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
@@ -30,11 +30,13 @@ const addMin = (t: string, m: number) => {
   const v = Math.min(23 * 60 + 59, Math.max(0, h * 60 + mm + m));
   return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`;
 };
-const CUR_NAME: Record<string, string> = { KRW: "원", JPY: "엔", USD: "달러", EUR: "유로", TWD: "대만 달러", CNY: "위안", THB: "바트", VND: "동", HKD: "홍콩 달러", GBP: "파운드" };
 
 export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceContext; day: number | null; memo?: boolean }) {
   const p = ctx.place;
-  const startCur = p?.cost_currency ?? ctx.currency;
+  /* 기본 통화 (2026-11-17) : 그날 일정이 있는 도시 통화 → 첫 도시 통화 */
+  const curOfDay = (v: string) => (v !== "none" && ctx.dayCurrency[Number(v)]) || ctx.currencies[0] || ctx.currency;
+  const startCur = p?.cost_currency ?? curOfDay(day == null ? "none" : String(day));
+  const curTouched = useRef(!!p?.cost_currency);
   const [title, setTitle] = useState(p ? moveTitle(p.category, p.title, p.details).title : ""); // 이동은 출발 → 도착으로 연다
   const [category, setCategory] = useState(p?.category ?? (startMemo ? "memo" : "sight"));
   const isMemo = category === "memo";
@@ -109,7 +111,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     setPhotos((l) => l.filter((x) => x.path !== path));
     if (!(ctx.photos ?? []).some((x) => x.path === path)) void createClient()?.storage.from("place-photos").remove([path]);
   };
-  const currencies = [...new Set([ctx.currency, startCur, "KRW", "USD"])];
+  const currencies = currencyOptions(ctx.currencies, currency);
   const titleLen = [...title.trim()].length;
   const autoName = [extra.from, extra.to].map((x) => x?.trim()).filter(Boolean).join(" → ");
   // 이동의 표시 이름은 "출발 → 도착"을 값으로 채워 둔다 (2026-11-16 마루님). 직접 고친 이름은 그대로
@@ -156,7 +158,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
               const on = dayValue === v;
               const d = v === "none" ? null : addDays(ctx.start, Number(v));
               return (
-                <button key={v} type="button" aria-pressed={on} disabled={busy} onClick={() => setDayValue(v)}
+                <button key={v} type="button" aria-pressed={on} disabled={busy} onClick={() => { setDayValue(v); if (!curTouched.current && !p) setCurrency(curOfDay(v)); }}
                   className={"press flex h-14 flex-none flex-col items-center justify-center rounded-field px-3.5 " + (on ? "bg-btn text-on-btn" : "bg-bg text-ink")}>
                   {d ? <>
                     <span className="text-sub font-bold">{Number(v) + 1}일차</span>
@@ -319,9 +321,12 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             </div>
             <label className="flex w-28 flex-none flex-col gap-2">
               <span className="sr-only">통화</span>
-              <select value={currency} onChange={(e) => setCurrency(e.target.value)} disabled={busy}
+              <select value={currency} onChange={(e) => { setCurrency(e.target.value); curTouched.current = true; }} disabled={busy}
                 className="h-14 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15">
-                {currencies.map((c) => <option key={c} value={c}>{CUR_NAME[c] ?? c}</option>)}
+                {currencies.map((c) => <option key={c} value={c}>{curName(c)}</option>)}
+                <optgroup label="기타">
+                  {ALL_CURRENCIES.filter((c) => !currencies.includes(c)).map((c) => <option key={c} value={c}>{curName(c)} ({c})</option>)}
+                </optgroup>
               </select>
             </label>
           </div>

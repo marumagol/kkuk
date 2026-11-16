@@ -13,12 +13,11 @@ import { Avatar } from "@/components/screen";
 import { AlertDialog } from "@/components/gate";
 import { saveExpense, removeExpense } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
-import { decimalsOf, formatMoney } from "@/lib/countries";
+import { decimalsOf, formatMoney, curName, currencyOptions, ALL_CURRENCIES } from "@/lib/countries";
 import { balances, settle } from "@/lib/settle";
 import { md, weekday, todayKST } from "@/lib/mock";
 import type { Expense, ExpensesView } from "@/lib/trips";
 
-const CUR_NAME: Record<string, string> = { KRW: "원", JPY: "엔", USD: "달러", EUR: "유로", TWD: "대만 달러", CNY: "위안", THB: "바트", VND: "동", HKD: "홍콩 달러", GBP: "파운드" };
 const QUICK = ["식사", "카페", "교통", "숙소", "쇼핑", "입장료"];
 type Draft = Partial<Expense> & { fromPlace?: boolean };
 
@@ -203,14 +202,22 @@ function Pick({ on, children, onClick, disabled }: { on: boolean; children: Reac
 function ExpenseSheet({ view, draft, onClose }: { view: ExpensesView; draft: Draft; onClose: () => void }) {
   const editing = draft.id ? draft : null;
   const active = view.people.filter((p) => p.active);
-  const startCur = draft.currency ?? view.currency;
-  const currencies = [...new Set([view.currency, startCur, "KRW", "USD"])];
   const today = todayKST();
   const defDate = today < view.start ? view.start : today > view.end ? "" : today;
+  /* 날짜의 기본 통화 (2026-11-17) : 그날 일정이 있는 도시 통화 → 첫 도시 통화 → 예전 기본값 */
+  const curOfDate = (dt: string) => {
+    const i = dt ? Math.round((Date.parse(dt) - Date.parse(view.start)) / 864e5) : -1;
+    return (i >= 0 && view.dayCurrency[i]) || view.currencies[0] || view.currency;
+  };
+  const startCur = draft.currency ?? curOfDate(draft.spentOn ?? (editing ? "" : defDate));
+  const [curTouched, setCurTouched] = useState(!!draft.currency);
   const [title, setTitle] = useState(draft.title ?? "");
   const [currency, setCurrency] = useState(startCur);
   const [amount, setAmount] = useState(draft.amount != null ? String(draft.amount / 10 ** decimalsOf(startCur)) : "");
   const [date, setDate] = useState(draft.spentOn ?? (editing ? "" : defDate));
+  const currencies = currencyOptions(view.currencies, currency);
+  const shown = currencies.slice(0, 4);
+  const pickCur = (c: string) => { setCurrency(c); setCurTouched(true); };
   const [paidBy, setPaidBy] = useState(draft.paidBy ?? view.me);
   const [split, setSplit] = useState<string[]>(draft.splitWith ?? active.map((p) => p.userId));
   const [error, setError] = useState("");
@@ -239,7 +246,7 @@ function ExpenseSheet({ view, draft, onClose }: { view: ExpensesView; draft: Dra
 
   return (
     <Modal title={editing ? "경비 수정" : "경비 추가"} onClose={onClose}>
-      {draft.fromPlace && <p className="rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink-sub">장소의 예상 경비으로 채웠어요. 실제 낸 금액으로 고쳐 주세요</p>}
+      {draft.fromPlace && <p className="rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink-sub">장소의 예상 경비로 채웠어요. 실제 낸 금액으로 고쳐 주세요</p>}
       {/* 금액이 맨 위, 통화는 금액 바로 아래 칩 */}
       <label className="flex flex-col gap-2">
         <span className="text-sub font-semibold text-ink">금액</span>
@@ -247,11 +254,19 @@ function ExpenseSheet({ view, draft, onClose }: { view: ExpensesView; draft: Dra
           <input name="amount" inputMode={d ? "decimal" : "numeric"} placeholder="0" value={amount} autoFocus={!editing && !draft.fromPlace} disabled={busy}
             onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ""))}
             className="min-w-0 flex-1 bg-transparent text-[32px] font-extrabold tabular-nums text-ink outline-none placeholder:text-ink-sub/50" />
-          <span className="flex-none text-title font-bold text-ink-sub">{CUR_NAME[currency] ?? currency}</span>
+          <span className="flex-none text-title font-bold text-ink-sub">{curName(currency)}</span>
         </span>
       </label>
       <div className="flex flex-wrap gap-2" role="group" aria-label="통화">
-        {currencies.map((c) => <Pick key={c} on={currency === c} onClick={() => setCurrency(c)} disabled={busy}>{CUR_NAME[c] ?? c}</Pick>)}
+        {/* 여행 통화 → 원 → 달러, 4개까지. 나머지는 [기타] (2026-11-17) */}
+        {(shown.includes(currency) ? shown : [...shown.slice(0, 3), currency]).map((c) => <Pick key={c} on={currency === c} onClick={() => pickCur(c)} disabled={busy}>{curName(c)}</Pick>)}
+        <label className="press relative inline-flex h-10 items-center gap-1 rounded-full border border-line-strong bg-surface px-3.5 text-sub font-bold text-ink">
+          기타<Icon name="chevron-down" size={14} />
+          <select aria-label="다른 통화 고르기" value="" disabled={busy} onChange={(e) => e.target.value && pickCur(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0">
+            <option value="">다른 통화</option>
+            {ALL_CURRENCIES.filter((c) => !shown.includes(c)).map((c) => <option key={c} value={c}>{curName(c)} ({c})</option>)}
+          </select>
+        </label>
       </div>
 
       <label className="flex flex-col gap-2">
@@ -268,7 +283,7 @@ function ExpenseSheet({ view, draft, onClose }: { view: ExpensesView; draft: Dra
 
       <label className="flex flex-col gap-2">
         <span className="text-sub font-semibold text-ink">날짜 (선택)</span>
-        <input type="date" name="date" value={date} disabled={busy} onChange={(e) => setDate(e.target.value)}
+        <input type="date" name="date" value={date} disabled={busy} onChange={(e) => { setDate(e.target.value); if (!curTouched && !editing) setCurrency(curOfDate(e.target.value)); }}
           className="h-12 rounded-field border border-line-strong bg-surface px-4 text-[16px] text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />
       </label>
 
