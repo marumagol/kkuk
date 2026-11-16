@@ -1,4 +1,5 @@
 /* S19 일기 탭 (2단계) : 내가 볼 수 있는 여행일기 최신순 + 지금 여행의 일기 쓰기 바로 가기 */
+import { FlashToast } from "@/components/toast";
 import Link from "next/link";
 import { EmptyState, Icon } from "@/components/kit";
 import { AppShell, MainTabs } from "@/components/screen";
@@ -32,7 +33,7 @@ export default async function Diary({ searchParams }: { searchParams: Promise<{ 
         <h1 className="text-title-xl font-extrabold text-ink">일기</h1>
         <p className="mt-1 text-sub text-ink-sub">여행의 하루를 사진과 글로 남기고 함께 이야기해요</p>
       </header>
-      {removed && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">일기를 삭제했어요</p>}
+      {removed && <FlashToast message="일기를 삭제했어요" param="removed" />}
       {viewer.kind === "user" && (
         <nav aria-label="일기 모아 보기" className="flex gap-1.5 overflow-x-auto px-5 pt-4 [scrollbar-width:none]">
           {FILTERS.map((x) => {

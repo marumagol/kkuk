@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { SwipeRow } from "@/components/swipe-row";
+import { Toast } from "@/components/toast";
 import { useRouter } from "next/navigation";
 import { Button, Field, Icon } from "@/components/kit";
 import { addPrepItem, addPrepDefaults, updatePrepItem, saveBudget, reorderPrep } from "@/app/actions";
@@ -46,14 +47,7 @@ export function PrepPanel({ view }: { view: PrepView }) {
       <List title="예약" kind="reservation" view={shown} canEdit={canEdit} busy={busy} run={run} onSwipe={swipeDelete} />
       <List title="체크리스트" kind="item" view={shown} canEdit={canEdit} busy={busy} run={run} onSwipe={swipeDelete} />
       {!canEdit && <p className="text-tiny text-ink-sub">보기만 권한이라 준비 목록을 고칠 수 없어요</p>}
-      {gone && (
-        <div role="status" className="pointer-events-none fixed inset-x-0 bottom-[156px] z-30 mx-auto flex w-full max-w-[560px] justify-center px-5">
-          <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-deep py-2 pl-4 pr-2 text-tiny font-semibold text-on-deep shadow-float">
-            <span className="min-w-0 truncate">&ldquo;{gone.title}&rdquo;을(를) 삭제했어요</span>
-            <button type="button" onClick={undo} className="press h-8 flex-none rounded-full bg-deep-soft px-3 font-bold">되돌리기</button>
-          </p>
-        </div>
-      )}
+      {gone && <Toast action="되돌리기" onAction={undo}>&ldquo;{gone.title}&rdquo;을(를) 삭제했어요</Toast>}
     </div>
   );
 }

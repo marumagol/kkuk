@@ -2,6 +2,7 @@
   S07 여행 상세 : 모든 날의 일정이 이어서 보인다 (2026-11-15 여행 메뉴 개편). ?day=2 면 그 날로 스크롤
   날짜 탭, 끌어서 날짜 옮기기는 components/day-board.tsx. 장소 추가는 로그인 문지기를 거친다
 */
+import { FlashToast } from "@/components/toast";
 import Link from "next/link";
 import { after } from "next/server";
 import { Icon } from "@/components/kit";
@@ -74,10 +75,10 @@ export default async function TripDetail({ params, searchParams }: Props) {
   return (
     <AppShell>
       <TripHeader trip={trip} meId={viewer.kind === "user" ? viewer.id : undefined} user={viewer.kind === "user"} owner={owner} editable={editable} />
-      {sp.removed && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">삭제했어요</p>}
-      {sp.joined && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행에 함께하게 됐어요</p>}
-      {sp.restored && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행을 되살렸어요</p>}
-      {sp.saved && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">여행 정보를 저장했어요</p>}
+      {sp.removed && <FlashToast message="삭제했어요" param="removed" />}
+      {sp.joined && <FlashToast message="여행에 함께하게 됐어요" param="joined" />}
+      {sp.restored && <FlashToast message="여행을 되살렸어요" param="restored" />}
+      {sp.saved && <FlashToast message="여행 정보를 저장했어요" param="saved" />}
       {viewer.kind === "preview" && <MockNote />}
       {viewer.kind === "user" && <TripTabs tripId={trip.id} active="일정" />}
       {viewer.kind === "user" && <LiveRefresh tripId={trip.id} />}

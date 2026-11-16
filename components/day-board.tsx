@@ -14,6 +14,7 @@ import Link from "next/link";
 import { Icon, PinCard } from "@/components/kit";
 import { GateButton, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
+import { Toast, TOAST_MS } from "@/components/toast";
 import { DayMap, type DayPoint } from "@/components/day-map";
 import { reorderPlaces, moveItem, deletePlace, fillTripCoords, setItemTimes } from "@/app/actions";
 import { useRouter } from "next/navigation";
@@ -89,10 +90,10 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   }, [days, undated]);
   const showEditor = (it: Item) => !!it.editedKey && !!seen && !seen.has(it.editedKey);
 
-  /* 알림 줄은 5초 뒤 사라진다 (되돌리기가 있으면 8초) */
+  /* 알림은 4초 뒤 사라진다 (되돌리기가 있으면 6초) */
   useEffect(() => {
     if (!msg) return;
-    const t = setTimeout(() => { setMsg(""); setUndo(null); }, undo ? 8000 : 5000);
+    const t = setTimeout(() => { setMsg(""); setUndo(null); }, undo ? 6000 : TOAST_MS);
     return () => clearTimeout(t);
   }, [msg, undo]);
 
@@ -452,15 +453,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         </div>
       </section>
 
-      <div role="status" aria-live="polite" className={msg ? "pointer-events-none fixed inset-x-0 bottom-[156px] z-30 mx-auto flex w-full max-w-[560px] justify-center px-5" : "sr-only"}>
-        {msg && (
-          <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-deep py-2 pl-4 pr-2 text-tiny font-semibold text-on-deep shadow-float">
-            <span className="min-w-0">{msg}</span>
-            {undo && <button type="button" onClick={() => { if (busy.current) return; const u = undo; void applyDay(u.c, u.items, "원래 순서로 돌렸어요", null); }}
-              className="press h-8 flex-none rounded-full bg-deep-soft px-3 font-bold">되돌리기</button>}
-          </p>
-        )}
-      </div>
+      {msg ? <Toast action={undo ? "되돌리기" : undefined} onAction={() => { if (busy.current || !undo) return; const u = undo; void applyDay(u.c, u.items, "원래 순서로 돌렸어요", null); }}>{msg}</Toast>
+        : <span role="status" aria-live="polite" className="sr-only" />}
 
       {asking && <AlertDialog title={asking.category === "메모" ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
         confirmLabel="삭제" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}

@@ -1,4 +1,5 @@
 /* S08 장소 추가. ?day=2 (일차) 또는 ?day=none (날짜 미정) */
+import { FlashToast } from "@/components/toast";
 import { redirect } from "next/navigation";
 import { PlaceShell } from "../place-shell";
 import { PlaceForm } from "@/components/place-form";
@@ -24,7 +25,7 @@ export default async function NewPlace({ params, searchParams }: { params: Promi
   return (
     <PlaceShell tripId={id} title={memo ? "메모 추가" : "장소 추가"} back={`/trips/${id}${start == null ? "" : `?day=${start + 1}`}`}>
       {/* 이어서 추가 : 저장 뒤 같은 날로 다시 열린다. key 로 칸을 비운다 */}
-      {added && <p role="status" className="mx-5 mt-4 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">장소를 추가했어요. 이어서 다음 장소를 적어 주세요</p>}
+      {added && <FlashToast key={added} message="장소를 추가했어요. 이어서 다음 장소를 적어 주세요" />}
       <PlaceForm key={added ?? "first"} ctx={ctx} day={start} memo={memo} />
     </PlaceShell>
   );

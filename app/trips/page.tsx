@@ -2,6 +2,7 @@
   S05 여행 : 기본은 지도 (2026-11-15 여행 메뉴 개편, 세계 지도 위 여행 핀 → 누르면 여행 상세)
   2026-11-16 목록 보기 방식은 뺐다. 목록은 지도 아래 다가오는/다녀온 여행 탭 (components/world-trips.tsx)
 */
+import { FlashToast } from "@/components/toast";
 import { EmptyState } from "@/components/kit";
 import { AppShell, MainTabs, MockNote } from "@/components/screen";
 import { GateButton, GateCta } from "@/components/gate";
@@ -31,8 +32,8 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
   );
   const notes = (
     <>
-      {left && <p role="status" className="mx-5 mb-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">여행에서 나왔어요</p>}
-      {deleted && <p role="status" className="mx-5 mb-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">여행을 삭제했어요. 30일 안에는 설정 &gt; 최근 삭제한 여행에서 되살릴 수 있어요</p>}
+      {left && <FlashToast message="여행에서 나왔어요" param="left" />}
+      {deleted && <FlashToast message="여행을 삭제했어요. 30일 안에는 설정 > 최근 삭제한 여행에서 되살릴 수 있어요" param="deleted" />}
     </>
   );
 

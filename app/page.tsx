@@ -8,6 +8,7 @@
   - 맨 아래 : 수집 현황 한 줄 (도장 탭으로)
   여행 탭(지도, 목록)과 도장 탭(도감)에 있는 것은 되풀이하지 않는다
 */
+import { FlashToast } from "@/components/toast";
 import Link from "next/link";
 import { Icon, PinCard, StampFace } from "@/components/kit";
 import { AppShell, Logo, Avatar, MainTabs, MockNote } from "@/components/screen";
@@ -315,7 +316,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
     <AppShell>
       <Header loggedIn={loggedIn} initial={initialOf(viewer)} avatar={avatarOf(viewer)} unread={unread} />
       {viewer.kind === "preview" && <MockNote />}
-      {bye && <p role="status" className="mx-5 mt-3 rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink">탈퇴했어요. 그동안 KKuK 를 써 주셔서 고마워요</p>}
+      {bye && <FlashToast message="탈퇴했어요. 그동안 KKuK를 써 주셔서 고마워요" param="bye" />}
       <div className="flex flex-col gap-3 px-5 pb-4 pt-4">
         {ongoing ? <During v={viewer} trip={ongoing} today={todayOf(ongoing)} />
           : recent ? <After v={viewer} trip={recent} />
