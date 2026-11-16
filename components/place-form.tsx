@@ -21,8 +21,8 @@ import { fieldsOf, MODES, type Details } from "@/lib/place-fields";
 
 const CATS = [
   { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
-  { code: "stay", label: "숙소" }, { code: "transport", label: "이동" }, { code: "memo", label: "메모" },
-];
+  { code: "stay", label: "숙소" }, { code: "transport", label: "이동" },
+]; // 메모는 components/memo-form.tsx 에서 (2026-11-16)
 const CUR_NAME: Record<string, string> = { KRW: "원", JPY: "엔", USD: "달러", EUR: "유로", TWD: "대만 달러", CNY: "위안", THB: "바트", VND: "동", HKD: "홍콩 달러", GBP: "파운드" };
 
 export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceContext; day: number | null; memo?: boolean }) {

@@ -224,11 +224,11 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
     const { data } = await q.order("sort_order", { ascending: false }).limit(1).maybeSingle();
     return (data?.sort_order ?? -1) + 1;
   };
-  // 메모는 장소가 아니라 주소, 비용, 사진, 지도 위치를 비운다
+  // 메모는 장소가 아니라 주소, 비용, 지도 위치를 비운다 (사진은 2026-11-16 부터 남긴다)
   const isMemo = input.category === "memo";
   const row = {
     title, address: isMemo ? null : address || null, memo: memo || null, category: input.category, start_time: time || null,
-    estimated_cost: isMemo ? null : cost, cost_currency: isMemo || cost == null ? null : currency, day_index: day, photos: isMemo ? [] : photos, details: extra,
+    estimated_cost: isMemo ? null : cost, cost_currency: isMemo || cost == null ? null : currency, day_index: day, photos, details: extra,
     ...placeCols(isMemo ? null : input?.place),
   };
 

@@ -11,7 +11,7 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { TripTabs, TripHeader } from "@/components/trip-tabs";
 import { StampClaim } from "@/components/stamp-claim";
 import { getViewer, isIn } from "@/lib/viewer";
-import { placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
+import { statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
 import { loadTrip, tripOpenLogger, coordsRefiller } from "@/lib/trips";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; restored?: string; removed?: string; undated?: string; joined?: string }> };
@@ -81,7 +81,6 @@ export default async function TripDetail({ params, searchParams }: Props) {
       {viewer.kind === "user" && <TripTabs tripId={trip.id} active="일정" />}
       {viewer.kind === "user" && <LiveRefresh tripId={trip.id} />}
       {viewer.kind === "user" && ongoing && <StampClaim tripId={trip.id} />}
-      <p className="px-5 pt-3 text-tiny text-ink-sub">장소 {placeCount(trip)}개{editable && placeCount(trip) > 1 ? " · 오른쪽 손잡이를 끌어 순서와 날짜를 바꿀 수 있어요" : ""}</p>
 
       <DayBoard tripId={trip.id} start={trip.start} days={trip.days.slice(0, len)} undated={trip.undated}
         editable={editable} canAdd={canEdit} user={viewer.kind === "user"} initialDay={day}

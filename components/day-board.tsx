@@ -1,18 +1,20 @@
 "use client";
 /*
-  여행 일정 한 화면 (2026-11-15 여행 메뉴 개편)
-  - 모든 날짜가 위에서 아래로 이어진다. 위 날짜 탭을 누르면 그 날로 스크롤, 스크롤하면 지금 보는 날이 탭에 표시
-  - 손잡이(점 6개)를 끌어서 같은 날 안 순서를 바꾸거나 다른 날(날짜 미정 포함)로 옮긴다. 화면 끝에 가까이 끌면 저절로 스크롤
-  - 날마다 아래 [+ 장소] [메모] 로 그 날에 바로 추가 (메모는 장소가 아닌 글, 2026-11-15)
+  여행 일정 (2026-11-16 하루 단위로 바꿈. 마루님 "일정과 지도를 함께, 일정 단위로")
+  - 위 : 그날 지도 (번호 핀 + 점선, components/day-map.tsx). 스크롤하면 지도는 그 자리에 있고 아래 시트가 지도 위로 올라온다
+  - 시트 : 손잡이(누르면 펼치기/접기), [1일차][2일차]…[날짜 미정] + [편집], 고른 날 일정만 타임라인
+  - 타임라인 : 위치 있는 장소만 번호(지도 핀과 같은 번호), 장소 사이 거리. 공항·항공은 비행기, 메모는 점 (번호 없음)
+  - [편집] 을 누르면 손잡이와 지우기가 나온다. 손잡이를 끌어 순서를 바꾸고, 위 날짜 칩에 놓으면 그 날로 옮긴다
   - 키보드 : 손잡이에 초점을 두고 위/아래 화살표. 그 날 맨 위/아래에서 더 누르면 앞/뒤 날로 넘어간다
   - 저장에 실패하면 원래 자리로 되돌리고 안내
 */
 import { FEATURES } from "@/lib/features";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon, PinCard } from "@/components/kit";
 import { GateFab, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
+import { DayMap, type DayPoint } from "@/components/day-map";
 import { reorderPlaces, moveItem, deletePlace, fillTripCoords, setItemTimes } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { safeCall } from "@/lib/safe-call";
@@ -20,24 +22,43 @@ import { addDays, md, weekday, type Item } from "@/lib/mock";
 
 type Props = {
   tripId: string; start: string; days: { title?: string; items: Item[] }[]; undated: Item[];
-  editable: boolean; canAdd: boolean; user: boolean; initialDay: number; jump: boolean; jumpUndated?: boolean;
+  editable: boolean; canAdd: boolean; user: boolean; initialDay: number; jump?: boolean; jumpUndated?: boolean;
 };
 
-export function DayBoard({ tripId, start, days, undated, editable, canAdd, user, initialDay, jump, jumpUndated }: Props) {
+/* 공항·항공은 비행기 표시 (번호 대신) */
+const isFlight = (x: Item) => /공항|항공|airport/i.test(x.title) || (x.category === "이동" && (x.detail ?? "").startsWith("비행기"));
+const hasPos = (x: Item) => x.lat != null && x.lng != null;
+/* 번호 : 위치가 있는 장소만, 메모와 공항·항공은 빼고 1부터. 지도 핀과 같은 번호 */
+function numbering(items: Item[]) {
+  let n = 0;
+  return items.map((x) => (x.category === "메모" ? { mark: "dot" as const, n: 0 } : isFlight(x) ? { mark: "plane" as const, n: 0 } : hasPos(x) ? { n: ++n } : { n: 0 }));
+}
+function km(a: Item, b: Item) {
+  const R = 6371, r = Math.PI / 180;
+  const dLat = (b.lat! - a.lat!) * r, dLng = (b.lng! - a.lng!) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat! * r) * Math.cos(b.lat! * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const distText = (d: number) => (d < 1 ? `${Math.max(10, Math.round(d * 100) * 10)}m` : d < 100 ? `${d.toFixed(1)}km` : `${Math.round(d)}km`);
+
+export function DayBoard({ tripId, start, days, undated, editable, canAdd, user, initialDay, jumpUndated }: Props) {
   const len = days.length;
   const U = len; // 날짜 미정 칸 번호
   const fromProps = useCallback(() => [...days.map((d) => d.items), undated], [days, undated]);
   const [cols, setCols] = useState<Item[][]>(fromProps);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [active, setActive] = useState(initialDay);
+  const [sel, setSel] = useState(jumpUndated && undated.length ? U : Math.min(Math.max(initialDay, 1), len) - 1);
+  const [editing, setEditing] = useState(false);
+  const [overCol, setOverCol] = useState<number | null>(null); // 끄는 중 날짜 칩 위
   const [msg, setMsg] = useState("");
   const colsRef = useRef(cols);
   colsRef.current = cols;
   const before = useRef<Item[][]>(cols);
-  const sections = useRef(new Map<number, HTMLElement>());
   const rows = useRef(new Map<string, HTMLLIElement>());
   const nav = useRef<HTMLElement>(null);
+  const sheet = useRef<HTMLElement>(null);
   const lastY = useRef(0);
+  const overRef = useRef<number | null>(null);
   const busy = useRef(false);
   const [asking, setAsking] = useState<Item | null>(null); // 지우기 확인
   const [undo, setUndo] = useState<{ c: number; items: Item[] } | null>(null); // 동선 정렬 되돌리기
@@ -54,7 +75,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     const prev = colsRef.current;
     const next = prev.map((x, i) => (i === c ? items : x));
     setCols(next); colsRef.current = next; setMsg(""); setUndo(null); busy.current = true;
-    // 시간이 바뀐 장소가 있으면 먼저 시간 저장
     const was = new Map(prev[c].map((x) => [x.id, x.time ?? null]));
     const times = items.filter((x) => (x.time ?? null) !== was.get(x.id)).map((x) => ({ id: x.id!, time: x.time ?? null }));
     const t = times.length ? await safeCall(() => setItemTimes(tripId, times)) : undefined;
@@ -79,7 +99,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const sortRoute = (c: number) => {
     const cur = colsRef.current[c];
     const next = routeOrder(cur);
-    if (!next) { setUndo(null); setMsg("순서를 바꿀 수 있는 관광, 쇼핑 장소가 2곳 이상이어야 해요. 지도 위치가 없으면 위 [위치 찾기] 를 먼저 눌러 주세요"); return; }
+    if (!next) { setUndo(null); setMsg("순서를 바꿀 수 있는 관광, 쇼핑 장소가 2곳 이상이어야 해요. 지도 위치가 없으면 [위치 찾기] 를 먼저 눌러 주세요"); return; }
     if (next.every((x, i) => x === cur[i])) { setUndo(null); setMsg("이미 가장 짧은 동선이에요"); return; }
     void applyDay(c, next, "가까운 순서로 동선을 정리했어요", { c, items: cur });
   };
@@ -97,40 +117,19 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   // 저장 뒤나 다른 사람이 고쳐서 새 목록이 오면 맞춘다 (끄는 중, 저장 중에는 그대로)
   useEffect(() => { if (!dragId && !busy.current) setCols(fromProps()); }, [fromProps]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* 처음 열 때 고른 날(또는 오늘)로 */
+  /* 고른 날 : 칩을 가운데로, 주소에 남기기 */
   useEffect(() => {
-    const el = jumpUndated ? sections.current.get(U) : jump ? sections.current.get(initialDay - 1) : null;
-    el?.scrollIntoView({ block: "start" });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    nav.current?.querySelector<HTMLElement>(`[data-col="${sel}"]`)?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    history.replaceState(history.state, "", `/trips/${tripId}?${sel === U ? "undated=1" : `day=${sel + 1}`}`);
+  }, [sel, tripId, U]);
 
-  /* 지금 보는 날 : 탭 아래 선을 지난 마지막 날 */
-  useEffect(() => {
-    let raf = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const line = (nav.current?.getBoundingClientRect().bottom ?? 0) + 24;
-        let cur = 1;
-        for (let i = 0; i < len; i++) {
-          const el = sections.current.get(i);
-          if (el && el.getBoundingClientRect().top <= line) cur = i + 1;
-        }
-        setActive(cur);
-      });
-    };
-    onScroll();
-    addEventListener("scroll", onScroll, { passive: true });
-    return () => { removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); };
-  }, [len]);
-
-  /* 고른 날을 탭 줄 가운데로 */
-  useEffect(() => {
-    const chip = nav.current?.querySelector<HTMLElement>(`[data-day="${active}"]`);
-    chip?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
-    history.replaceState(history.state, "", `/trips/${tripId}?day=${active}`);
-  }, [active, tripId]);
-
-  const goDay = (d: number) => sections.current.get(d - 1)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const sheetTop = () => (sheet.current ? sheet.current.getBoundingClientRect().top + scrollY : 0);
+  const pickDay = (c: number) => {
+    setSel(c); setUndo(null);
+    // 시트를 끌어 올려 둔 상태면 새 날의 맨 위부터
+    if (scrollY > sheetTop()) scrollTo({ top: sheetTop(), behavior: "smooth" });
+  };
+  const toggleSheet = () => scrollTo({ top: scrollY < sheetTop() - 8 ? sheetTop() : 0, behavior: "smooth" });
 
   const where = (list: Item[][], id: string) => {
     for (let c = 0; c < list.length; c++) { const i = list[c].findIndex((x) => x.id === id); if (i >= 0) return { c, i }; }
@@ -153,48 +152,64 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     else setMsg(a.c === b.c ? "순서를 바꿨어요" : `${b.c === U ? "날짜 미정" : `${b.c + 1}일차`}로 옮겼어요`);
   };
 
-  /* 끄는 자리 계산 : y 가 어느 날 칸에 있는지, 그 칸에서 몇 번째인지 */
+  /* 끄는 자리 계산 : 고른 날 안에서 몇 번째인지 */
   const place = (id: string, y: number) => {
     const list = colsRef.current;
-    const keys = [...sections.current.keys()].sort((x, z) => x - z);
-    let target = keys[keys.length - 1];
-    for (const k of keys) { const r = sections.current.get(k)!.getBoundingClientRect(); if (y < r.bottom) { target = k; break; } }
-    const me = list.flat().find((x) => x.id === id);
-    if (!me || target == null) return;
-    const others = list[target].filter((x) => x.id !== id);
+    const at = where(list, id);
+    if (!at) return;
+    const others = list[at.c].filter((x) => x.id !== id);
     let idx = 0;
     for (const o of others) {
       const el = rows.current.get(o.id!);
       if (el) { const r = el.getBoundingClientRect(); if (y > r.top + r.height / 2) idx++; }
     }
-    const next = list.map((c) => c.filter((x) => x.id !== id));
-    next[target] = [...others.slice(0, idx), me, ...others.slice(idx)];
-    if (next.some((c, i) => c.length !== list[i].length || c.some((x, j) => x !== list[i][j]))) setCols(next);
+    const row = [...others.slice(0, idx), list[at.c][at.i], ...others.slice(idx)];
+    if (row.some((x, j) => x !== list[at.c][j])) setCols(list.map((c, i) => (i === at.c ? row : c)));
+  };
+  /* 날짜 칩에 놓으면 그 날 맨 뒤로 */
+  const moveTo = (id: string, target: number) => {
+    const list = colsRef.current;
+    const at = where(list, id);
+    if (!at || at.c === target) return false;
+    const me = list[at.c][at.i];
+    const next = list.map((c, i) => (i === at.c ? c.filter((x) => x.id !== id) : i === target ? [...c, me] : c));
+    setCols(next); colsRef.current = next;
+    return true;
   };
 
-  /*
-    끄는 동안의 움직임과 놓기는 창(window)에서 받는다
-    (다른 날로 넘어가면 카드가 다른 목록으로 옮겨 그려져 손잡이 버튼이 새로 생기므로, 버튼에서 받으면 놓기를 놓친다. 2026-11-15 버그)
-  */
+  /* 끄는 동안의 움직임과 놓기는 창(window)에서 받는다 (2026-11-15 버그 : 버튼에서 받으면 놓기를 놓친다) */
   useEffect(() => {
     if (!dragId) return;
     const id = dragId;
-    const move = (e: PointerEvent) => { lastY.current = e.clientY; place(id, e.clientY); };
-    const drop = () => { setDragId(null); void save(id); };
+    const move = (e: PointerEvent) => {
+      lastY.current = e.clientY;
+      const chip = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-col]");
+      const c = chip ? Number(chip.dataset.col) : null;
+      overRef.current = c; setOverCol(c);
+      if (c == null) place(id, e.clientY);
+    };
+    const drop = () => {
+      const c = overRef.current;
+      overRef.current = null; setOverCol(null); setDragId(null);
+      if (c != null) moveTo(id, c);
+      void save(id);
+    };
     addEventListener("pointermove", move);
     addEventListener("pointerup", drop);
     addEventListener("pointercancel", drop);
     return () => { removeEventListener("pointermove", move); removeEventListener("pointerup", drop); removeEventListener("pointercancel", drop); };
   }, [dragId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* 끄는 동안 화면 위/아래 끝 근처면 저절로 스크롤 */
+  /* 끄는 동안 화면 아래 끝 근처면 저절로 스크롤 (위쪽은 날짜 칩이 있어 시트 맨 위까지만) */
   useEffect(() => {
     if (!dragId) return;
     let raf = 0;
     const tick = () => {
       const y = lastY.current; const h = innerHeight; const edge = 96;
-      const v = y < edge ? -Math.ceil((edge - y) / 6) : y > h - edge ? Math.ceil((y - (h - edge)) / 6) : 0;
-      if (v) { scrollBy(0, v); place(dragId, y); }
+      const navBottom = nav.current?.getBoundingClientRect().bottom ?? 0;
+      const up = y < navBottom + 48 && y > navBottom && scrollY > sheetTop() ? -6 : 0;
+      const v = up || (y > h - edge ? Math.ceil((y - (h - edge)) / 6) : 0);
+      if (v) { scrollBy(0, v); if (overRef.current == null) place(dragId, y); }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -222,132 +237,147 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   };
 
   const canSort = editable && cols.flat().every((i) => i.id);
-  const showUndated = cols[U].length > 0 || (editable && !!dragId);
+  const showUndated = cols[U].length > 0 || sel === U || (editable && !!dragId);
+  const cur = useMemo(() => cols[sel] ?? [], [cols, sel]);
+  const marks = useMemo(() => numbering(cur), [cur]);
+  const points = useMemo<DayPoint[]>(() => cur.flatMap((x, i) => (marks[i].n && hasPos(x) ? [{ lat: x.lat!, lng: x.lng!, n: marks[i].n, title: x.title }] : [])), [cur, marks]);
+  const onPin = useCallback((n: number) => {
+    const i = numbering(colsRef.current[sel] ?? []).findIndex((m) => m.n === n);
+    const id = colsRef.current[sel]?.[i]?.id;
+    const el = id ? rows.current.get(id) : null;
+    if (!el) return;
+    scrollTo({ top: Math.max(el.getBoundingClientRect().top + scrollY - (nav.current?.offsetHeight ?? 0) - 24, sheetTop()), behavior: "smooth" });
+    el.animate?.([{ transform: "scale(1.02)" }, { transform: "scale(1)" }], { duration: 400 });
+  }, [sel]);
 
-  const list = (c: number) => (
-    <ol className="flex flex-col" aria-label={c === U ? "날짜 미정 장소" : `${c + 1}일차 장소`}>
-      {cols[c].map((it, i) => (
-        <li key={it.id ?? `${c}-${i}`} ref={(el) => { if (el && it.id) rows.current.set(it.id, el); }}
-          className={"flex items-start gap-1 transition-transform " + (dragId === it.id ? "relative z-10 scale-[1.02] opacity-90 drop-shadow-lg" : "")}>
-          <div className="min-w-0 flex-1">
-            <PinCard index={c === U ? 0 : i + 1} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
-              desc={it.desc ?? ""} editedBy={it.editedBy} photo={it.photos?.[0]?.url} photoCount={it.photos?.length} last={i === cols[c].length - 1}
-              href={editable && it.id ? `/trips/${tripId}/places/${it.id}` : undefined} />
-          </div>
-          {editable && it.id && (
-          <div className="flex flex-none flex-col items-center">
-          {canSort && (
-            <button type="button" data-grip aria-label={`${it.title} 옮기기. 위아래 화살표로 순서와 날짜를 바꿔요`}
-              className="press mt-2 flex size-11 flex-none cursor-grab touch-none items-center justify-center rounded-full text-ink-sub active:cursor-grabbing"
-              onKeyDown={(e) => onKey(e, it.id!)}
-              onPointerDown={(e) => { e.preventDefault(); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); }}>
-              <Icon name="grip" size={22} />
-            </button>
-          )}
-            <button type="button" aria-label={`${it.title} 지우기`} onClick={() => setAsking(it)} disabled={!!dragId}
-              className={"press flex size-10 items-center justify-center rounded-full text-ink-sub " + (canSort ? "" : "mt-2")}>
-              <Icon name="trash" size={18} />
-            </button>
-          </div>
-          )}
-        </li>
-      ))}
-    </ol>
-  );
+  /* 장소 사이 거리 : 앞쪽에서 가장 가까운 위치 있는 장소와 (위치 없는 곳, 메모는 건너뜀) */
+  const gapBefore = (i: number) => {
+    const x = cur[i];
+    if (!hasPos(x) || x.category === "메모") return null;
+    for (let j = i - 1; j >= 0; j--) { const p = cur[j]; if (p.category !== "메모" && hasPos(p)) return distText(km(p, x)); }
+    return null;
+  };
 
-  const empty = (c: number) => (
-    <div className={"flex min-h-16 items-center justify-between gap-2 rounded-pin border-2 border-dashed px-4 py-3 " + (dragId ? "border-point bg-point-soft" : "border-line")}>
-      <span className="text-sub text-ink-sub">{dragId ? "여기에 놓으면 이 날로 옮겨요" : c === U ? "날짜를 못 정한 장소를 여기로 옮길 수 있어요" : "아직 장소가 없어요"}</span>
-    </div>
-  );
+  const d = sel === U ? null : addDays(start, sel);
+  const chip = (c: number, label: string) => {
+    const on = sel === c, over = overCol === c;
+    return (
+      <button key={c} type="button" data-col={c} onClick={() => pickDay(c)} aria-current={on ? "true" : undefined}
+        aria-label={c === U ? `날짜 미정 ${cols[U].length}곳` : `${c + 1}일차, ${md(addDays(start, c))} ${weekday(addDays(start, c))}요일`}
+        className={"press flex h-10 flex-none items-center rounded-full px-4 text-sub font-bold transition-colors " +
+          (over ? "bg-point-soft text-point-text ring-2 ring-point" : on ? "bg-btn text-on-btn" : dragId ? "border border-dashed border-point bg-surface text-ink" : "border border-line-strong bg-surface text-ink-sub")}>
+        {label}
+      </button>
+    );
+  };
 
   return (
     <>
-      <nav ref={nav} aria-label="날짜" className="sticky top-0 z-20 -mt-1 bg-bg pb-2 pt-3">
-        <div className="flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
-          {days.map((_, i) => {
-            const d = addDays(start, i);
-            const on = i + 1 === active;
-            return (
-              <button key={d} type="button" data-day={i + 1} onClick={() => goDay(i + 1)}
-                aria-current={on ? "true" : undefined} aria-label={`${i + 1}일차, ${md(d)} ${weekday(d)}요일로 가기`}
-                className={"press flex h-[60px] w-[52px] flex-none flex-col items-center justify-center rounded-field " + (on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
-                <span className={"text-tiny " + (on ? "" : "text-ink-sub")}>{weekday(d)}</span>
-                <span className="text-title font-bold">{Number(d.slice(8))}</span>
-              </button>
-            );
-          })}
-          {(cols[U].length > 0) && (
-            <button type="button" onClick={() => sections.current.get(U)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              className="press flex h-[60px] flex-none flex-col items-center justify-center rounded-field bg-surface px-3 text-ink">
-              <span className="text-tiny text-ink-sub">미정</span><span className="text-title font-bold">{cols[U].length}</span>
-            </button>
-          )}
-        </div>
-      </nav>
-
-      {editable && noPin > 0 && (
-        <div className="mx-5 mt-2 flex items-center gap-2 rounded-field bg-surface px-3 py-2">
-          <Icon name="map" size={16} className="flex-none text-ink-sub" />
-          <span className="min-w-0 flex-1 text-tiny text-ink-sub">지도 위치가 없는 장소 {noPin}곳. 위치가 있어야 동선 정리와 지도에 쓰여요</span>
-          <button type="button" onClick={findCoords} disabled={finding} className="press h-9 flex-none rounded-full bg-btn px-3 text-tiny font-bold text-on-btn">
-            {finding ? "찾는 중" : "위치 찾기"}
+      {/* 지도 : 스크롤해도 그 자리에 있고, 시트가 그 위로 올라온다 */}
+      <div className="sticky top-0 z-0 mt-3 h-[40dvh] min-h-[240px]">
+        <DayMap points={points} onPick={onPin} className="size-full" />
+        {editable && noPin > 0 && (
+          <button type="button" onClick={findCoords} disabled={finding}
+            className="press absolute bottom-10 left-1/2 inline-flex h-10 -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-surface px-4 text-tiny font-bold text-ink shadow-float">
+            <Icon name="map" size={16} />{finding ? "위치 찾는 중" : `위치 없는 장소 ${noPin}곳 찾기`}
           </button>
-        </div>
-      )}
-      <div className="flex flex-col gap-7 px-5 pt-3">
-        {days.map((plan, c) => {
-          const d = addDays(start, c);
-          return (
-            <section key={c} ref={(el) => { if (el) sections.current.set(c, el); }} id={`day-${c + 1}`} aria-label={`${c + 1}일차 일정`}
-              className="flex scroll-mt-[96px] flex-col gap-3">
-              <div className="flex items-end justify-between gap-2">
-                <div className="min-w-0">
-                  <span className="text-sub font-bold text-point-text">{c + 1}일차</span>
-                  <h2 className="truncate text-title-lg font-extrabold text-ink">{plan.title ?? `${md(d)} (${weekday(d)})`}</h2>
-                </div>
-                <div className="flex flex-none gap-1.5">
-                  {editable && movableOf(cols[c]) >= 2 && (
-                    <button type="button" onClick={() => sortRoute(c)} disabled={!!dragId} aria-label={`${c + 1}일차 동선 정리`}
-                      className="press inline-flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                      <Icon name="refresh" size={16} />동선
-                    </button>
-                  )}
-                  <Link href={`/trips/${tripId}/map?day=${c + 1}`} aria-label={`${c + 1}일차 지도`} className="press inline-flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                    <Icon name="map" size={16} />지도
-                  </Link>
-                  {user && FEATURES.diary && (
-                    <Link href={`/trips/${tripId}/diary?day=${c + 1}`} aria-label={`${c + 1}일차 일기 쓰기`} className="press inline-flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                      <Icon name="book" size={16} />일기
-                    </Link>
-                  )}
-                </div>
-              </div>
-              {cols[c].length ? list(c) : empty(c)}
-              {canAdd && !dragId && user && (
-                <div className="-mt-1 flex gap-1.5 pl-10">
-                  <Link href={`/trips/${tripId}/places/new?day=${c + 1}`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                    <Icon name="plus" size={14} />장소
-                  </Link>
-                  <Link href={`/trips/${tripId}/places/new?day=${c + 1}&kind=memo`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
-                    <Icon name="pencil" size={14} />메모
-                  </Link>
-                </div>
-              )}
-            </section>
-          );
-        })}
-        {showUndated && (
-          <section ref={(el) => { if (el) sections.current.set(U, el); else sections.current.delete(U); }} id="undated" aria-label="날짜 미정"
-            className="flex scroll-mt-[96px] flex-col gap-3">
-            <div className="flex items-end justify-between">
-              <h2 className="text-title-lg font-extrabold text-ink">날짜 미정</h2>
-              <span className="text-sub text-ink-sub">{cols[U].length}곳</span>
-            </div>
-            {cols[U].length ? list(U) : empty(U)}
-          </section>
         )}
       </div>
+
+      <section ref={sheet} aria-label="일정" className="relative z-10 -mt-6 flex min-h-[100dvh] flex-col rounded-t-[28px] bg-bg pb-8 shadow-[0_-6px_20px_rgb(0_0_0/0.06)]">
+        <button type="button" onClick={toggleSheet} aria-label="일정 펼치기, 접기" className="flex h-6 w-full flex-none items-end justify-center">
+          <span className="h-1 w-10 rounded-full bg-line-strong" />
+        </button>
+        <nav ref={nav} aria-label="날짜" className="sticky top-0 z-20 flex items-center gap-2 rounded-t-[28px] bg-bg py-3 pl-5 pr-3">
+          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none]">
+            {days.map((_, c) => chip(c, `${c + 1}일차`))}
+            {showUndated && chip(U, `미정 ${cols[U].length}`)}
+          </div>
+          {editable && (
+            <button type="button" onClick={() => setEditing((v) => !v)} aria-pressed={editing}
+              className={"press inline-flex h-10 flex-none items-center gap-1 rounded-full px-3.5 text-sub font-bold " + (editing ? "bg-point text-white" : "border border-line-strong bg-surface text-ink")}>
+              {editing ? <><Icon name="check" size={16} />완료</> : <><Icon name="grip" size={16} />편집</>}
+            </button>
+          )}
+        </nav>
+        {dragId && <p className="px-5 pb-1 text-tiny font-semibold text-point-text">다른 날로 옮기려면 위 날짜에 놓아 주세요</p>}
+
+        <div className="flex items-end justify-between gap-2 px-5 pb-3 pt-1">
+          <h2 className="min-w-0 truncate text-title font-extrabold text-ink">
+            {sel === U ? "날짜 미정" : <>{sel + 1}일차 <span className="font-semibold text-ink-sub">{md(d!)} ({weekday(d!)})</span></>}
+            {sel !== U && days[sel]?.title && <span className="block truncate text-sub font-semibold text-ink-sub">{days[sel].title}</span>}
+          </h2>
+          <div className="flex flex-none gap-1.5">
+            {editable && sel !== U && movableOf(cur) >= 2 && (
+              <button type="button" onClick={() => sortRoute(sel)} disabled={!!dragId} aria-label={`${sel + 1}일차 동선 정리`}
+                className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                <Icon name="refresh" size={15} />동선
+              </button>
+            )}
+            {user && FEATURES.diary && sel !== U && (
+              <Link href={`/trips/${tripId}/diary?day=${sel + 1}`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                <Icon name="book" size={15} />일기
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <div className="px-5">
+          {cur.length ? (
+            <ol className="flex flex-col" aria-label={sel === U ? "날짜 미정 장소" : `${sel + 1}일차 장소`}>
+              {cur.map((it, i) => {
+                const gap = gapBefore(i);
+                return (
+                  <li key={it.id ?? `${sel}-${i}`} ref={(el) => { if (el && it.id) rows.current.set(it.id, el); }}
+                    className={"flex flex-col transition-transform " + (dragId === it.id ? "relative z-10 scale-[1.02] opacity-90 drop-shadow-lg" : "")}>
+                    {gap && !dragId && (
+                      <span className="-mt-2 mb-1 -ml-1 w-fit rounded-full border border-line bg-bg px-2 py-0.5 text-[11px] font-bold leading-4 text-ink-sub">{gap}</span>
+                    )}
+                    <div className="flex items-start gap-1">
+                      <div className="min-w-0 flex-1">
+                        <PinCard index={marks[i].n} mark={marks[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
+                          desc={it.desc ?? ""} editedBy={it.editedBy} photo={it.photos?.[0]?.url} photoCount={it.photos?.length} last={i === cur.length - 1}
+                          href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined} />
+                      </div>
+                      {editing && editable && it.id && (
+                        <div className="flex flex-none flex-col items-center">
+                          {canSort && (
+                            <button type="button" data-grip aria-label={`${it.title} 옮기기. 위아래 화살표로 순서와 날짜를 바꿔요`}
+                              className="press mt-2 flex size-11 flex-none cursor-grab touch-none items-center justify-center rounded-full text-ink-sub active:cursor-grabbing"
+                              onKeyDown={(e) => onKey(e, it.id!)}
+                              onPointerDown={(e) => { e.preventDefault(); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); }}>
+                              <Icon name="grip" size={22} />
+                            </button>
+                          )}
+                          <button type="button" aria-label={`${it.title} 지우기`} onClick={() => setAsking(it)} disabled={!!dragId}
+                            className={"press flex size-10 items-center justify-center rounded-full text-ink-sub " + (canSort ? "" : "mt-2")}>
+                            <Icon name="trash" size={18} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <div className="flex min-h-16 items-center rounded-pin border-2 border-dashed border-line px-4 py-3">
+              <span className="text-sub text-ink-sub">{sel === U ? "날짜를 못 정한 장소가 없어요" : "아직 장소가 없어요"}</span>
+            </div>
+          )}
+          {canAdd && !dragId && user && (
+            <div className="mt-1 flex gap-1.5 pl-10">
+              <Link href={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                <Icon name="plus" size={14} />장소
+              </Link>
+              <Link href={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}&kind=memo`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                <Icon name="pencil" size={14} />메모
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
       <div role="status" aria-live="polite" className={msg ? "pointer-events-none fixed inset-x-0 bottom-[156px] z-30 mx-auto flex w-full max-w-[560px] justify-center px-5" : "sr-only"}>
         {msg && (
           <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-deep py-2 pl-4 pr-2 text-tiny font-semibold text-on-deep shadow-float">
@@ -360,7 +390,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
       {asking && <AlertDialog title={asking.category === "메모" ? "메모를 지울까요?" : "장소를 지울까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
         confirmLabel="지우기" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
-      {canAdd && <BottomDock align="end"><GateFab href={user ? `/trips/${tripId}/places/new?day=${active}` : undefined} /></BottomDock>}
+      {canAdd && <BottomDock align="end"><GateFab href={user ? `/trips/${tripId}/places/new?day=${sel === U ? "none" : sel + 1}` : undefined} /></BottomDock>}
     </>
   );
 }

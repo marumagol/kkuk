@@ -13,7 +13,7 @@ const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).jo
 /* ---------- 아이콘 (선 1.75, 둥근 끝) ---------- */
 type IconName =
   | "plus" | "bell" | "home" | "cal" | "map" | "user" | "arrow" | "camera"
-  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin" | "share" | "list" | "globe" | "trash";
+  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin" | "share" | "list" | "globe" | "trash" | "plane";
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
   bell: <><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7z" /><path d="M10 19a2 2 0 0 0 4 0" /></>,
@@ -51,6 +51,7 @@ const PATHS: Record<IconName, ReactNode> = {
   send: <><path d="M20 4 10.5 13.5" /><path d="M20 4l-6 16-3.5-6.5L4 10z" /></>,
   users: <><circle cx="9" cy="8.5" r="3" /><path d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5" /><path d="M15.5 6a3 3 0 0 1 0 5.5M17 14.3c2.1.6 3.5 2.3 3.5 4.7" /></>,
   up: <path d="M12 19V5M6 11l6-6 6 6" />,
+  plane: <path d="M10.5 20.5 12 15l-5-1.5-1.5 1.5-2-1 2-2.5L4 9l2-1 4 2.5L14 6c1-1 2.6-1.4 3.3-.7.7.7.3 2.3-.7 3.3l-4.5 4L15 18l-1 2-2.5-2-.5 2.5z" />,
   pin: <><path d="M12 21s-6-5.6-6-10.5a6 6 0 1 1 12 0C18 15.4 12 21 12 21z" /><circle cx="12" cy="10.5" r="2" /></>,
   stamp: <><circle cx="12" cy="12" r="8.5" strokeDasharray="3 2.6" /><circle cx="12" cy="12" r="4.5" /></>,
 };
@@ -171,8 +172,8 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, time, category, title, desc, detail, editedBy, last, href, photo, photoCount }: {
-  index: number; time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
+export function PinCard({ index, mark, time, category, title, desc, detail, editedBy, last, href, photo, photoCount }: {
+  index: number; mark?: "plane" | "dot"; /* 비행기(공항, 항공) / 점(메모) : 번호 대신 (2026-11-16) */ time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
 }) {
   const Box = ({ children }: { children: ReactNode }) => href
     ? <Link href={href} className="press mb-3 block min-w-0 flex-1 rounded-pin bg-surface px-4 py-3.5">{children}</Link>
@@ -180,7 +181,9 @@ export function PinCard({ index, time, category, title, desc, detail, editedBy, 
   return (
     <div className="flex gap-3">
       <div className="flex w-7 flex-none flex-col items-center gap-1 pt-3.5">
-        {index > 0 ? <span className="flex size-7 items-center justify-center rounded-full bg-btn text-tiny font-bold text-on-btn">{index}</span>
+        {mark === "plane" ? <span className="flex size-7 items-center justify-center rounded-full bg-point text-white"><Icon name="plane" size={16} /></span>
+          : mark === "dot" ? <span className="mt-2.5 size-2.5 rounded-full bg-ink-sub" />
+          : index > 0 ? <span className="flex size-7 items-center justify-center rounded-full bg-btn text-tiny font-bold text-on-btn">{index}</span>
           : <span className="mt-2 size-3 rounded-full border-2 border-line-strong bg-surface" />}
         {!last && <span className="w-0 flex-1 border-l-2 border-dashed border-line-strong/60" />}
       </div>
@@ -188,15 +191,16 @@ export function PinCard({ index, time, category, title, desc, detail, editedBy, 
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             {time && <span className="text-sub font-bold text-ink">{time}</span>}
-            <CategoryChip category={category} />
+            {category !== "메모" && <CategoryChip category={category} />}
           </div>
           {editedBy && <span className="text-tiny font-bold text-point-text">{editedBy}님이 고쳤어요</span>}
         </div>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>
+            {/* 메모 (2026-11-16) : 제목 없이 글 한 칸. 예전 메모(글이 제목으로 시작하지 않음)만 제목을 따로 보인다 */}
+            {(category !== "메모" || !desc || !desc.startsWith(title)) && <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>}
             {detail && <p className="mt-1 line-clamp-2 text-tiny font-semibold text-ink">{detail}</p>}
-            {desc && <p className={category === "메모" ? "mt-1 line-clamp-4 whitespace-pre-line text-sub text-ink-sub" : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}>{desc}</p>}
+            {desc && <p className={category === "메모" ? "mt-1.5 line-clamp-4 whitespace-pre-line text-body text-ink" : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}>{desc}</p>}
           </div>
           {photo && (
             <span className="relative mt-1.5 flex-none">

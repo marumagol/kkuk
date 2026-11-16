@@ -2,6 +2,8 @@
 import { redirect } from "next/navigation";
 import { PlaceShell } from "../place-shell";
 import { PlaceForm } from "@/components/place-form";
+import { MemoForm } from "@/components/memo-form";
+import { AppShell } from "@/components/screen";
 import { getViewer } from "@/lib/viewer";
 import { loadPlaceContext } from "@/lib/trips";
 
@@ -17,6 +19,8 @@ export default async function NewPlace({ params, searchParams }: { params: Promi
   if (!ctx || ctx.role === "viewer") redirect(`/trips/${id}`);
   const n = Number(day);
   const start = day === "none" ? null : Number.isInteger(n) && n >= 1 && n <= ctx.days ? n - 1 : 0;
+  const back = `/trips/${id}${start == null ? "?undated=1" : `?day=${start + 1}`}`;
+  if (memo) return <AppShell bottomGap={false}><MemoForm ctx={ctx} day={start} back={back} /></AppShell>;
   return (
     <PlaceShell tripId={id} title={memo ? "메모 추가" : "장소 추가"} back={`/trips/${id}${start == null ? "" : `?day=${start + 1}`}`}>
       <PlaceForm ctx={ctx} day={start} memo={memo} />

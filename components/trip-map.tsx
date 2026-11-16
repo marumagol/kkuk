@@ -12,7 +12,7 @@ const KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
 export const mapEnabled = () => KEY.length > 0;
 
 type G = typeof window & { google?: any; __kkukMap?: Promise<void> }; // eslint-disable-line @typescript-eslint/no-explicit-any
-function loadMaps(): Promise<void> {
+export function loadMaps(): Promise<void> {
   const w = window as G;
   if (w.google?.maps?.Map) return Promise.resolve();
   if (!w.__kkukMap) {
