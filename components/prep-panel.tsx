@@ -21,11 +21,42 @@ export function PrepPanel({ view }: { view: PrepView }) {
 
   return (
     <div className="flex flex-col gap-6 px-5 pt-5">
+      <PrepSummary view={view} />
       {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
-      <List title="예약" kind="reservation" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 숙소, 렌터카" />
-      <List title="챙길 것" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 여권, 충전기" />
+      <List title="예약" kind="reservation" view={view} canEdit={canEdit} busy={busy} run={run} />
+      <List title="챙길 것" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} />
       {!canEdit && <p className="text-tiny text-ink-sub">보기만 권한이라 준비 목록을 고칠 수 없어요</p>}
     </div>
+  );
+}
+
+/* 준비 요약 (2026-11-16 마루님 "예약 몇 건, 준비물 몇 건 같은 대시보드") : 예약, 챙길 것, 전체 준비율 */
+function PrepSummary({ view }: { view: PrepView }) {
+  const count = (k: "item" | "reservation") => { const l = view.items.filter((x) => x.kind === k); return { all: l.length, done: l.filter((x) => x.done).length }; };
+  const res = count("reservation"), item = count("item");
+  const all = res.all + item.all, done = res.done + item.done;
+  const pct = all ? Math.round((done / all) * 100) : 0;
+  const tile = (label: string, c: { all: number; done: number }, unit: string) => (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-tiny font-semibold text-on-deep-sub">{label}</dt>
+      <dd className="text-title font-extrabold tabular-nums">{c.all ? <>{c.done}<span className="text-sub font-bold text-on-deep-sub">/{c.all}{unit}</span></> : <span className="text-sub font-bold text-on-deep-sub">없음</span>}</dd>
+    </div>
+  );
+  return (
+    <section className="flex flex-col gap-3 rounded-deep bg-deep p-5 text-on-deep" aria-label="준비 요약">
+      <dl className="grid grid-cols-3 gap-2">
+        {tile("예약", res, "건")}
+        {tile("챙길 것", item, "개")}
+        <div className="flex flex-col gap-0.5">
+          <dt className="text-tiny font-semibold text-on-deep-sub">준비</dt>
+          <dd className="text-title font-extrabold tabular-nums">{pct}%</dd>
+        </div>
+      </dl>
+      <div className="h-2 overflow-hidden rounded-full bg-deep-soft" role="img" aria-label={`준비 ${pct}% 끝냄`}>
+        <span className="block h-full rounded-full bg-point" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="text-tiny text-on-deep-sub">{all === 0 ? "아래에서 예약과 챙길 것을 추가해 보세요" : all === done ? "준비를 모두 끝냈어요" : `${all - done}개 남았어요`}</p>
+    </section>
   );
 }
 
@@ -123,8 +154,8 @@ function Budget({ view, canEdit, busy, run, actual }: { view: PrepView; canEdit:
   );
 }
 
-function List({ title, kind, view, canEdit, busy, run, placeholder }: {
-  title: string; kind: "item" | "reservation"; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; placeholder: string;
+function List({ title, kind, view, canEdit, busy, run }: {
+  title: string; kind: "item" | "reservation"; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn;
 }) {
   const items = view.items.filter((x) => x.kind === kind);
   const [text, setText] = useState("");
