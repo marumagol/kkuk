@@ -6,7 +6,7 @@
   사진은 최대 5장 (2026-11-14). 고르는 즉시 줄여서 비공개 저장소 place-photos/<여행 id>/ 에 올리고, 저장할 때 위치 목록을 함께 저장
 */
 import { LeaveGuard } from "@/components/leave-guard";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Button, Field, FormCard, Icon } from "@/components/kit";
 import { createClient } from "@/lib/supabase/client";
 import { shrinkImage } from "@/lib/image";
@@ -107,6 +107,11 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const currencies = [...new Set([ctx.currency, startCur, "KRW", "USD"])];
   const titleLen = [...title.trim()].length;
   const autoName = [extra.from, extra.to].map((x) => x?.trim()).filter(Boolean).join(" → ");
+  // 이동의 표시 이름은 "출발 → 도착"을 값으로 채워 둔다 (2026-11-16 마루님). 직접 고친 이름은 그대로
+  useEffect(() => {
+    if (!isMove || !autoName) return;
+    if (!title.trim() || title === autoTitle.current) { autoTitle.current = autoName; setTitle(autoName.slice(0, MAX_PLACE_TITLE)); }
+  }, [isMove, autoName]); // eslint-disable-line react-hooks/exhaustive-deps
   const dayNum = dayValue === "none" ? null : Number(dayValue);
   // 시간 빠른 고르기 : [시간 정하기] 를 누르면 그날 가장 늦은 장소 + 1시간을 미리 채운다
   const lastTime = ctx.lastTimes[dayNum ?? ctx.days] ?? null;
