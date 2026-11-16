@@ -1,6 +1,6 @@
 /*
   여행 안 머리 + 탭 (2026-11-15 여행 메뉴 개편, 참고 이미지 "기록" 화면과 같게)
-  - 머리 : 뒤로, (함께하는 사람, 여행 한 권, 수정) + 어두운 [공유] 알약 / 여행 이름 / "2026.12.28 – 2027.1.4 · 윤과 함께"
+  - 머리 : 뒤로, 함께하는 사람, ⋯ 메뉴(공유, 수정, 여행 한 권). 2026-11-16 공유 알약과 연필을 ⋯ 하나로 / 여행 이름 / "2026.12.28 – 2027.1.4 · 윤과 함께"
   - 탭 : 일정 / 준비 / 기록 세그먼트. 고른 탭은 흰 칸 + 굵은 글자, 나머지는 옅은 글자
 */
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { Icon } from "@/components/kit";
 import { Avatar } from "@/components/screen";
 import type { Trip } from "@/lib/mock";
 import { FEATURES } from "@/lib/features";
+import { TripMenu } from "@/components/trip-menu";
 
 export type TripTab = "일정" | "준비" | "기록";
 
@@ -58,13 +59,8 @@ export function TripHeader({ trip, meId, user, owner, editable, back = "/trips",
           </span>
           {owner && user ? <Icon name="plus" size={16} className="text-ink-sub" /> : <span className="text-tiny font-bold text-ink-sub">{trip.members.length}</span>}
         </Link>
-        {user && FEATURES.book && <Link href={`/trips/${trip.id}/book`} aria-label="여행 한 권 (인쇄, PDF)" className={round}><Icon name="book" size={20} /></Link>}
-        {editable && <Link href={`/trips/${trip.id}/edit`} aria-label="여행 정보 수정" className={round}><Icon name="pencil" size={20} /></Link>}
-        {editable && (
-          <Link href={`/trips/${trip.id}/share`} className="press inline-flex h-11 flex-none items-center gap-1.5 rounded-full bg-deep px-4 text-sub font-bold text-on-deep">
-            <Icon name="share" size={18} />공유
-          </Link>
-        )}
+        {editable ? <TripMenu tripId={trip.id} book={user && FEATURES.book} />
+          : user && FEATURES.book && <Link href={`/trips/${trip.id}/book`} aria-label="여행 한 권 (인쇄, PDF)" className={round}><Icon name="book" size={20} /></Link>}
       </div>
       <div className="px-5 pt-4">
         <h1 className="text-title-xl font-extrabold text-ink">{trip.title}</h1>
