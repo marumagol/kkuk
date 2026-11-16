@@ -282,44 +282,6 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
   };
 });
 
-/* ───────── 여행일기 (2단계 8~10) ───────── */
-export type Visibility = "private" | "members" | "public";
-export type Entry = {
-  id: string; tripId: string; tripTitle: string; tripStart: string; kind: "day" | "recap"; dayIndex: number | null;
-  title: string | null; body: string; photos: { path: string; url: string }[]; visibility: Visibility;
-  author: string; mine: boolean; updatedAt: string; shareToken: string | null;
-  /* 피드 (0022) : 좋아요 수, 내가 눌렀는지, 댓글 수. 나만 보기 글은 모두 0 */
-  likes: number; liked: boolean; comments: number;
-  /* 피드 디자인 (11.15) : 쓴 사람 얼굴, 최근 댓글 한 줄(피드에서만) */
-  avatar: string | null; latest?: { author: string; body: string } | null;
-};
-type EntryRow = { id: string; trip_id: string; author_id: string; kind: "day" | "recap"; day_index: number | null; title: string | null; body: string; photos: string[]; visibility: Visibility; updated_at: string; share_token: string | null };
-const ENTRY_COLS = "id, trip_id, author_id, kind, day_index, title, body, photos, visibility, updated_at, share_token";
-
-async function toEntries(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, v: Viewer & { kind: "user" }, rows: EntryRow[], allPhotos: boolean): Promise<Entry[]> {
-  if (!rows.length) return [];
-  const tripIds = [...new Set(rows.map((r) => r.trip_id))];
-  const [{ data: trips }, { data: people }] = await Promise.all([
-    sb.from("trips").select("id, title, start_date").in("id", tripIds),
-    sb.from("trip_members").select("trip_id, user_id, display_name").in("trip_id", tripIds),
-  ]);
-  const tripOf = new Map((trips ?? []).map((t: { id: string; title: string; start_date: string }) => [t.id, t]));
-  const nameOf = new Map((people ?? []).map((p: { trip_id: string; user_id: string | null; display_name: string }) => [`${p.trip_id}:${p.user_id}`, p.display_name]));
-  const [urls, { data: counts }, face] = await Promise.all([
-    photoUrls(sb, rows.flatMap((r) => (allPhotos ? r.photos : r.photos.slice(0, 1)))),
-    sb.rpc("journal_counts", { p_ids: rows.map((r) => r.id) }),
-    faces(sb, [...new Set(rows.map((r) => r.author_id))]),
-  ]);
-  const countOf = new Map(((counts ?? []) as { entry_id: string; likes: number; liked: boolean; comments: number }[]).map((c) => [c.entry_id, c]));
-  return rows.filter((r) => tripOf.has(r.trip_id)).map((r) => ({
-    id: r.id, tripId: r.trip_id, tripTitle: tripOf.get(r.trip_id)!.title, tripStart: tripOf.get(r.trip_id)!.start_date,
-    kind: r.kind, dayIndex: r.day_index, title: r.title, body: r.body, visibility: r.visibility, updatedAt: r.updated_at, shareToken: r.visibility === "public" ? r.share_token : null,
-    likes: countOf.get(r.id)?.likes ?? 0, liked: countOf.get(r.id)?.liked ?? false, comments: countOf.get(r.id)?.comments ?? 0,
-    photos: r.photos.map((p) => ({ path: p, url: urls.get(p) ?? "" })).filter((p) => p.url),
-    author: nameOf.get(`${r.trip_id}:${r.author_id}`) ?? "나간 사람", mine: r.author_id === v.id, avatar: face.get(r.author_id) ?? null,
-  }));
-}
-
 /* ───────── 도장 (3단계, migration 0012) ───────── */
 export type StampCard = {
   cityId: number | null; name: string; country: string; earned: boolean;
@@ -402,7 +364,7 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
   return { earned, missing, cityCount: earned.length, countryCount: new Set(earned.map((s) => s.country)).size };
 });
 
-/* 여행 요약 숫자 (3단계 8) : 함께한 날, 장소 수, 남긴 사진(장소 + 내가 볼 수 있는 일기), 이 여행에서 받은 도장 */
+/* 여행 요약 숫자 (3단계 8) : 함께한 날, 장소 수, 장소 사진, 이 여행에서 받은 도장 */
 export type TripSummary = { days: number; places: number; photos: number; stamps: number };
 export const loadTripSummary = cache(async (v: Viewer, trip: Trip): Promise<TripSummary> => {
   const days = daysBetween(trip.start, trip.end) + 1;
@@ -410,12 +372,8 @@ export const loadTripSummary = cache(async (v: Viewer, trip: Trip): Promise<Trip
   const placePhotos = trip.days.reduce((n, d) => n + d.items.reduce((m, i) => m + (i.photos?.length ?? 0), 0), 0);
   if (v.kind !== "user") return { days, places, photos: placePhotos, stamps: 0 };
   const sb = (await createClient())!;
-  const [{ data: entries }, { count }] = await Promise.all([
-    sb.from("journal_entries").select("photos").eq("trip_id", trip.id).is("removed_at", null),
-    sb.from("stamp_grants").select("city_id", { count: "exact", head: true }).eq("trip_id", trip.id).eq("user_id", v.id),
-  ]);
-  const diaryPhotos = (entries ?? []).reduce((n: number, e: { photos: string[] }) => n + e.photos.length, 0);
-  return { days, places, photos: placePhotos + diaryPhotos, stamps: count ?? 0 };
+  const { count } = await sb.from("stamp_grants").select("city_id", { count: "exact", head: true }).eq("trip_id", trip.id).eq("user_id", v.id);
+  return { days, places, photos: placePhotos, stamps: count ?? 0 };
 });
 
 /* ───────── 내 장소 지도 (4단계 5) : 다녀온 여행(끝난 날이 지난 여행)의 장소 중 지도 위치가 있는 것 ───────── */
@@ -550,19 +508,15 @@ export async function coordsRefiller(v: Viewer, tripId: string): Promise<(() => 
   };
 }
 
-/* 여행 한 권 (5단계 6번) : 이 여행에서 내가 볼 수 있는 일기 전부 + 이 여행에서 받은 내 도장 */
-export type TripBook = { entries: Entry[]; stamps: { name: string; country: string; date: string }[] };
+/* 여행 한 권 (5단계 6번) : 이 여행에서 받은 내 도장 (일기는 2026-11-17 삭제) */
+export type TripBook = { stamps: { name: string; country: string; date: string }[] };
 export const loadTripBook = cache(async (v: Viewer, tripId: string): Promise<TripBook> => {
-  if (v.kind !== "user") return { entries: [], stamps: [] };
+  if (v.kind !== "user") return { stamps: [] };
   const sb = (await createClient())!;
-  const [{ data: rows }, { data: grants }] = await Promise.all([
-    sb.from("journal_entries").select(ENTRY_COLS).eq("trip_id", tripId).is("removed_at", null).order("day_index", { nullsFirst: false }).order("updated_at"),
-    sb.from("stamp_grants").select("granted_at, cities(name, country_code)").eq("trip_id", tripId).eq("user_id", v.id).order("granted_at"),
-  ]);
-  const entries = await toEntries(sb, v, (rows ?? []) as EntryRow[], true);
+  const { data: grants } = await sb.from("stamp_grants").select("granted_at, cities(name, country_code)").eq("trip_id", tripId).eq("user_id", v.id).order("granted_at");
   type G = { granted_at: string; cities: { name: string; country_code: string } | null };
   const stamps = ((grants ?? []) as unknown as G[]).filter((g) => g.cities).map((g) => ({ name: g.cities!.name, country: g.cities!.country_code, date: g.granted_at.slice(0, 10) }));
-  return { entries, stamps };
+  return { stamps };
 });
 
 /* 경비와 정산 (6단계 3번, migration 0026) */

@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 07:30", version: "0.64.1", items: ["여행 한 권에서 일기 부분을 뺐어요"] },
   { at: "2026-11-17 07:40", version: "0.64.0", items: [
     "여행 도시 중 도장을 받을 수 없는 도시는 만들기와 수정 화면에서 미리 알려 줘요",
     "일정 전체 보기에서 + 를 누르면 넣을 날을 먼저 골라요",

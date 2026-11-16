@@ -1,7 +1,7 @@
 /*
-  여행 한 권 (5단계 6번, 2026-11-15) : 일정, 일기, 도장을 한 장씩 이어 인쇄용 화면으로.
+  여행 한 권 (5단계 6번, 2026-11-15) : 일정과 도장을 한 장씩 이어 인쇄용 화면으로.
   [인쇄, PDF로 저장] 은 브라우저 인쇄 창. 지금은 누구나 무료 (나중에 여행 패스 후보, 기획/10)
-  메모와 예상 비용은 함께하는 사람끼리 보는 내용이라 그대로 싣는다. 나만 보기 일기는 내 것만 (RLS)
+  메모와 예상 비용은 함께하는 사람끼리 보는 내용이라 그대로 싣는다.
 */
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -38,13 +38,11 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
   const trip = r.trip;
   const book = await loadTripBook(viewer, id);
   const len = tripLength(trip);
-  const dayEntries = (d: number) => book.entries.filter((e) => e.kind === "day" && e.dayIndex === d);
-  const recaps = book.entries.filter((e) => e.kind === "recap");
   const summary = await loadTripSummary(viewer, trip);
-  // 장소도 일기도 없는 날은 이어지는 것끼리 한 줄로 묶는다 ("2일차 ~ 9일차")
+  // 장소가 없는 날은 이어지는 것끼리 한 줄로 묶는다 ("2일차 ~ 9일차")
   const blocks: ({ kind: "day"; d: number } | { kind: "empty"; from: number; to: number })[] = [];
   trip.days.forEach((day, d) => {
-    if (day.items.length || dayEntries(d).length) return void blocks.push({ kind: "day", d });
+    if (day.items.length) return void blocks.push({ kind: "day", d });
     const last = blocks[blocks.length - 1];
     if (last?.kind === "empty" && last.to === d - 1) last.to = d; else blocks.push({ kind: "empty", from: d, to: d });
   });
@@ -59,7 +57,7 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
         <h1 className="text-title-lg font-extrabold text-ink">여행 한 권</h1>
       </div>
       <div className="mt-3 flex flex-col gap-2 print:hidden">
-        <p className="text-sub text-ink-sub">일정, 일기, 도장을 한 권으로 모았어요. 인쇄 창에서 &quot;PDF로 저장&quot;을 고르면 파일로 받을 수 있어요</p>
+        <p className="text-sub text-ink-sub">일정과 도장을 한 권으로 모았어요. 인쇄 창에서 &quot;PDF로 저장&quot;을 고르면 파일로 받을 수 있어요</p>
         <PrintButton />
       </div>
 
@@ -73,17 +71,17 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
         <TripSummaryRow s={summary} />
       </section>
 
-      {/* 일차별 카드 : 사진 묶음 + 그날 장소 + 그날 일기 */}
+      {/* 일차별 카드 : 사진 묶음 + 그날 장소 */}
       <div className="mt-6 flex flex-col gap-3 print:mt-0">
         {blocks.map((b) => {
           if (b.kind === "empty") return (
             <p key={`e${b.from}`} className="flex flex-wrap items-baseline gap-x-2 rounded-card border border-dashed border-line-strong/60 px-5 py-3.5 print:hidden">
               <span className="text-body font-bold text-ink">{b.from === b.to ? `${b.from + 1}일차` : `${b.from + 1}일차 ~ ${b.to + 1}일차`}</span>
-              <span className="text-sub text-ink-sub">{b.from === b.to ? dayLabel(b.from) : `${md(addDays(trip.start, b.from))} ~ ${md(addDays(trip.start, b.to))}`} · 아직 남긴 기록이 없어요</span>
+              <span className="text-sub text-ink-sub">{b.from === b.to ? dayLabel(b.from) : `${md(addDays(trip.start, b.from))} ~ ${md(addDays(trip.start, b.to))}`} · 장소가 없어요</span>
             </p>
           );
-          const d = b.d, day = trip.days[d], entries = dayEntries(d);
-          const photos = [...entries.flatMap((e) => e.photos.map((p) => p.url)), ...day.items.flatMap((it) => (it.photos ?? []).filter((p) => !p.path.endsWith(".pdf")).map((p) => p.url))].filter(Boolean);
+          const d = b.d, day = trip.days[d];
+          const photos = [...day.items.flatMap((it) => (it.photos ?? []).filter((p) => !p.path.endsWith(".pdf")).map((p) => p.url))].filter(Boolean);
           return (
             <section key={d} className="flex flex-col gap-3 rounded-card bg-surface p-4 break-inside-avoid-page print:break-before-page print:bg-transparent print:p-0">
               <PhotoStack urls={photos} label={day.items[0]?.title} />
@@ -91,13 +89,6 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
                 <p className="text-sub font-bold text-point-text">{d + 1}일차 · {dayLabel(d)}</p>
                 {day.title && <h3 className="text-title font-extrabold text-ink">{day.title}</h3>}
               </div>
-              {entries.map((e) => (
-                <article key={e.id} className="break-inside-avoid px-1">
-                  {e.title && <h4 className="text-title font-extrabold text-ink">{e.title}</h4>}
-                  {e.body && <p className="mt-1 whitespace-pre-line text-body text-ink">{e.body}</p>}
-                  <p className="mt-1 text-tiny text-ink-sub">{e.author}의 일기</p>
-                </article>
-              ))}
               {day.items.length > 0 && <ol className="rounded-field bg-bg px-3 print:bg-transparent">{day.items.map((it, i) => <Place key={it.id ?? i} n={i + 1} it={it} />)}</ol>}
             </section>
           );
@@ -108,19 +99,6 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
         <section className="mt-8 print:mt-0 print:break-before-page">
           <h3 className="text-title font-extrabold text-ink">날짜 미정</h3>
           <ol className="mt-2">{trip.undated.map((it, i) => <Place key={it.id ?? i} n={i + 1} it={it} />)}</ol>
-        </section>
-      )}
-
-      {recaps.length > 0 && (
-        <section className="mt-8 print:mt-0 print:break-before-page">
-          <h3 className="text-title font-extrabold text-ink">여행 회고</h3>
-          {recaps.map((e) => (
-            <article key={e.id} className="mt-4 break-inside-avoid">
-              <p className="text-tiny font-semibold text-ink-sub">{e.author}</p>
-              {e.title && <h4 className="mt-1 text-body font-bold text-ink">{e.title}</h4>}
-              <p className="mt-1 whitespace-pre-line text-sub text-ink">{e.body}</p>
-            </article>
-          ))}
         </section>
       )}
 

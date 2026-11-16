@@ -31,13 +31,10 @@ begin
   select count(*) into n from public.notifications where user_id = b and kind = 'items'; r := r || '4 actor self=' || n || ' | ';
 
   set local role authenticated;
-  insert into public.journal_entries (trip_id, kind, day_index, body, visibility) values (tid, 'day', 0, '혼자', 'private');
-  insert into public.journal_entries (trip_id, kind, day_index, title, body) values (tid, 'day', 1, '둘째날', '같이');
   select count(*) into n from public.notifications; r := r || '5 b sees own only rows=' || n || ' | ';
   begin insert into public.notifications (user_id, trip_id, kind) values (a, tid, 'joined'); r := r || '6 FAIL direct insert | ';
   exception when others then r := r || '6 direct insert blocked | '; end;
   reset role;
-  select count(*), max(detail) into n, s from public.notifications where user_id = a and kind = 'journal'; r := r || '7 journal=' || n || ' ' || s || ' | ';
 
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   set local role authenticated;
