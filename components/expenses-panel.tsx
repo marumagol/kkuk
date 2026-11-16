@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button, Icon } from "@/components/kit";
 import { Avatar } from "@/components/screen";
+import { AlertDialog } from "@/components/gate";
 import { saveExpense, removeExpense } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 import { decimalsOf, formatMoney } from "@/lib/countries";
@@ -283,16 +284,8 @@ function ExpenseSheet({ view, draft, onClose }: { view: ExpensesView; draft: Dra
           <button type="button" onClick={() => setAsking(true)} disabled={busy} className="press inline-flex h-10 items-center gap-1 rounded-full px-3 text-sub font-semibold text-point-text"><Icon name="trash" size={16} />경비 삭제</button>
         </div>
       )}
-      {asking && (
-        <div role="alertdialog" aria-label="경비를 삭제할까요?" className="flex flex-col gap-3 rounded-card bg-surface p-4">
-          <p className="text-body font-bold text-ink">경비를 삭제할까요?</p>
-          <p className="text-sub text-ink-sub">정산에서도 빠져요</p>
-          <div className="flex gap-2">
-            <Button type="button" variant="secondary" full onClick={() => setAsking(false)} disabled={busy}>취소</Button>
-            <Button type="button" full onClick={remove} disabled={busy}>삭제</Button>
-          </div>
-        </div>
-      )}
+      {asking && <AlertDialog title="경비를 삭제할까요?" desc={`"${title}"이(가) 목록과 정산에서 빠져요`} confirmLabel="삭제"
+        confirm={remove} onClose={() => setAsking(false)} />}
     </Modal>
   );
 }
