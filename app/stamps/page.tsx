@@ -4,10 +4,11 @@
   - 곧 열릴 도장 : 실루엣 대신 봉인 카드. 도장 모양은 받기 전까지 보여 주지 않는다
   - 목표 배지 : 첫 도장, 도장 5개 등. 못 이룬 것은 물음표
   - 모은 도장 : 나라별로 묶고, 7일 안에 받은 도장은 NEW
-  ?c=도시번호 로 도장 자세히 (3단계 4)
+  ?c=도시번호 로 도장 메달 창을 바로 연다 (3단계 4, 2026-11-17 메달 창으로)
 */
 import Link from "next/link";
-import { Icon, Stamp, StampFace } from "@/components/kit";
+import { Icon } from "@/components/kit";
+import { SealedButton, EarnedStamp } from "@/components/stamp-cards";
 import { AppShell, MainTabs, MockNote } from "@/components/screen";
 import { GateCta } from "@/components/gate";
 import { getViewer } from "@/lib/viewer";
@@ -18,8 +19,6 @@ import { GOALS, type Goal } from "@/lib/stamp-goals";
 
 export const metadata = { title: "도장" };
 
-const dot = (d?: string) => (d ? d.slice(2).replaceAll("-", ".") : undefined);
-const tiltOf = (name: string) => ([...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 17) - 8;
 
 
 function status(x: StampCard, today: string) {
@@ -55,9 +54,8 @@ function SealedCard({ x, today }: { x: StampCard; today: string }) {
       <span className={`text-[11px] leading-tight ${s.tone === "past" ? "text-ink-sub" : s.tone === "now" ? "font-bold text-point" : "text-on-deep-sub"}`}>{s.line}</span>
     </div>
   );
-  return x.next
-    ? <Link href={`/trips/${x.next.tripId}`} aria-label={`${x.name} 도장, ${s.line}`} className="press block">{body}</Link>
-    : body;
+  // 누르면 여행으로 넘어가지 않고 받는 방법 안내 (2026-11-17 마루님)
+  return <SealedButton x={x} tone={s.tone} label={s.line}>{body}</SealedButton>;
 }
 
 export default async function Stamps({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
@@ -114,30 +112,6 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
             </Link>
           )}
         </section>
-
-        {picked && (
-          <section aria-label={`${picked.name} 도장`} className="flex flex-col items-center gap-3 rounded-card bg-surface px-4 py-5 text-center">
-            <div className="-rotate-6"><StampFace name={picked.name} country={picked.country} size={120} /></div>
-            <div>
-              <h2 className="flex items-center justify-center gap-1.5 text-title font-extrabold text-ink">
-                {flagOf(picked.country) && <img src={flagOf(picked.country)!} alt="" width={18} height={18} className="rounded-sm" />}
-                {picked.name}
-              </h2>
-              <p className="mt-1 text-sub text-ink-sub">{countryOf(picked.country)?.name ?? ""}, 처음 받은 날 {dot(picked.firstDate)}, {picked.visits}번 방문</p>
-            </div>
-            <ul className="flex w-full flex-col gap-1.5 text-left">
-              {picked.trips.map((t) => (
-                <li key={t.id}>
-                  <Link href={`/trips/${t.id}`} className="press flex min-h-11 items-center justify-between gap-2 rounded-field bg-bg px-3 py-2 text-sub">
-                    <span className="truncate font-semibold text-ink">{t.title}</span>
-                    {t.verifiedBy && <span className="flex-none text-tiny text-ink-sub">{t.verifiedBy === "나" ? "내가 인증" : `${t.verifiedBy}님이 인증`}</span>}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Link href="/stamps" replace className="press flex h-11 items-center px-4 text-sub font-semibold text-ink-sub">닫기</Link>
-          </section>
-        )}
 
         {/* 곧 열릴 도장 */}
         {s.missing.length > 0 && (
@@ -196,16 +170,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
                 </h3>
                 <div className="grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-4">
                   {list.map((x) => (
-                    <Link key={`${x.country}:${x.name}`} href={x.cityId ? `/stamps?c=${x.cityId}` : "#"} replace scroll={false}
-                      aria-label={`${x.name} 도장, ${x.visits}번 방문`} className="press relative flex justify-center">
-                      <Stamp fluid name={x.name} country={x.country} date={dot(x.firstDate)} tilt={tiltOf(x.name)} />
-                      {x.firstDate && x.firstDate >= newSince && (
-                        <span className="absolute right-1 top-0 rounded-full bg-point px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">NEW</span>
-                      )}
-                      {x.visits > 1 && (
-                        <span className="absolute left-1 top-0 rounded-full bg-deep px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-on-deep">×{x.visits}</span>
-                      )}
-                    </Link>
+                    <EarnedStamp key={`${x.country}:${x.name}`} x={x} isNew={!!x.firstDate && x.firstDate >= newSince} startOpen={picked === x} />
                   ))}
                 </div>
               </div>
