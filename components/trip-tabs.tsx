@@ -7,13 +7,14 @@ import Link from "next/link";
 import { Icon } from "@/components/kit";
 import { Avatar } from "@/components/screen";
 import type { Trip } from "@/lib/mock";
+import { FEATURES } from "@/lib/features";
 
 export type TripTab = "일정" | "준비" | "기록";
 
 export function TripTabs({ tripId, active }: { tripId: string; active: TripTab }) {
   const tabs = [
     { name: "일정", href: `/trips/${tripId}` }, { name: "준비", href: `/trips/${tripId}/prep` }, { name: "기록", href: `/trips/${tripId}/record` },
-  ] as const;
+  ].filter((t) => FEATURES.diary || t.name !== "기록");
   return (
     <nav aria-label="여행 안 메뉴" className="mx-5 mt-4 flex gap-1 rounded-[18px] bg-surface-soft p-1">
       {tabs.map((t) => (
@@ -57,7 +58,7 @@ export function TripHeader({ trip, meId, user, owner, editable, back = "/trips",
           </span>
           {owner && user ? <Icon name="plus" size={16} className="text-ink-sub" /> : <span className="text-tiny font-bold text-ink-sub">{trip.members.length}</span>}
         </Link>
-        {user && <Link href={`/trips/${trip.id}/book`} aria-label="여행 한 권 (인쇄, PDF)" className={round}><Icon name="book" size={20} /></Link>}
+        {user && FEATURES.book && <Link href={`/trips/${trip.id}/book`} aria-label="여행 한 권 (인쇄, PDF)" className={round}><Icon name="book" size={20} /></Link>}
         {editable && <Link href={`/trips/${trip.id}/edit`} aria-label="여행 정보 수정" className={round}><Icon name="pencil" size={20} /></Link>}
         {editable && (
           <Link href={`/trips/${trip.id}/share`} className="press inline-flex h-11 flex-none items-center gap-1.5 rounded-full bg-deep px-4 text-sub font-bold text-on-deep">

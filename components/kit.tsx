@@ -3,6 +3,7 @@
   모든 화면은 이 조각과 globals.css 토큰으로 만든다. 색 값을 직접 쓰지 않는다.
   서버/클라이언트 어디서나 import 할 수 있게 상태(useState)는 넣지 않았다.
 */
+import { FEATURES } from "@/lib/features";
 import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes } from "react";
 import Link from "next/link";
 import { blobPath, stampArt } from "@/lib/stamp-art";
@@ -378,7 +379,7 @@ export function TabBar({ active: asked = "홈" }: { active?: "홈" | "여행" | 
   const tabs: { name: "홈" | "여행" | "일기" | "설정"; icon: IconName; href: string }[] = [
     { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" }, { name: "일기", icon: "book", href: "/diary" },
     { name: "설정", icon: "gear", href: "/me" },
-  ];
+  ].filter((t) => FEATURES.diary || t.name !== "일기") as typeof tabs;
   const item = (t: (typeof tabs)[number]) => (
     <Link key={t.name} href={t.href} aria-label={t.name} aria-current={active === t.name ? "page" : undefined}
       className={cx("press flex h-[52px] items-center justify-center gap-1.5 rounded-full",

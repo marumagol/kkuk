@@ -4,6 +4,7 @@
   - iPhone 은 홈 화면에 추가한 앱에서만 됨 (iOS 16.4+)
   - 공개 키는 Supabase Edge Function "push" 에서 받는다 (비밀 키는 서버에만)
 */
+import { FEATURES } from "@/lib/features";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { supabaseEnv } from "@/lib/supabase/env";
@@ -81,7 +82,7 @@ export function PushToggle() {
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-body font-bold text-ink">휴대폰 알림</p>
-          <p className="text-tiny text-ink-sub">함께하는 사람이 들어오거나 장소를 고치거나 일기를 남기면 알려 줘요</p>
+          <p className="text-tiny text-ink-sub">{FEATURES.diary ? "함께하는 사람이 들어오거나 장소를 고치거나 일기를 남기면 알려 줘요" : "함께하는 사람이 들어오거나 장소를 고치면 알려 줘요"}</p>
         </div>
         {canToggle && (
           <button type="button" role="switch" aria-checked={on} aria-label="휴대폰 알림" disabled={busy} onClick={on ? turnOff : turnOn}
@@ -106,7 +107,7 @@ const KINDS: { label: string; kinds: string[] }[] = [
   { label: "새 일기", kinds: ["journal"] },
   { label: "댓글과 답글", kinds: ["comment", "reply"] },
   { label: "도장", kinds: ["stamp"] },
-];
+].filter((k) => FEATURES.diary || !k.kinds.some((x) => ["journal", "comment", "reply"].includes(x)));
 function KindPrefs() {
   const [off, setOff] = useState<string[] | null>(null);
   const [failed, setFailed] = useState(false);

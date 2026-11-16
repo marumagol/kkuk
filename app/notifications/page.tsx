@@ -1,4 +1,5 @@
 /* 알림 (4단계 8) : 함께하는 사람 참여, 장소 고침, 새 일기, 함께 받은 도장. 열면 모두 읽음 */
+import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { EmptyState, Icon } from "@/components/kit";
 import { AppShell, MockNote } from "@/components/screen";
@@ -20,8 +21,8 @@ function textOf(n: Notice) {
 }
 function hrefOf(n: Notice) {
   if (!n.tripId) return "#";
-  if (n.kind === "journal" && n.refId) return `/diary/${n.refId}`;
-  if ((n.kind === "comment" || n.kind === "reply") && n.refId) return `/diary/${n.refId}#comments`;
+  if (FEATURES.diary && n.kind === "journal" && n.refId) return `/diary/${n.refId}`;
+  if (FEATURES.diary && (n.kind === "comment" || n.kind === "reply") && n.refId) return `/diary/${n.refId}#comments`;
   if (n.kind === "stamp" && n.refId) return `/stamps?c=${n.refId}`;
   if (n.kind === "joined") return `/trips/${n.tripId}/members`;
   return `/trips/${n.tripId}`;

@@ -7,6 +7,7 @@
   - 키보드 : 손잡이에 초점을 두고 위/아래 화살표. 그 날 맨 위/아래에서 더 누르면 앞/뒤 날로 넘어간다
   - 저장에 실패하면 원래 자리로 되돌리고 안내
 */
+import { FEATURES } from "@/lib/features";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon, PinCard } from "@/components/kit";
@@ -315,7 +316,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                   <Link href={`/trips/${tripId}/map?day=${c + 1}`} aria-label={`${c + 1}일차 지도`} className="press inline-flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
                     <Icon name="map" size={16} />지도
                   </Link>
-                  {user && (
+                  {user && FEATURES.diary && (
                     <Link href={`/trips/${tripId}/diary?day=${c + 1}`} aria-label={`${c + 1}일차 일기 쓰기`} className="press inline-flex h-10 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
                       <Icon name="book" size={16} />일기
                     </Link>
