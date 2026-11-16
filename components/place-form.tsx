@@ -203,10 +203,18 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                 {on ? "시간 정하기" : "시간 없음"}
               </button>
             ))}
-            {timed && !isMove && <input type="time" aria-label="시간" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} autoFocus={!p?.start_time}
-              className="h-11 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />}
           </div>
           {/* 이동은 시간 칸 대신 출발/도착 시간. 출발 시간이 일정의 시간(정렬 기준)이 된다 */}
+          {/* 다른 분류는 시간 하나. 이동 칸과 같은 모양으로 칩 아래에 (2026-11-16 마루님) */}
+          {timed && !isMove && (
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex min-w-0 flex-col gap-1.5">
+                <span className="text-tiny font-bold text-ink-sub">시간</span>
+                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} autoFocus={!p?.start_time}
+                  className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />
+              </label>
+            </div>
+          )}
           {timed && isMove && (
             <div className="grid grid-cols-2 gap-3">
               {(["depart", "arrive"] as const).map((k) => (
