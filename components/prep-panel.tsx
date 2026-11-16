@@ -133,7 +133,7 @@ function List({ title, kind, view, canEdit, busy, run, placeholder }: {
             <div className={items.length ? "border-t border-line" : ""}>
               <div className="flex min-h-14 items-center gap-3 px-4 py-2">
                 <span aria-hidden className="flex size-7 flex-none items-center justify-center rounded-full border-2 border-dashed border-line-strong text-ink-sub"><Icon name="plus" size={14} /></span>
-                <input name={`add-${kind}`} aria-label={`${title} 추가`} placeholder={`${title} 추가 (${placeholder})`} value={text} maxLength={80} disabled={busy}
+                <input name={`add-${kind}`} aria-label={`${title} 추가`} placeholder={`${title} 추가`} value={text} maxLength={80} disabled={busy}
                   onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && text.trim()) { e.preventDefault(); add(); } }}
                   className="h-10 min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-sub" />
