@@ -19,7 +19,7 @@ export function GlobalTabs() {
   if (HIDE.some((r) => r.test(path))) return null;
   const active = path.startsWith("/stamps") ? "도장" : path.startsWith("/trips") ? "여행" : path.startsWith("/me") ? "설정" : "홈";
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-[560px] justify-center px-5 pb-[max(20px,env(safe-area-inset-bottom))]">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-[560px] justify-center px-5 pb-[max(20px,env(safe-area-inset-bottom))] in-data-editing:hidden">
       <div className="pointer-events-auto"><TabBar active={active} /></div>
     </div>
   );

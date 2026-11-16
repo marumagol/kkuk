@@ -12,9 +12,11 @@ const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).jo
 /* ---------- 아이콘 (선 1.75, 둥근 끝) ---------- */
 type IconName =
   | "plus" | "bell" | "home" | "cal" | "map" | "user" | "arrow" | "camera"
-  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin" | "share" | "list" | "globe" | "trash" | "plane" | "more" | "chevron-down" | "star";
+  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin" | "share" | "list" | "globe" | "trash" | "plane" | "more" | "chevron-down" | "star" | "menu" | "swap";
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
+  menu: <path d="M5 7h14M5 12h14M5 17h14" />,
+  swap: <><path d="M8 4v16M4 8l4-4 4 4" /><path d="M16 20V4M12 16l4 4 4-4" /></>,
   bell: <><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7z" /><path d="M10 19a2 2 0 0 0 4 0" /></>,
   home: <path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1v-8z" />,
   cal: <><rect x="4" y="5" width="16" height="15" rx="2.5" /><path d="M4 10h16M8 3v4M16 3v4" /></>,

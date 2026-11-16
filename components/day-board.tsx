@@ -70,7 +70,17 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const lastY = useRef(0);
   const overRef = useRef<number | null>(null);
   const busy = useRef(false);
-  const [asking, setAsking] = useState<Item | null>(null); // 지우기 확인
+  /* 편집 모드 (2026-11-17 마루님 참고 화면) : 동그라미로 여러 개 고르고 아래 바에서 [날짜 이동] [삭제하기] */
+  const [picked, setPicked] = useState<string[]>([]);
+  const [moving, setMoving] = useState(false); // 옮길 날 고르기 창
+  const [askDel, setAskDel] = useState(false); // 삭제 확인
+  const togglePick = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const endEdit = () => { setEditing(false); setPicked([]); setMoving(false); };
+  // 편집 중에는 아래 탭바를 숨기고 편집 바만 (globals.css body[data-editing])
+  useEffect(() => {
+    document.body.toggleAttribute("data-editing", editing);
+    return () => document.body.removeAttribute("data-editing");
+  }, [editing]);
   const [undo, setUndo] = useState<{ c: number; items: Item[] } | null>(null); // 동선 정렬 되돌리기
 
   /*
@@ -132,15 +142,38 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     void applyDay(c, next, "가까운 순서로 동선을 정리했어요", { c, items: cur });
   };
 
-  /* 목록에서 바로 지우기 (확인 창 한 번). 실패하면 되돌리고 안내 */
-  const remove = async (it: Item) => {
-    if (busy.current) return;
+  /* 고른 것 한꺼번에 삭제 (확인 창 한 번). 하나씩 저장하고, 실패하면 새로 불러와 맞춘다 */
+  const removeMany = async () => {
+    if (busy.current || !picked.length) return;
+    const ids = picked;
     const prev = colsRef.current;
-    const next = prev.map((c) => c.filter((x) => x.id !== it.id));
-    setCols(next); colsRef.current = next; setMsg(""); busy.current = true;
-    const r = await safeCall(() => deletePlace(tripId, it.id!));
-    busy.current = false;
-    if (r?.error) { setCols(prev); setMsg(r.error); } else setMsg(`"${it.title}"을(를) 삭제했어요`);
+    const next = prev.map((c) => c.filter((x) => !ids.includes(x.id!)));
+    setCols(next); colsRef.current = next; setMsg(""); setUndo(null); busy.current = true;
+    let err = "";
+    for (const id of ids) {
+      const r = await safeCall(() => deletePlace(tripId, id));
+      if (r?.error) { err = r.error; break; }
+    }
+    busy.current = false; setPicked([]);
+    if (err) { setMsg(err); router.refresh(); } else setMsg(`${ids.length}개를 삭제했어요`);
+  };
+  /* 고른 것을 다른 날 맨 뒤로 (지금 순서 그대로) */
+  const moveMany = async (target: number) => {
+    setMoving(false);
+    if (busy.current || !picked.length) return;
+    const prev = colsRef.current;
+    const moved = prev.flat().filter((x) => picked.includes(x.id!));
+    const base = prev[target].filter((x) => !picked.includes(x.id!));
+    const next = prev.map((c, i) => (i === target ? [...base, ...moved] : c.filter((x) => !picked.includes(x.id!))));
+    setCols(next); colsRef.current = next; setMsg(""); setUndo(null); busy.current = true;
+    let err = "";
+    for (let k = 0; k < moved.length; k++) {
+      const ids = [...base, ...moved.slice(0, k + 1)].map((x) => x.id!);
+      const r = await safeCall(() => moveItem(tripId, moved[k].id!, target === U ? null : target, ids));
+      if (r?.error) { err = r.error; break; }
+    }
+    busy.current = false; setPicked([]);
+    if (err) { setMsg(err); router.refresh(); } else setMsg(`${moved.length}개를 ${target === U ? "날짜 미정" : `${target + 1}일차`}로 옮겼어요`);
   };
 
   // 저장 뒤나 다른 사람이 고쳐서 새 목록이 오면 맞춘다 (끄는 중, 저장 중에는 그대로)
@@ -154,7 +187,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
   const sheetTop = () => (sheet.current ? sheet.current.getBoundingClientRect().top + scrollY : 0);
   const pickDay = (c: number) => {
-    setSel(c); setUndo(null); if (c === ALL) setEditing(false); // 전체에서는 순서 바꾸기를 하지 않는다
+    setSel(c); setUndo(null); setPicked([]); if (c === ALL) endEdit(); // 전체에서는 편집하지 않는다
     // 시트를 끌어 올려 둔 상태면 새 날의 맨 위부터
     if (scrollY > sheetTop()) scrollTo({ top: sheetTop(), behavior: "smooth" });
   };
@@ -343,10 +376,14 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           </div>
           {editable && sel !== ALL && (
             /* 아이콘만 (2026-11-17 마루님). 글자는 화면 읽기용 이름으로. 점 6개(옮기기 손잡이와 같아 보임) 대신 연필 (2026-11-17) */
-            <button type="button" onClick={() => setEditing((v) => !v)} aria-pressed={editing} aria-label={editing ? "편집 완료" : "일정 편집"}
-              className={"press flex size-10 flex-none items-center justify-center rounded-full " + (editing ? "bg-point text-white" : "border border-line-strong bg-surface text-ink")}>
-              <Icon name={editing ? "check" : "pencil"} size={18} strokeWidth={editing ? 2.25 : 2} />
-            </button>
+            editing ? (
+              <button type="button" onClick={endEdit} className="press flex h-10 flex-none items-center rounded-full px-3 text-sub font-bold text-point-text">완료</button>
+            ) : (
+              <button type="button" onClick={() => { setEditing(true); setPicked([]); }} aria-label="일정 편집"
+                className="press flex size-10 flex-none items-center justify-center rounded-full border border-line-strong bg-surface text-ink">
+                <Icon name="pencil" size={18} strokeWidth={2} />
+              </button>
+            )
           )}
         </nav>
         {dragId && <p className="px-5 pb-1 text-tiny font-semibold text-point-text">다른 날로 옮기려면 위 날짜에 놓아 주세요</p>}
@@ -357,8 +394,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
             {sel !== U && sel !== ALL && days[sel]?.title && <span className="block truncate text-sub font-semibold text-ink-sub">{days[sel].title}</span>}
             {/* 예상 비용 알약 (2026-11-17 마루님 "이날" 빼고 다듬기) */}
             {dayCost && (
-              <span className="mt-1.5 flex w-fit max-w-full items-center gap-1 rounded-full bg-surface-soft py-1 pl-2 pr-2.5 text-tiny font-semibold text-ink-sub">
-                <Icon name="won" size={13} className="flex-none" />예상 비용
+              <span className="mt-1.5 flex w-fit max-w-full items-center gap-1 rounded-full bg-surface-soft px-2.5 py-1 text-tiny font-semibold text-ink-sub">
+                예상 비용
                 <span className="min-w-0 truncate font-extrabold text-ink tabular-nums">{dayCost}</span>
               </span>
             )}
@@ -410,8 +447,17 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                     {gap && !dragId && (
                       <span className="-mt-2 mb-1 -ml-1 w-fit rounded-full border border-line bg-bg px-2 py-0.5 text-tiny font-bold leading-4 text-ink-sub">{gap}</span>
                     )}
-                    <div className="flex items-start gap-1">
-                      <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      {/* 편집 : 왼쪽 동그라미로 고르기 (카드를 눌러도 골라짐) */}
+                      {editing && editable && it.id && (
+                        <button type="button" role="checkbox" aria-checked={picked.includes(it.id)} aria-label={`${it.title} 고르기`} disabled={!!dragId}
+                          onClick={() => togglePick(it.id!)} className="press -ml-2 flex size-11 flex-none items-center justify-center">
+                          <span className={"flex size-6 items-center justify-center rounded-full border-2 transition-colors " + (picked.includes(it.id) ? "border-point bg-point text-white" : "border-line-strong bg-surface")}>
+                            {picked.includes(it.id) && <Icon name="check" size={14} strokeWidth={3} />}
+                          </span>
+                        </button>
+                      )}
+                      <div className={"min-w-0 flex-1 " + (editing && it.id ? "cursor-pointer select-none" : "")} onClick={editing && editable && it.id ? () => togglePick(it.id!) : undefined}>
                         <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
                           desc={it.desc ?? ""} editedBy={showEditor(it) ? it.editedBy : undefined} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === list.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined}
@@ -421,21 +467,14 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                               className="press flex size-8 items-center justify-center rounded-full bg-bg"><Icon name="pin" size={16} className="text-point" /></a>
                           ) : undefined} />
                       </div>
-                      {editing && editable && it.id && (
-                        <div className="flex flex-none flex-col items-center">
-                          {canSort && (
-                            <button type="button" data-grip aria-label={`${it.title} 옮기기. 위아래 화살표로 순서와 날짜를 바꿔요`}
-                              className="press mt-2 flex size-11 flex-none cursor-grab touch-none items-center justify-center rounded-full text-ink-sub active:cursor-grabbing"
-                              onKeyDown={(e) => onKey(e, it.id!)}
-                              onPointerDown={(e) => { e.preventDefault(); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); }}>
-                              <Icon name="grip" size={22} />
-                            </button>
-                          )}
-                          <button type="button" aria-label={`${it.title} 삭제`} onClick={() => setAsking(it)} disabled={!!dragId}
-                            className={"press flex size-10 items-center justify-center rounded-full text-ink-sub " + (canSort ? "" : "mt-2")}>
-                            <Icon name="trash" size={18} />
-                          </button>
-                        </div>
+                      {/* 편집 : 오른쪽 손잡이를 끌어 순서 바꾸기, 위 날짜 칩에 놓으면 그 날로 */}
+                      {editing && canSort && it.id && (
+                        <button type="button" data-grip aria-label={`${it.title} 옮기기. 위아래 화살표로 순서와 날짜를 바꿔요`}
+                          className="press -mr-2 flex size-11 flex-none cursor-grab touch-none items-center justify-center rounded-full text-ink-sub active:cursor-grabbing"
+                          onKeyDown={(e) => onKey(e, it.id!)}
+                          onPointerDown={(e) => { e.preventDefault(); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); }}>
+                          <Icon name="menu" size={22} />
+                        </button>
                       )}
                     </div>
                   </li>
@@ -463,9 +502,46 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
       {msg ? <Toast action={undo ? "되돌리기" : undefined} onAction={() => { if (busy.current || !undo) return; const u = undo; void applyDay(u.c, u.items, "원래 순서로 돌렸어요", null); }}>{msg}</Toast>
         : <span role="status" aria-live="polite" className="sr-only" />}
 
-      {asking && <AlertDialog title={asking.category === "메모" ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
-        confirmLabel="삭제" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
-      {canAdd && !dragId && <BottomDock align="end"><AddFab user={user} base={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel === ALL ? 1 : sel + 1}`}
+      {askDel && <AlertDialog title={`${picked.length}개를 삭제할까요?`} desc="고른 장소와 메모가 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요"
+        confirmLabel="삭제" confirm={() => { setAskDel(false); void removeMany(); }} onClose={() => setAskDel(false)} />}
+      {/* 편집 중 아래 바 (2026-11-17 마루님) : 고른 것을 다른 날로, 또는 삭제 */}
+      {editing && editable && !dragId && (
+        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[560px] bg-btn text-on-btn pb-[env(safe-area-inset-bottom)]">
+          <p className="sr-only" aria-live="polite">{picked.length ? `${picked.length}개 골랐어요` : "고른 것이 없어요"}</p>
+          <div className="flex">
+            <button type="button" disabled={!picked.length} onClick={() => setMoving(true)}
+              className="press flex h-16 flex-1 items-center justify-center gap-2 text-body font-bold disabled:opacity-40">
+              <Icon name="swap" size={20} />날짜 이동
+            </button>
+            <button type="button" disabled={!picked.length} onClick={() => setAskDel(true)}
+              className="press flex h-16 flex-1 items-center justify-center gap-2 text-body font-bold disabled:opacity-40">
+              <Icon name="trash" size={20} />삭제하기{picked.length ? ` ${picked.length}` : ""}
+            </button>
+          </div>
+        </div>
+      )}
+      {moving && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setMoving(false)}>
+          <div role="dialog" aria-modal="true" aria-label="옮길 날짜" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && setMoving(false)}
+            className="w-full max-w-[560px] rounded-t-[24px] bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5">
+            <h2 className="text-title font-extrabold text-ink">어느 날로 옮길까요?</h2>
+            <p className="mt-1 text-sub text-ink-sub">고른 {picked.length}개를 그날 맨 뒤로 옮겨요</p>
+            <div className="mt-4 grid max-h-[50vh] grid-cols-3 gap-2 overflow-y-auto">
+              {[...Array.from({ length: len }, (_, c) => c), U].filter((c) => c !== sel).map((c, k) => (
+                <button key={c} type="button" autoFocus={k === 0} onClick={() => void moveMany(c)}
+                  className="press flex h-14 flex-col items-center justify-center rounded-field bg-bg text-ink">
+                  {c === U ? <span className="text-sub font-bold">날짜 미정</span> : <>
+                    <span className="text-sub font-bold">{c + 1}일차</span>
+                    <span className="text-tiny text-ink-sub">{md(addDays(start, c))} ({weekday(addDays(start, c))})</span>
+                  </>}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={() => setMoving(false)} className="press mt-3 h-12 w-full rounded-btn text-body font-bold text-ink-sub">취소</button>
+          </div>
+        </div>
+      )}
+      {canAdd && !dragId && !editing && <BottomDock align="end"><AddFab user={user} base={`/trips/${tripId}/places/new?day=${sel === U ? "none" : sel === ALL ? 1 : sel + 1}`}
         pick={sel === ALL ? [...Array.from({ length: len }, (_, i) => ({ day: String(i + 1), label: `${i + 1}일차`, sub: `${md(addDays(start, i))} (${weekday(addDays(start, i))})` })), { day: "none", label: "날짜 미정" }] : undefined} /></BottomDock>}
     </>
   );
