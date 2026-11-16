@@ -209,7 +209,7 @@ export const loadMembers = cache(async (v: Viewer, tripId: string): Promise<Memb
 });
 
 /* 준비 탭 (2단계 6~7) : 챙길 것, 예약, 예산 */
-export type PrepItem = { id: string; kind: "item" | "reservation"; title: string; due: string | null; assignee: string | null; done: boolean; itemId: string | null /* 장소에서 온 예약 (0032) */ };
+export type PrepItem = { id: string; kind: "item" | "reservation"; title: string; due: string | null; assignee: string | null; done: boolean; itemId: string | null /* 장소에서 온 예약 (0032) */; code?: string; files?: number /* 예약 지갑 (0034) */ };
 export type PrepView = {
   tripId: string; tripTitle: string; start: string; end: string; role: Role; currency: string;
   items: PrepItem[]; budget: { currency: string; total: number } | null;
@@ -223,7 +223,7 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
   if (!("trip" in r)) return null;
   const sb = (await createClient())!;
   const [{ data: rows }, { data: budget }, { data: city }, mv] = await Promise.all([
-    sb.from("checklist_items").select("id, kind, title, due_date, assignee_id, done_at, sort_order, created_at, item_id")
+    sb.from("checklist_items").select("id, kind, title, due_date, assignee_id, done_at, sort_order, created_at, item_id, booking_code, files")
       .eq("trip_id", tripId).is("removed_at", null).order("sort_order").order("created_at"),
     sb.from("trip_budgets").select("currency, total").eq("trip_id", tripId).maybeSingle(),
     sb.from("trip_cities").select("country_code").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle(),
@@ -241,8 +241,8 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
   const spent = byCategory.reduce((n, c) => n + c.amount, 0);
   return {
     tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency,
-    items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null; item_id: string | null }[])
-      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at, itemId: x.item_id })),
+    items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null; item_id: string | null; booking_code: string | null; files: string[] | null }[])
+      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at, itemId: x.item_id, code: x.booking_code ?? undefined, files: x.files?.length ?? 0 })),
     budget: budget ? { currency: budget.currency, total: Number(budget.total) } : null,
     spent, byCategory,
     people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name }] : [])),
@@ -668,4 +668,28 @@ export const loadMapTrips = cache(async (v: Viewer, trips: Trip[]): Promise<MapT
     return { id: t.id, title: t.title, start: t.start, end: t.end, status: statusOfTrip(t), cities, allCities: cs.length,
       countries: [...new Set(cs.map((c) => (c.country_code === "ETC" ? c.country_name ?? "ETC" : c.country_code ?? "")).filter(Boolean))] };
   });
+});
+
+/* 예약 지갑 (0034, 2026-11-16 마루님) : 예약 하나의 예약번호, 메모, 첨부 파일. 파일은 1시간짜리 주소 */
+export type BookingView = {
+  tripId: string; tripTitle: string; start: string; end: string; canEdit: boolean;
+  id: string; title: string; due: string | null; code: string; note: string; done: boolean; itemId: string | null;
+  files: { path: string; url: string; pdf: boolean }[];
+};
+export const loadBooking = cache(async (v: Viewer, tripId: string, id: string): Promise<BookingView | null> => {
+  if (v.kind !== "user" || !/^[0-9a-f-]{36}$/i.test(tripId) || !/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const sb = (await createClient())!;
+  const [r, { data: row }] = await Promise.all([
+    loadTrip(v, tripId),
+    sb.from("checklist_items").select("id, kind, title, due_date, done_at, item_id, booking_code, note, files").eq("trip_id", tripId).eq("id", id).is("removed_at", null).maybeSingle(),
+  ]);
+  if (!("trip" in r) || !row || row.kind !== "reservation") return null;
+  const paths = (row.files ?? []) as string[];
+  const { data: signed } = paths.length ? await sb.storage.from("trip-files").createSignedUrls(paths, 3600) : { data: [] };
+  const url = new Map((signed ?? []).flatMap((d) => (d.path && d.signedUrl ? [[d.path, d.signedUrl] as const] : [])));
+  return {
+    tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, canEdit: r.role !== "viewer",
+    id: row.id, title: row.title, due: row.due_date, code: row.booking_code ?? "", note: row.note ?? "", done: !!row.done_at, itemId: row.item_id,
+    files: paths.map((p) => ({ path: p, url: url.get(p) ?? "", pdf: p.endsWith(".pdf") })),
+  };
 });

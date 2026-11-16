@@ -480,6 +480,29 @@ export async function addPrepDefaults(tripId: string, titles: string[]): Promise
   if (rows.length) { const { error } = await c.sb.from("checklist_items").insert(rows); if (error) return PREP_FAIL; }
   revalidatePath(`/trips/${tripId}/prep`);
 }
+/* 예약 지갑 저장 (0034) : 이름, 날짜, 예약번호, 메모, 첨부 파일. 빠진 파일은 저장소에서도 지운다 */
+const BOOKING_FILE = (tripId: string) => new RegExp(`^${tripId}/[0-9a-f-]{36}\\.(jpg|png|webp|pdf)$`);
+export async function saveBooking(tripId: string, id: string, input: { title: string; due: string; code: string; note: string; files: string[] }): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !isUuid(id)) return PREP_FAIL;
+  const title = String(input?.title ?? "").trim(), code = String(input?.code ?? "").trim(), note = String(input?.note ?? "").trim(), due = String(input?.due ?? "");
+  if (![...title].length) return { error: "예약 이름을 적어 주세요" };
+  if ([...title].length > 80) return { error: "예약 이름은 80자까지 쓸 수 있어요" };
+  if ([...code].length > 60) return { error: "예약번호는 60자까지 쓸 수 있어요" };
+  if ([...note].length > 500) return { error: "메모는 500자까지 쓸 수 있어요" };
+  if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) return { error: "날짜를 다시 골라 주세요" };
+  const files = (Array.isArray(input?.files) ? input.files : []).map(String);
+  if (files.length > 5) return { error: "파일은 5개까지 넣을 수 있어요" };
+  if (files.some((f) => !BOOKING_FILE(tripId).test(f))) return { error: "파일을 다시 올려 주세요" };
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const { data: prev } = await c.sb.from("checklist_items").select("files").eq("trip_id", tripId).eq("id", id).eq("kind", "reservation").is("removed_at", null).maybeSingle();
+  if (!prev) return { error: "이 예약을 찾을 수 없어요. 이미 삭제됐을 수 있어요" };
+  const { data, error } = await c.sb.from("checklist_items").update({ title, due_date: due || null, booking_code: code || null, note: note || null, files }).eq("trip_id", tripId).eq("id", id).select("id");
+  if (error || !data?.length) return { error: "저장하지 못했어요. 수정할 권한이 없거나 잠시 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요" };
+  const gone = ((prev.files ?? []) as string[]).filter((f) => !files.includes(f));
+  if (gone.length) await c.sb.storage.from("trip-files").remove(gone);
+  revalidatePath(`/trips/${tripId}/prep`);
+  redirect(`/trips/${tripId}/prep`);
+}
 export async function updatePrepItem(tripId: string, id: string, patch: { done?: boolean; assignee?: string | null; remove?: boolean; title?: string; due?: string | null }): Promise<CreateTripResult> {
   if (!isUuid(tripId) || !isUuid(id)) return PREP_FAIL;
   const t = patch.title === undefined ? undefined : String(patch.title).trim();

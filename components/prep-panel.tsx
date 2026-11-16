@@ -190,7 +190,14 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
           <button type="button" onClick={() => setEdit(true)} disabled={busy} aria-label={`${it.title} 수정`}
             className={"block w-full truncate text-left text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</button>
         ) : <p className={"truncate text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</p>}
-        {it.itemId && <Link href={`/trips/${view.tripId}/places/${it.itemId}`} className="inline-flex items-center gap-0.5 text-tiny text-ink-sub underline underline-offset-2"><Icon name="pin" size={12} />일정 장소</Link>}
+        {it.kind === "reservation" ? (
+          /* 예약 지갑 (0034) : 예약번호와 첨부가 보이고, 누르면 예약 화면 */
+          <Link href={`/trips/${view.tripId}/bookings/${it.id}`} className="inline-flex max-w-full items-center gap-1 text-tiny text-ink-sub">
+            {it.code ? <span className="truncate font-semibold text-ink">{it.code}</span> : <span className="underline underline-offset-2">예약번호, 파일 넣기</span>}
+            {(it.files ?? 0) > 0 && <span className="flex-none">· 파일 {it.files}</span>}
+            <Icon name="right" size={12} className="flex-none" />
+          </Link>
+        ) : it.itemId && <Link href={`/trips/${view.tripId}/places/${it.itemId}`} className="inline-flex items-center gap-0.5 text-tiny text-ink-sub underline underline-offset-2"><Icon name="pin" size={12} />일정 장소</Link>}
       </div>
       {it.due && <span className={"flex-none rounded-full px-2.5 py-1 text-tiny font-semibold " + (it.done ? "bg-surface-soft text-ink" : "bg-warn-soft text-warn-text")}>{md(it.due)}</span>}
       {name && <span title={`담당 ${name}`} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span>}
