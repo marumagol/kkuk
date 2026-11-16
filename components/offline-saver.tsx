@@ -13,7 +13,7 @@ export function OfflineSaver({ tripId, days }: { tripId: string; days: number })
     let last = 0;
     try { last = Number(localStorage.getItem(key)) || 0; } catch {}
     if (!navigator.onLine || !("serviceWorker" in navigator) || Date.now() - last < 30 * 60e3) return;
-    const urls = [`/trips/${tripId}`, ...Array.from({ length: days }, (_, i) => `/trips/${tripId}?day=${i + 1}`), `/trips/${tripId}/prep`];
+    const urls = [`/trips/${tripId}`, ...Array.from({ length: days }, (_, i) => `/trips/${tripId}?day=${i + 1}`), `/trips/${tripId}/prep`, `/trips/${tripId}/expenses`];
     let done = false;
     const onMsg = (e: MessageEvent) => {
       if (e.data?.type !== "pages-saved" || done) return;

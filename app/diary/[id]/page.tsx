@@ -28,7 +28,7 @@ export default async function EntryPage({ params, searchParams }: { params: Prom
     <AppShell bottomGap={false}>
       <div className="flex items-center justify-between px-5 pt-4">
         <Link href="/diary" aria-label="일기 목록으로" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink"><Icon name="back" size={20} /></Link>
-        {e.mine && <Link href={editHref} aria-label="일기 고치기" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink"><Icon name="pencil" size={20} /></Link>}
+        {e.mine && <Link href={editHref} aria-label="일기 수정" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink"><Icon name="pencil" size={20} /></Link>}
       </div>
       {saved && <p role="status" className="mx-5 mt-3 rounded-field bg-ok-soft px-3 py-2 text-tiny font-semibold text-ok-text">일기를 저장했어요</p>}
       <div className="flex flex-col gap-6 px-5 pb-10 pt-3">

@@ -33,7 +33,12 @@ self.addEventListener("fetch", (e) => {
       const hit = await c.match(req);
       if (hit) return hit;
       const res = await fetch(req);
-      if (res.ok) c.put(req, res.clone());
+      if (res.ok) {
+        // 배포마다 새 파일이 쌓이므로 오래된 것부터 지워 400개까지만 둔다
+        await c.put(req, res.clone());
+        const keys = await c.keys();
+        for (const k of keys.slice(0, Math.max(0, keys.length - 400))) await c.delete(k);
+      }
       return res;
     })());
     return;
@@ -49,7 +54,8 @@ self.addEventListener("fetch", (e) => {
       return res;
     } catch {
       const c = await caches.open(PAGES);
-      return (await c.match(req)) || (await c.match(url.pathname)) ||
+      // ?day=3 처럼 주소 뒤가 다르면 같은 화면의 다른 저장본이라도 보여 준다
+      return (await c.match(req)) || (await c.match(url.pathname)) || (await c.match(req, { ignoreSearch: true })) ||
         new Response(OFFLINE_HTML, { headers: { "content-type": "text/html; charset=utf-8" } });
     }
   })());

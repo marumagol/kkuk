@@ -96,7 +96,7 @@ export function BookingForm({ view }: { view: BookingView }) {
         <div className="flex flex-col gap-2">
           <label htmlFor="booking-note" className="text-tiny font-bold text-ink-sub">메모 (선택)</label>
           <textarea id="booking-note" name="note" value={note} maxLength={500} rows={3} disabled={busy} onChange={(e) => setNote(e.target.value)} placeholder="예 : 체크인 15시, 조식 포함"
-            className="rounded-card border border-line-strong bg-surface px-4 py-4 text-[16px] text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+            className="rounded-field border border-line-strong bg-surface px-4 py-3 text-[16px] text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
         </div>
         <section className="flex flex-col gap-2" aria-label="첨부 파일">
           <div className="flex items-end justify-between">

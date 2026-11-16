@@ -2,6 +2,7 @@
 /* 준비 탭 내용 : 체크리스트, 예약 (예산 카드는 2026-11-16 경비 탭으로 옮김, BudgetSection). 저장은 app/actions.ts (RLS 가 권한 검사) */
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { SwipeRow } from "@/components/swipe-row";
 import { useRouter } from "next/navigation";
 import { Button, Field, Icon } from "@/components/kit";
@@ -227,7 +228,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
                   <SwipeRow rounded="" bg="bg-surface" disabled={!canEdit || busy || !!dragId}
                     onDelete={canEdit ? () => onSwipe(it) : undefined}
                     onLongPress={canEdit && items.length > 1 ? () => setDragId(it.id) : undefined}>
-                    <Row it={it} view={view} canEdit={canEdit} busy={busy} run={run} />
+                    <Row it={it} view={view} canEdit={canEdit} busy={busy} run={run} onDelete={() => onSwipe(it)} />
                   </SwipeRow>
                 </li>
               ))}
@@ -267,7 +268,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
   );
 }
 
-function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn }) {
+function Row({ it, view, canEdit, busy, run, onDelete }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; onDelete: () => void }) {
   const router = useRouter();
   // 예약은 [수정] 을 누르면 예약 화면(예약번호, 메모, 첨부 파일)으로 (2026-11-16 마루님 "목록에 뿌리지 말고 수정에서")
   const openEdit = () => (it.kind === "reservation" ? router.push(`/trips/${view.tripId}/bookings/${it.id}`) : setEdit(true));
@@ -317,26 +318,43 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {who?.avatar ? <img src={who.avatar} alt="" title={`담당 ${name}`} width={32} height={32} className="size-8 flex-none rounded-full object-cover" />
         : name && <span title={`담당 ${name}`} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span>}
-      {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} />}
+      {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} onDelete={onDelete} />}
     </div>
   );
 }
 
-/* 줄 오른쪽 ⋯ 메뉴 : 중요 표시(예약), 담당자 지정, 삭제. 수정은 이름을 누르면 (2026-11-16 마루님 "줄에 요소가 많아 복잡해") */
-function RowMenu({ it, view, busy, run }: { it: PrepItem; view: PrepView; busy: boolean; run: RunFn }) {
+/* 줄 오른쪽 ⋮ 메뉴 : 중요 표시(예약), 담당자 지정, 삭제. 수정은 이름을 누르면 (2026-11-16 마루님 "줄에 요소가 많아 복잡해")
+   메뉴는 화면 맨 위(body)에 띄운다 : 목록 카드(overflow-hidden) 안에 두면 아래쪽 줄의 메뉴가 잘린다. 아래 자리가 모자라면 위로 연다
+   삭제는 밀어서 삭제와 같이 5초 [되돌리기] */
+function RowMenu({ it, view, busy, run, onDelete }: { it: PrepItem; view: PrepView; busy: boolean; run: RunFn; onDelete: () => void }) {
   const [open, setOpen] = useState<"menu" | "who" | null>(null);
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; right: number }>({ right: 0 });
+  const btn = useRef<HTMLButtonElement>(null);
   const close = () => setOpen(null);
+  const toggle = () => {
+    if (open) return close();
+    const r = btn.current?.getBoundingClientRect();
+    if (r) setPos(innerHeight - r.bottom < 280 ? { bottom: innerHeight - r.top + 4, right: innerWidth - r.right } : { top: r.bottom + 4, right: innerWidth - r.right });
+    setOpen("menu");
+  };
+  // 스크롤하거나 화면 크기가 바뀌면 닫는다 (메뉴가 줄과 떨어져 떠 있지 않게)
+  useEffect(() => {
+    if (!open) return;
+    const c = () => setOpen(null);
+    addEventListener("scroll", c, { passive: true }); addEventListener("resize", c);
+    return () => { removeEventListener("scroll", c); removeEventListener("resize", c); };
+  }, [open]);
   const item = "press flex min-h-11 w-full items-center gap-2.5 px-4 text-left text-body text-ink";
   return (
     <div className="relative flex-none">
-      <button type="button" aria-label={`${it.title} 메뉴`} aria-haspopup="menu" aria-expanded={!!open} disabled={busy}
-        onClick={() => setOpen(open ? null : "menu")}
+      <button ref={btn} type="button" aria-label={`${it.title} 메뉴`} aria-haspopup="menu" aria-expanded={!!open} disabled={busy}
+        onClick={toggle}
         className="press flex size-9 items-center justify-center rounded-full text-ink-sub"><Icon name="more" size={20} /></button>
-      {open && (
-        <>
+      {open && createPortal(
+        <div onPointerDown={(e) => e.stopPropagation() /* 줄의 길게 누르기로 번지지 않게 */}>
           <div className="fixed inset-0 z-30" onClick={close} aria-hidden />
-          <div role="menu" onKeyDown={(e) => e.key === "Escape" && close()}
-            className="absolute right-0 top-10 z-40 min-w-[168px] overflow-hidden rounded-field bg-surface py-1 shadow-float ring-1 ring-line">
+          <div role="menu" onKeyDown={(e) => e.key === "Escape" && close()} style={pos}
+            className="fixed z-40 max-h-72 min-w-[168px] overflow-y-auto rounded-field bg-surface py-1 shadow-float ring-1 ring-line">
             {open === "menu" ? (
               <>
                 {it.kind === "reservation" && (
@@ -345,7 +363,7 @@ function RowMenu({ it, view, busy, run }: { it: PrepItem; view: PrepView; busy: 
                   </button>
                 )}
                 <button type="button" role="menuitem" autoFocus={it.kind !== "reservation"} className={item} onClick={() => setOpen("who")}><Icon name="user" size={18} className="text-ink-sub" />담당자 지정</button>
-                <button type="button" role="menuitem" className={item + " text-point-text"} onClick={() => { close(); run(() => updatePrepItem(view.tripId, it.id, { remove: true })); }}>
+                <button type="button" role="menuitem" className={item + " text-point-text"} onClick={() => { close(); onDelete(); }}>
                   <Icon name="trash" size={18} />삭제
                 </button>
               </>
@@ -359,7 +377,8 @@ function RowMenu({ it, view, busy, run }: { it: PrepItem; view: PrepView; busy: 
               ))
             )}
           </div>
-        </>
+        </div>,
+        document.body,
       )}
     </div>
   );

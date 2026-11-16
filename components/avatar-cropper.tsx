@@ -28,8 +28,10 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
     const fit = () => setV(Math.min(320, Math.floor(innerWidth - 48)));
     fit(); addEventListener("resize", fit);
     const prev = document.body.style.overflow; document.body.style.overflow = "hidden"; // 뒤 화면이 같이 스크롤되지 않게
-    return () => { removeEventListener("resize", fit); document.body.style.overflow = prev; };
-  }, []);
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); }; // 컴퓨터 : Esc 로 닫기
+    addEventListener("keydown", esc);
+    return () => { removeEventListener("resize", fit); removeEventListener("keydown", esc); document.body.style.overflow = prev; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const base = nat ? V / Math.min(nat.w, nat.h) : 1; // 확대 1 = 틀을 꽉 채우는 크기
   const clamp = (v: { zoom: number; x: number; y: number }) => {

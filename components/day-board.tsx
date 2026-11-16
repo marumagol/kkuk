@@ -56,7 +56,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const fromProps = useCallback(() => [...days.map((d) => d.items), undated], [days, undated]);
   const [cols, setCols] = useState<Item[][]>(fromProps);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [sel, setSel] = useState(jumpUndated && undated.length ? U : initialDay === 0 ? ALL : Math.min(Math.max(initialDay, 1), len) - 1); // ALL = 전체 (2026-11-16 마루님)
+  const [sel, setSel] = useState(jumpUndated && undated.length ? U : initialDay === 0 && days.length > 1 ? ALL : Math.min(Math.max(initialDay, 1), len) - 1); // ALL = 전체 (2026-11-16 마루님)
   const [editing, setEditing] = useState(false);
   const swipe = useRef<{ x: number; y: number } | null>(null); // 일정 좌우로 밀어 날짜 넘기기 (2026-11-16 마루님)
   const [overCol, setOverCol] = useState<number | null>(null); // 끄는 중 날짜 칩 위
@@ -382,7 +382,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
             const dx = t.clientX - s.x, dy = t.clientY - s.y;
             if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // 세로 스크롤과 헷갈리지 않게 가로로 충분히 밀었을 때만
             // 칩 순서 그대로 : 전체 → 1일차 → … → 날짜 미정 (2026-11-16 마루님 "1일차에서 넘기면 전체로")
-            const order = [ALL, ...Array.from({ length: len }, (_, i) => i), ...(showUndated ? [U] : [])];
+            const order = [...(len > 1 ? [ALL] : []), ...Array.from({ length: len }, (_, i) => i), ...(showUndated ? [U] : [])];
             const next = order[order.indexOf(sel) + (dx < 0 ? 1 : -1)];
             if (next !== undefined) pickDay(next);
           }}>

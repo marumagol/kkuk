@@ -236,7 +236,9 @@ export function Field({ label, hint, error, icon, ...rest }: InputHTMLAttributes
     <label className="flex min-w-0 flex-col gap-2">
       <span className="text-sub font-bold text-ink-sub">{label}</span>
       <span className={cx(
-        "flex h-14 items-center gap-2.5 rounded-field border bg-surface px-4",
+        "flex h-14 items-center gap-2.5 rounded-field border bg-surface pl-4",
+        /* 날짜, 시간 칸은 화살표가 칸 안쪽 16px 에 오도록 오른쪽 여백을 입력칸이 가진다 (globals.css 공통 화살표) */
+        rest.type === "date" || rest.type === "time" ? "pr-0" : "pr-4",
         "focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/15",
         error ? "border-point-text" : "border-line-strong",
         rest.disabled && "bg-surface-soft",

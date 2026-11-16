@@ -261,11 +261,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator, input[type="mon
 }
 input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) select {
+  :root:not([data-theme="light"]) select, :root:not([data-theme="light"]) input:is([type="date"], [type="time"], [type="datetime-local"], [type="month"]) {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A6ABB3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 }
-:root[data-theme="dark"] select {
+:root[data-theme="dark"] select, :root[data-theme="dark"] input:is([type="date"], [type="time"], [type="datetime-local"], [type="month"]) {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A6ABB3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
