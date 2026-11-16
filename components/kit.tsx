@@ -241,6 +241,25 @@ export function Field({ label, hint, error, icon, ...rest }: InputHTMLAttributes
   );
 }
 
+/* ---------- 입력 묶음 카드 (여행 만들기, 수정) : 제목 한 줄 + 설명 + 내용 ---------- */
+export function FormCard({ step, title, desc, aside, children }: { step?: number; title?: string; desc?: string; aside?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3.5 rounded-card bg-surface p-4">
+      {title && (
+        <header className="flex items-start gap-2.5">
+          {step && <span className="mt-px flex size-6 flex-none items-center justify-center rounded-full bg-deep text-tiny font-extrabold text-on-deep">{step}</span>}
+          <div className="min-w-0 flex-1">
+            <h2 className="text-body font-bold text-ink">{title}</h2>
+            {desc && <p className="mt-0.5 text-tiny text-ink-sub">{desc}</p>}
+          </div>
+          {aside}
+        </header>
+      )}
+      {children}
+    </section>
+  );
+}
+
 /* ---------- 아래 시트 ---------- */
 export function Sheet({ title, badge, children, footer, inline }: { title: string; badge?: ReactNode; children: ReactNode; footer?: ReactNode; inline?: boolean }) {
   return (

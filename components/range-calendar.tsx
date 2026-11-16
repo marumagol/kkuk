@@ -13,8 +13,8 @@ const WD = ["일", "월", "화", "수", "목", "금", "토"];
 const pad = (n: number) => String(n).padStart(2, "0");
 const ym = (y: number, m: number) => `${y}-${pad(m + 1)}`;
 
-export function RangeCalendar({ start, end, today, maxDays, onChange }: {
-  start?: string; end?: string; today: string; maxDays: number;
+export function RangeCalendar({ start, end, today, maxDays, onChange, bare }: {
+  start?: string; end?: string; today: string; maxDays: number; bare?: boolean;
   onChange: (start?: string, end?: string, error?: string) => void;
 }) {
   const first = start ?? today;
@@ -31,7 +31,7 @@ export function RangeCalendar({ start, end, today, maxDays, onChange }: {
   };
 
   return (
-    <div className="rounded-card bg-surface p-4">
+    <div className={bare ? "" : "rounded-card bg-surface p-4"}>
       <div className="flex items-center justify-between">
         <button type="button" onClick={() => move(-1)} aria-label="이전 달" className="press flex size-11 items-center justify-center rounded-full text-ink">
           <Icon name="back" size={20} />

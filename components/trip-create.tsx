@@ -6,7 +6,7 @@
 import { LeaveGuard } from "@/components/leave-guard";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Field, Icon } from "@/components/kit";
+import { Button, Field, FormCard, Icon } from "@/components/kit";
 import { RangeCalendar } from "@/components/range-calendar";
 import { CityEditor, useCityDraft, type City } from "@/components/city-editor";
 import { MAX_TRIP_DAYS, MAX_TRIP_TITLE } from "@/lib/rules";
@@ -71,30 +71,43 @@ export function TripCreate({ today, searchable }: { today: string; searchable?: 
         <h1 className="text-title-xl font-extrabold text-ink">{STEPS[step]}</h1>
 
         {step === 0 && (
-          <div className="mt-6"><CityEditor cities={cities} onChange={setCities} draft={draft} onError={setError} searchable={searchable} /></div>
+          <div className="mt-5"><CityEditor numbered cities={cities} onChange={setCities} draft={draft} onError={setError} searchable={searchable} /></div>
         )}
 
         {step === 1 && (
-          <div className="mt-6 flex flex-col gap-3">
-            <p className="text-body font-semibold text-ink" aria-live="polite">
-              {start && end ? `${md(start)} (${weekday(start)}) ~ ${md(end)} (${weekday(end)}), ${nights}박 ${nights + 1}일`
-                : start ? `${md(start)} (${weekday(start)}) 부터, 끝 날짜를 골라 주세요` : "시작 날짜를 골라 주세요"}
-            </p>
-            <RangeCalendar start={start} end={end} today={today} maxDays={MAX_TRIP_DAYS}
-              onChange={(s, e, err) => { setStart(s); setEnd(e); setError(err ?? ""); }} />
-            <p className="text-tiny text-ink-sub">당일치기는 같은 날을 두 번 눌러요. 다녀온 여행도 만들 수 있어요</p>
+          <div className="mt-5 flex flex-col gap-3">
+            <FormCard>
+              <div className="grid grid-cols-2 gap-2" aria-live="polite">
+                {[["가는 날", start], ["오는 날", end]].map(([label, d]) => (
+                  <div key={label} className={"flex flex-col gap-0.5 rounded-field px-3 py-2.5 " + (d ? "bg-bg" : "border border-dashed border-line-strong")}>
+                    <span className="text-tiny font-semibold text-ink-sub">{label}</span>
+                    <span className={"text-body font-bold " + (d ? "text-ink" : "text-ink-sub")}>{d ? `${md(d)} (${weekday(d)})` : "골라 주세요"}</span>
+                  </div>
+                ))}
+              </div>
+              {start && end && <p className="-mt-1 text-center text-sub font-bold text-point-text">{nights}박 {nights + 1}일</p>}
+              <div className="border-t border-line pt-1">
+                <RangeCalendar bare start={start} end={end} today={today} maxDays={MAX_TRIP_DAYS}
+                  onChange={(s, e, err) => { setStart(s); setEnd(e); setError(err ?? ""); }} />
+              </div>
+            </FormCard>
+            <p className="px-1 text-tiny text-ink-sub">당일치기는 같은 날을 두 번 눌러요. 다녀온 여행도 만들 수 있어요</p>
           </div>
         )}
 
         {step === 2 && (
-          <div className="mt-6 flex flex-col gap-4">
-            <Field label="여행 이름" name="title" value={title} maxLength={40} autoFocus
-              onChange={(e) => { setTitle(e.target.value); setTitleTouched(true); setError(""); }}
-              hint={`${titleLen}/${MAX_TRIP_TITLE}자`} disabled={saving} />
-            <dl className="flex flex-col gap-2 rounded-card bg-surface p-4 text-sub">
-              <div className="flex gap-3"><dt className="w-10 flex-none text-ink-sub">도시</dt><dd className="min-w-0 text-ink">{cities.map((c) => c.name).join(" → ")}</dd></div>
-              <div className="flex gap-3"><dt className="w-10 flex-none text-ink-sub">기간</dt><dd className="text-ink">{start && end && `${md(start)} ~ ${md(end)}, ${nights}박 ${nights + 1}일`}</dd></div>
-            </dl>
+          <div className="mt-5 flex flex-col gap-3">
+            <FormCard>
+              <Field label="여행 이름" name="title" value={title} maxLength={40} autoFocus
+                onChange={(e) => { setTitle(e.target.value); setTitleTouched(true); setError(""); }}
+                hint={`${titleLen}/${MAX_TRIP_TITLE}자`} disabled={saving} />
+            </FormCard>
+            <FormCard title="이렇게 만들어요" desc="만든 뒤에도 여행 수정에서 바꿀 수 있어요">
+              <dl className="flex flex-col gap-2.5 text-sub">
+                <div className="flex gap-3"><dt className="flex w-12 flex-none items-center gap-1 text-ink-sub"><Icon name="pin" size={14} />도시</dt><dd className="min-w-0 font-semibold text-ink">{cities.map((c) => c.name).join(" → ")}</dd></div>
+                <div className="flex gap-3"><dt className="flex w-12 flex-none items-center gap-1 text-ink-sub"><Icon name="cal" size={14} />기간</dt><dd className="font-semibold text-ink">{start && end && `${md(start)} ~ ${md(end)}, ${nights}박 ${nights + 1}일`}</dd></div>
+              </dl>
+            </FormCard>
           </div>
         )}
 

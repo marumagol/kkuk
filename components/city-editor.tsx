@@ -5,7 +5,7 @@
   입력칸에 적어 두고 다음/저장을 눌러도 빠지지 않게 withPending() 으로 합쳐서 쓴다
 */
 import { useRef, useState } from "react";
-import { Button, Field, Icon } from "@/components/kit";
+import { Button, Field, FormCard, Icon } from "@/components/kit";
 import { COUNTRIES, POPULAR_CITIES, POPULAR_COUNTRIES, MAX_COUNTRY_NAME, countryOf, flagOf, iconUrl } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/client";
 import { MAX_CITIES } from "@/lib/rules";
@@ -82,22 +82,21 @@ function CountryPicker({ draft, onError, disabled }: { draft: ReturnType<typeof 
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sub font-bold text-ink-sub" id="country-label">나라</span>
-      <div role="radiogroup" aria-labelledby="country-label" className="grid grid-cols-4 gap-x-2 gap-y-3">
+    <div className="flex flex-col gap-1">
+      <div role="radiogroup" aria-label="나라" className="grid grid-cols-4 gap-x-1.5 gap-y-2">
         {list.map((code) => {
           const c = countryOf(code)!;
           const on = draft.country === code;
           return (
             <button key={code} type="button" role="radio" aria-checked={on} disabled={disabled} onClick={() => choose(code)}
-              className={"press flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-field px-1 py-2 " + (on ? "bg-surface ring-2 ring-ink" : "")}>
+              className={"press flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-field px-1 py-2 " + (on ? "bg-bg ring-2 ring-ink" : "")}>
               <CountryMark country={code} />
               <span className={"line-clamp-2 text-center text-tiny leading-tight " + (on ? "font-bold text-ink" : "font-semibold text-ink-sub")}>{c.name.replace(/ \((.*)\)/, " $1")}</span>
             </button>
           );
         })}
         <button type="button" role="radio" aria-checked={draft.custom} disabled={disabled} onClick={() => choose("ETC")}
-          className={"press flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-field px-1 py-2 " + (draft.custom ? "bg-surface ring-2 ring-ink" : "")}>
+          className={"press flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-field px-1 py-2 " + (draft.custom ? "bg-bg ring-2 ring-ink" : "")}>
           <CountryMark country="ETC" icon={draft.icon?.preview} />
           <span className={"text-center text-tiny leading-tight " + (draft.custom ? "font-bold text-ink" : "font-semibold text-ink-sub")}>직접 입력</span>
         </button>
@@ -108,7 +107,7 @@ function CountryPicker({ draft, onError, disabled }: { draft: ReturnType<typeof 
       </button>
 
       {draft.custom && (
-        <div className="flex flex-col gap-3 rounded-card bg-surface p-4">
+        <div className="flex flex-col gap-3 rounded-field bg-bg p-3.5">
           <Field label="나라 이름" name="countryName" placeholder="예 : 몰디브" value={draft.countryName} maxLength={MAX_COUNTRY_NAME} disabled={disabled}
             onChange={(e) => { draft.setCountryName(e.target.value); onError(""); }} />
           <div className="flex items-center gap-3">
@@ -132,8 +131,8 @@ function CountryPicker({ draft, onError, disabled }: { draft: ReturnType<typeof 
   );
 }
 
-export function CityEditor({ cities, onChange, draft, onError, disabled, searchable }: {
-  cities: City[]; onChange: (c: City[]) => void; draft: ReturnType<typeof useCityDraft>; onError: (e: string) => void; disabled?: boolean; searchable?: boolean;
+export function CityEditor({ cities, onChange, draft, onError, disabled, searchable, numbered }: {
+  cities: City[]; onChange: (c: City[]) => void; draft: ReturnType<typeof useCityDraft>; onError: (e: string) => void; disabled?: boolean; searchable?: boolean; numbered?: boolean;
 }) {
   // 장소 검색으로 고른 도시 : 구글이 알려 준 나라가 목록에 있으면 그 나라, 없으면 지금 고른 나라
   const addPicked = (d: Picked) => {
@@ -159,11 +158,16 @@ export function CityEditor({ cities, onChange, draft, onError, disabled, searcha
     draft.clear(); onError("");
   };
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
+      <FormCard step={numbered ? 1 : undefined} title="나라" desc="고른 나라의 인기 도시가 아래에 떠요">
+        <CountryPicker draft={draft} onError={onError} disabled={disabled} />
+      </FormCard>
+      <FormCard step={numbered ? 2 : undefined} title="도시" desc="여러 개 넣으면 넣은 순서대로 여행 경로가 돼요"
+        aside={cities.length > 0 ? <span className="flex-none text-tiny font-bold text-point-text">{cities.length}곳</span> : undefined}>
       {cities.length > 0 && (
-        <ol className="flex flex-wrap gap-2" aria-label="넣은 도시">
+        <ol className="flex flex-wrap gap-2 border-b border-line pb-3.5" aria-label="넣은 도시">
           {cities.map((c, i) => (
-            <li key={c.name} className="flex h-11 items-center gap-1.5 rounded-full bg-surface pl-2.5 pr-1 text-sub font-semibold text-ink">
+            <li key={c.name} className="flex h-11 items-center gap-1.5 rounded-full bg-bg pl-2.5 pr-1 text-sub font-semibold text-ink">
               <CountryMark country={c.country} icon={c.icon && iconUrl(c.icon)} size={24} />
               <span className="text-ink-sub">{i + 1}</span> {c.name}
               <span className="text-tiny text-ink-sub">{c.countryName ?? countryOf(c.country)?.name.replace(/ \(.*\)/, "")}</span>
@@ -175,7 +179,6 @@ export function CityEditor({ cities, onChange, draft, onError, disabled, searcha
           ))}
         </ol>
       )}
-      <CountryPicker draft={draft} onError={onError} disabled={disabled} />
       {/* 고른 나라의 인기 도시 : 누르면 넣고, 다시 누르면 뺀다 */}
       {(POPULAR_CITIES[draft.country] ?? []).length > 0 && (
         <div className="flex flex-col gap-2">
@@ -191,7 +194,7 @@ export function CityEditor({ cities, onChange, draft, onError, disabled, searcha
                     if (cities.length >= MAX_CITIES) return onError(`도시는 ${MAX_CITIES}개까지 넣을 수 있어요`);
                     onChange([...cities, { name, country: draft.country }]);
                   }}
-                  className={"press inline-flex h-11 items-center gap-1 rounded-full px-4 text-sub font-semibold " + (on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
+                  className={"press inline-flex h-11 items-center gap-1 rounded-full px-4 text-sub font-semibold " + (on ? "bg-btn text-on-btn" : "bg-bg text-ink")}>
                   {on ? <Icon name="x" size={14} /> : <Icon name="plus" size={14} />}{name}
                 </button>
               );
@@ -209,7 +212,8 @@ export function CityEditor({ cities, onChange, draft, onError, disabled, searcha
         <Button type="button" variant="secondary" size="lg" onClick={add} disabled={!draft.pending || disabled}>추가</Button>
       </div>
       {searchable && <PlaceSuggest query={draft.name} kind="city" onPick={addPicked} disabled={disabled} />}
-      <p className="text-tiny text-ink-sub">도시를 여러 개 넣을 수 있어요. 넣은 순서대로 여행 경로가 돼요. 여행 시간은 첫 도시의 나라에 맞춰요</p>
+      </FormCard>
+      <p className="px-1 text-tiny text-ink-sub">여행 시간은 첫 도시의 나라에 맞춰요</p>
     </div>
   );
 }

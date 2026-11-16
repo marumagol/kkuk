@@ -7,7 +7,7 @@
 */
 import { LeaveGuard } from "@/components/leave-guard";
 import { useState, useTransition } from "react";
-import { Button, Field, Icon } from "@/components/kit";
+import { Button, Field, FormCard, Icon } from "@/components/kit";
 import { AlertDialog } from "@/components/gate";
 import { RangeCalendar } from "@/components/range-calendar";
 import { CityEditor, useCityDraft, type City } from "@/components/city-editor";
@@ -67,31 +67,31 @@ export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) 
 
   return (
     <LeaveGuard>
-      <div className="flex flex-1 flex-col gap-8 px-5 pt-6">
-        <Field label="여행 이름" name="title" value={title} maxLength={40} disabled={busy}
-          onChange={(e) => { setTitle(e.target.value); setError(""); }} hint={`${titleLen}/${MAX_TRIP_TITLE}자`} />
+      <div className="flex flex-1 flex-col gap-3 px-5 pt-5">
+        <FormCard>
+          <Field label="여행 이름" name="title" value={title} maxLength={40} disabled={busy}
+            onChange={(e) => { setTitle(e.target.value); setError(""); }} hint={`${titleLen}/${MAX_TRIP_TITLE}자`} />
+        </FormCard>
 
-        <section className="flex flex-col gap-3" aria-labelledby="edit-cities">
-          <h2 id="edit-cities" className="text-title font-bold text-ink">도시</h2>
-          <CityEditor cities={cities} onChange={setCities} draft={draft} onError={setError} disabled={busy} searchable={trip.searchable} />
-        </section>
+        <CityEditor cities={cities} onChange={setCities} draft={draft} onError={setError} disabled={busy} searchable={trip.searchable} />
 
-        <section className="flex flex-col gap-3" aria-labelledby="edit-dates">
-          <h2 id="edit-dates" className="text-title font-bold text-ink">기간</h2>
+        <FormCard title="기간">
           <p className="text-body font-semibold text-ink" aria-live="polite">
             {start && end ? `${md(start)} (${weekday(start)}) ~ ${md(end)} (${weekday(end)}), ${nights}박 ${nights + 1}일`
               : start ? `${md(start)} (${weekday(start)}) 부터, 끝 날짜를 골라 주세요` : "시작 날짜를 골라 주세요"}
           </p>
-          <RangeCalendar start={start} end={end} today={today} maxDays={MAX_TRIP_DAYS}
-            onChange={(s, e, err) => { setStart(s); setEnd(e); setError(err ?? ""); }} />
+          <div className="border-t border-line pt-1">
+            <RangeCalendar bare start={start} end={end} today={today} maxDays={MAX_TRIP_DAYS}
+              onChange={(s, e, err) => { setStart(s); setEnd(e); setError(err ?? ""); }} />
+          </div>
           {moving > 0 && <p className="rounded-field bg-warn-soft px-3 py-2 text-tiny font-semibold text-warn-text">기간이 줄어서 장소 {moving}개가 날짜 미정으로 옮겨져요</p>}
           {shifted && <p className="text-tiny text-ink-sub">시작 날짜를 옮기면 장소는 날짜가 아니라 일차를 따라가요. 1일차 장소는 새 1일차로 가요</p>}
-        </section>
+        </FormCard>
 
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
 
         {trip.role === "owner" && (
-          <section className="flex flex-col gap-2 border-t border-line pt-6">
+          <section className="mt-5 flex flex-col gap-2 border-t border-line pt-6">
             <div className="flex justify-center"><button type="button" onClick={remove} disabled={busy} className="press inline-flex h-10 items-center gap-1 rounded-full px-3 text-sub font-semibold text-point-text"><Icon name="trash" size={16} />여행 삭제</button></div>
             <p className="text-center text-tiny text-ink-sub">여행 삭제는 여행 주인만 할 수 있어요</p>
           </section>
