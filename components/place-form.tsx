@@ -154,9 +154,19 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             {fields.map((f) => (
               <label key={f.key} className={"flex min-w-0 flex-col gap-1.5 " + (f.half ? "" : "col-span-2")}>
                 <span className="text-tiny font-bold text-ink-sub">{f.label}</span>
-                <input type={f.type ?? "text"} value={extra[f.key] ?? ""} placeholder={f.placeholder} maxLength={f.max ?? 60} disabled={busy}
-                  onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [f.key]: v })); setError(""); }}
-                  className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                {f.unit ? (
+                  // 숫자만 적으면 단위(명)가 붙어 저장된다 (2026-11-16 마루님)
+                  <span className="relative flex">
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={(extra[f.key] ?? "").replace(/\D/g, "")} placeholder={f.placeholder} maxLength={3} disabled={busy}
+                      onChange={(e) => { const n = e.target.value.replace(/\D/g, "").slice(0, 3); setExtra((x) => ({ ...x, [f.key]: n ? `${Number(n)}${f.unit}` : "" })); setError(""); }}
+                      className="h-12 w-full min-w-0 rounded-field border border-line-strong bg-surface pl-3 pr-9 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                    <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-body text-ink-sub">{f.unit}</span>
+                  </span>
+                ) : (
+                  <input type={f.type ?? "text"} value={extra[f.key] ?? ""} placeholder={f.placeholder} maxLength={f.max ?? 60} disabled={busy}
+                    onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [f.key]: v })); setError(""); }}
+                    className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+                )}
               </label>
             ))}
           </div>

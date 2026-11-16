@@ -1,12 +1,12 @@
 /*
   분류별 맞춤 칸 (2026-11-15 여행 메뉴 개편, migration 0030 itinerary_items.details)
-  - 이동 : 수단(비행기/기차/버스/배/차)을 고르면 그에 맞는 칸. 비행기는 편명, 출발/도착 공항, 도착 시간, 좌석, 예약번호
+  - 이동 : 수단(비행기/기차/버스/배/차)을 고르면 그에 맞는 칸. 비행기는 편명, 출발/도착 공항, 출발/도착 시간 (출발 시간 2026-11-16), 좌석, 예약번호
   - 숙소 : 예약번호, 체크인/체크아웃 시간, 예약한 곳, 연락처
   - 식사 : 예약번호, 인원, 먹을 메뉴 / 관광 : 예약·입장권 번호, 운영 시간 / 쇼핑 : 살 것
   저장할 때는 고른 분류(와 수단)의 칸만 남긴다. 공개 공유 링크에는 나가지 않는다
 */
 export type Details = Record<string, string>;
-export type FieldDef = { key: string; label: string; placeholder?: string; type?: "text" | "time"; half?: boolean; max?: number };
+export type FieldDef = { key: string; label: string; placeholder?: string; type?: "text" | "time"; half?: boolean; max?: number; unit?: string /* 숫자만 받고 뒤에 단위를 붙인다 (예 : 명) */ };
 
 export const MODES = [
   { code: "flight", label: "비행기" }, { code: "train", label: "기차" }, { code: "bus", label: "버스" },
@@ -16,6 +16,7 @@ export const MODES = [
 const COMMON_MOVE: FieldDef[] = [
   { key: "from", label: "출발", placeholder: "예 : 인천", half: true },
   { key: "to", label: "도착", placeholder: "예 : 신치토세", half: true },
+  { key: "depart", label: "출발 시간", type: "time", half: true },
   { key: "arrive", label: "도착 시간", type: "time", half: true },
 ];
 
@@ -27,8 +28,9 @@ export function fieldsOf(category: string, mode?: string): FieldDef[] {
         { key: "seat", label: "좌석", placeholder: "예 : 32A", half: true, max: 20 },
         { key: "from", label: "출발 공항", placeholder: "예 : 인천", half: true },
         { key: "to", label: "도착 공항", placeholder: "예 : 신치토세", half: true },
+        { key: "depart", label: "출발 시간", type: "time", half: true },
         { key: "arrive", label: "도착 시간", type: "time", half: true },
-        { key: "booking", label: "예약번호", placeholder: "예 : ABC123", half: true, max: 40 },
+        { key: "booking", label: "예약번호", placeholder: "예 : ABC123", max: 40 },
       ];
       if (mode === "train") return [
         { key: "code", label: "열차", placeholder: "예 : 쾌속 에어포트 150호", max: 40 },
@@ -46,7 +48,7 @@ export function fieldsOf(category: string, mode?: string): FieldDef[] {
     ];
     case "food": return [
       { key: "booking", label: "예약번호", half: true, max: 40 },
-      { key: "people", label: "인원", placeholder: "예 : 2명", half: true, max: 10 },
+      { key: "people", label: "인원", placeholder: "예 : 2", half: true, max: 10, unit: "명" },
       { key: "menu", label: "먹을 메뉴", placeholder: "예 : 징기스칸, 수프카레", max: 60 },
     ];
     case "sight": return [
@@ -86,7 +88,7 @@ export function detailLine(category: string, d?: Details | null): string {
   const parts: string[] = [];
   if (category === "transport") {
     const mode = MODES.find((m) => m.code === d.mode)?.label;
-    parts.push([mode, d.code].filter(Boolean).join(" "), route, d.arrive ? `${d.arrive} 도착` : "", d.seat ? `좌석 ${d.seat}` : "", book);
+    parts.push([mode, d.code].filter(Boolean).join(" "), route, d.depart && d.arrive ? `${d.depart}~${d.arrive}` : d.depart ? `${d.depart} 출발` : d.arrive ? `${d.arrive} 도착` : "", d.seat ? `좌석 ${d.seat}` : "", book);
   } else if (category === "stay") {
     parts.push(d.checkin ? `체크인 ${d.checkin}` : "", d.checkout ? `체크아웃 ${d.checkout}` : "", book);
   } else if (category === "food") {
