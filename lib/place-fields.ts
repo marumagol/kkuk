@@ -110,7 +110,7 @@ export function cleanDetails(category: string, raw: unknown): Details | null {
   return out;
 }
 
-/* 일정 카드에 보이는 한 줄. 예 : "비행기 KE765 · 인천 → 신치토세 · 예약 ABC123" */
+/* 일정 카드에 보이는 한 줄. 예 : "비행기 KE765 · 인천 → 신치토세 · 아고다 예약" */
 /*
   이동의 보이는 이름 (2026-11-16 마루님 "인천공항이랑 신치토세가 안 나와") : 출발지와 도착지가 있으면 "출발 → 도착".
   이름을 직접 다르게 적은 경우(예 : 공항 리무진 버스 → 스스키노)만 그 이름. 예전 데이터는 다시 저장하지 않아도 된다
@@ -125,7 +125,7 @@ export function moveTitle(category: string, title: string, d?: Details | null): 
 export function detailLine(category: string, d?: Details | null, skipRoute = false): string {
   if (!d) return "";
   const route = !skipRoute && (d.from || d.to) ? `${d.from ?? ""} → ${d.to ?? ""}`.trim() : "";
-  const book = d.booking ? `예약 ${d.booking}` : "";
+  const book = d.site ? `${d.site} 예약` : ""; // 목록에는 예약번호 대신 예약한 곳 (2026-11-16 마루님). 없으면 비움
   const parts: string[] = [];
   if (category === "transport") {
     const mode = MODES.find((m) => m.code === d.mode)?.label;
