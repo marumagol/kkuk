@@ -5,7 +5,8 @@
   - [+ 경비 추가] 를 누르면 아래에서 입력 창이 올라온다. 금액이 맨 위, 내용은 빠른 칩, 날짜는 오늘(여행 전이면 1일차)
   - [장소에서 가져오기] : 장소에 적은 예상 비용을 골라 미리 채운다. 한 장소는 한 번만 (0036 item_id)
   - 목록은 날짜별로 묶고, 날짜마다 합계. 줄을 누르면 수정
-  - 통화가 다르면 따로 계산 (환율로 합치지 않음). 나누어떨어지지 않는 나머지는 낸 사람이 떠안음 (lib/settle.ts)
+  - 통화가 섞이면 (2026-11-17 마루님 "원화로 묶기") 여행 환율(0040)로 원화 하나로 바꿔 정산하고, 맨 위에 총 ○○원 + 통화별 금액 + 환율 기준.
+    환율을 모르는 통화만 따로 계산. 나누어떨어지지 않는 나머지는 낸 사람이 떠안음 (lib/settle.ts)
 */
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button, Icon } from "@/components/kit";
@@ -14,7 +15,8 @@ import { AlertDialog } from "@/components/gate";
 import { saveExpense, removeExpense } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 import { decimalsOf, formatMoney, curName, currencyOptions, ALL_CURRENCIES, keepScroll } from "@/lib/countries";
-import { balances, settle } from "@/lib/settle";
+import { balances, settle, toKrw, isMixed } from "@/lib/settle";
+import { RateDialog, rateText } from "@/components/rate-dialog";
 import { md, weekday, todayKST } from "@/lib/mock";
 import type { Expense, ExpensesView } from "@/lib/trips";
 
@@ -25,8 +27,12 @@ export function ExpensesPanel({ view, budget, openAdd }: { view: ExpensesView; b
   const canEdit = view.role !== "viewer";
   const person = (id: string) => view.people.find((p) => p.userId === id);
   const nameOf = (id: string) => (id === view.me ? "나" : person(id)?.name ?? "나간 사람");
-  const transfers = useMemo(() => settle(view.expenses), [view.expenses]);
-  const mine = useMemo(() => balances(view.expenses).filter((b) => b.userId === view.me && (b.paid || b.share)), [view.expenses, view.me]);
+  const mixed = isMixed(view.expenses);
+  // 통화가 섞이면 환율로 원화 하나로 바꿔서 정산 (모두 같은 여행 환율을 쓰니 사람마다 금액이 같다)
+  const base = useMemo(() => (mixed ? toKrw(view.expenses, view.rates, decimalsOf) : view.expenses), [mixed, view.expenses, view.rates]);
+  const transfers = useMemo(() => settle(base), [base]);
+  const mine = useMemo(() => balances(base).filter((b) => b.userId === view.me && (b.paid || b.share)), [base, view.me]);
+  const [rateCur, setRateCur] = useState<string | null>(null);
   const active = view.people.filter((p) => p.active);
   const [sheet, setSheet] = useState<Draft | null>(openAdd && view.role !== "viewer" ? {} : null); // 홈 [+ 경비] 로 오면 바로 입력 창
   const [picking, setPicking] = useState(false);
@@ -90,6 +96,8 @@ export function ExpensesPanel({ view, budget, openAdd }: { view: ExpensesView; b
         </div>
       ) : <p className="text-tiny text-ink-sub">보기만 권한이라 경비를 적을 수 없어요</p>}
 
+      {mixed && <TotalCard view={view} onRate={setRateCur} />}
+
       {/* 날짜별 목록 */}
       {groups.length === 0 ? (
         <p className="rounded-card bg-surface px-4 py-6 text-center text-sub text-ink-sub">아직 적은 경비가 없어요</p>
@@ -122,8 +130,11 @@ export function ExpensesPanel({ view, budget, openAdd }: { view: ExpensesView; b
           </ul>
         </section>
       ))}
-      {view.expenses.length > 0 && active.length > 1 && <p className="px-1 text-tiny text-ink-sub">통화가 다르면 따로 계산해요. 나누어떨어지지 않는 나머지는 낸 사람이 떠안아요</p>}
+      {view.expenses.length > 0 && active.length > 1 && <p className="px-1 text-tiny text-ink-sub">{mixed ? "여러 통화는 환율로 원화로 바꿔 정산해요. " : ""}나누어떨어지지 않는 나머지는 낸 사람이 떠안아요</p>}
       </Part>
+
+      {rateCur && <RateDialog tripId={view.tripId} cur={rateCur} current={view.rates[rateCur]?.krw ?? null} auto={view.rates[rateCur]?.auto ?? null}
+        custom={!!view.rates[rateCur]?.custom} canEdit={canEdit} onClose={() => setRateCur(null)} />}
 
       {picking && (
         <Modal title="장소에서 가져오기" onClose={() => setPicking(false)}>
@@ -319,5 +330,54 @@ function ExpenseSheet({ view, draft, onClose }: { view: ExpensesView; draft: Dra
       {asking && <AlertDialog title="경비를 삭제할까요?" desc={`"${title}"이(가) 목록과 정산에서 빠져요`} confirmLabel="삭제"
         confirm={remove} onClose={() => setAsking(false)} />}
     </Modal>
+  );
+}
+
+/*
+  총 경비 (통화가 섞였을 때) : 크게 "약 ○○원", 아래에 통화별 금액, 환율 기준과 [환율 수정]
+  환율을 모르는 통화는 원화 합에서 빼고 "환율 없음" 으로 따로 보여 준다
+*/
+function TotalCard({ view, onRate }: { view: ExpensesView; onRate: (cur: string) => void }) {
+  const by = new Map<string, number>();
+  for (const e of view.expenses) by.set(e.currency, (by.get(e.currency) ?? 0) + e.amount);
+  const list = [...by].sort(([a], [b]) => (a === "KRW" ? 1 : b === "KRW" ? -1 : 0));
+  let krw = 0;
+  const unknown: string[] = [];
+  for (const [c, n] of list) {
+    if (c === "KRW") krw += n;
+    else if (view.rates[c]) krw += Math.round((n / 10 ** decimalsOf(c)) * view.rates[c].krw);
+    else unknown.push(c);
+  }
+  const foreign = list.map(([c]) => c).filter((c) => c !== "KRW");
+  return (
+    <section className="flex flex-col gap-3 rounded-card bg-surface p-5" aria-label="총 경비">
+      <div>
+        <p className="text-sub font-semibold text-ink-sub">총 경비</p>
+        <p className="text-number font-extrabold tabular-nums text-ink">약 {formatMoney(krw, "KRW")}</p>
+        {unknown.length > 0 && <p className="text-tiny text-point-text">{unknown.map(curName).join(", ")}는 환율을 몰라 빼고 더했어요</p>}
+      </div>
+      <ul className="flex flex-col gap-1 border-t border-line pt-3 text-sub">
+        {list.map(([c, n]) => (
+          <li key={c} className="flex items-center justify-between gap-2">
+            <span className="text-ink-sub">{curName(c)}</span>
+            <span className="font-bold tabular-nums text-ink">{formatMoney(n, c)}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-col gap-1.5 border-t border-line pt-3">
+        <p className="text-tiny font-semibold text-ink-sub">환율 기준</p>
+        {foreign.map((c) => {
+          const r = view.rates[c];
+          return (
+            <div key={c} className="flex items-center justify-between gap-2">
+              <span className="min-w-0 flex-1 text-tiny text-ink-sub">{r ? `1 ${c} = ${rateText(r.krw)}원${r.custom ? " (직접 정한 환율)" : " (오늘 환율)"}` : `${c} 환율을 받아 오지 못했어요`}</span>
+              <button type="button" onClick={() => onRate(c)} className="press inline-flex h-8 flex-none items-center gap-1 rounded-full bg-surface-sub px-3 text-tiny font-semibold text-ink">
+                <Icon name="pencil" size={13} />환율 수정
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

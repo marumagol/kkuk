@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { Button, Field, Icon } from "@/components/kit";
 import { addPrepItem, addPrepDefaults, updatePrepItem, saveBudget, reorderPrep } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
+import { RateDialog, rateText } from "@/components/rate-dialog";
 import { decimalsOf, formatMoney } from "@/lib/countries";
 import { md } from "@/lib/mock";
 import type { PrepView, PrepItem } from "@/lib/trips";
@@ -82,8 +83,8 @@ function PrepSummary({ view }: { view: PrepView }) {
   );
 }
 
-/* 경비 탭 맨 위 예산 카드 (2026-11-16 마루님 "예산 섹션이 경비로"). actual : 예산 통화로 적은 실제 경비 합 */
-export function BudgetSection({ view, actual }: { view: PrepView; actual: number }) {
+/* 경비 탭 맨 위 예산 카드 (2026-11-16 마루님 "예산 섹션이 경비로"). actual : 실제 경비 합 (예산 통화, 다른 통화는 환율로 바꿔서). mixed : 다른 통화 경비가 섞였는지 */
+export function BudgetSection({ view, actual, mixed = false }: { view: PrepView; actual: number; mixed?: boolean }) {
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
   const run: RunFn = (fn) => start(async () => {
@@ -93,7 +94,7 @@ export function BudgetSection({ view, actual }: { view: PrepView; actual: number
   });
   return (
     <div className="flex flex-col gap-2">
-      <Budget view={view} canEdit={view.role !== "viewer"} busy={busy} run={run} actual={actual} />
+      <Budget view={view} canEdit={view.role !== "viewer"} busy={busy} run={run} actual={actual} mixed={mixed} />
       {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
     </div>
   );
@@ -104,41 +105,7 @@ const DEFAULT_ITEMS = ["여권", "충전기", "보조배터리", "상비약", "�
 
 type RunFn = (fn: () => Promise<{ error?: string } | undefined | void>) => void;
 
-/* 환율 수정 창 : 1 외화 = 몇 원. [기본 환율로] 는 직접 정한 값을 지운다 */
-function RateDialog({ cur, current, auto, custom, onSave, onClose }: {
-  cur: string; current: number | null; auto: number | null; custom: boolean; onSave: (v: number | null) => void; onClose: () => void;
-}) {
-  const [text, setText] = useState(current ? String(current < 10 ? Number(current.toFixed(4)) : Math.round(current * 100) / 100) : "");
-  const [err, setErr] = useState("");
-  const submit = () => {
-    const v = Number(text.replace(/,/g, ""));
-    if (!(v > 0) || v > 1_000_000) return setErr("0보다 큰 숫자로 적어 주세요");
-    onSave(v);
-  };
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-labelledby="rate-title" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && onClose()}
-        className="w-full max-w-[420px] rounded-t-[24px] bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-[24px]">
-        <h2 id="rate-title" className="text-title font-extrabold text-ink">환율 수정</h2>
-        <p className="mt-1 text-sub text-ink-sub">환전한 환율로 맞추면 원화 금액이 더 정확해져요. 이 기기에만 저장돼요</p>
-        <form className="mt-4 flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); submit(); }}>
-          <Field label={`1 ${cur} = 원`} name="rate" inputMode="decimal" autoFocus value={text} placeholder="예 : 9.12"
-            onChange={(e) => { setText(e.target.value.replace(/[^\d.,]/g, "")); setErr(""); }}
-            hint={auto ? `오늘 받아 온 환율 : 1 ${cur} = ${auto < 10 ? auto.toFixed(2) : Math.round(auto).toLocaleString("ko-KR")}원` : "오늘 환율을 받아 오지 못했어요"} error={err || undefined} />
-          <Button type="submit" full disabled={!text}>저장</Button>
-          <div className="flex justify-between">
-            {custom && auto ? <button type="button" onClick={() => onSave(null)} className="press h-10 px-1 text-sub font-semibold text-ink-sub underline underline-offset-2">기본 환율로 되돌리기</button> : <span />}
-            <button type="button" onClick={onClose} className="press h-10 px-2 text-sub font-semibold text-ink-sub">취소</button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-function Budget({ view, canEdit, busy, run, actual }: { view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; actual: number }) {
+function Budget({ view, canEdit, busy, run, actual, mixed }: { view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; actual: number; mixed: boolean }) {
   const cur = view.budget?.currency ?? view.currency;
   const d = decimalsOf(cur);
   const [edit, setEdit] = useState(false);
@@ -146,22 +113,9 @@ function Budget({ view, canEdit, busy, run, actual }: { view: PrepView; canEdit:
   const total = view.budget?.total ?? 0;
   /* [원화로 보기] (2026-11-16 마루님) : 누르면 카드의 외화 금액이 모두 원화로 바뀐다. 다시 누르면 원래 통화 */
   const [inKrw, setInKrw] = useState(false);
-  /*
-    환율 직접 고치기 (2026-11-17 마루님 "환율 수정 버튼 → 모달") : 이 기기에만 저장(localStorage, 여행+통화별).
-    직접 정한 환율이 있으면 그것을, 없으면 받아 온 환율(view.krw)을 쓴다. 받아 오지 못해도 직접 넣으면 원화로 볼 수 있다
-  */
-  const fxKey = `kkuk:fx:${view.tripId}:${cur}`;
-  const [myRate, setMyRate] = useState<number | null>(null);
+  /* 환율 (2026-11-17 마루님 "원화로 묶기") : 여행에 정한 환율(0040 trip_fx)을 함께하는 사람 모두 같이 쓴다. 없으면 그날 받아 온 환율 */
   const [rateOpen, setRateOpen] = useState(false);
-  useEffect(() => {
-    try { const v = Number(localStorage.getItem(fxKey)); setMyRate(v > 0 ? v : null); } catch { setMyRate(null); }
-  }, [fxKey]);
-  const saveRate = (v: number | null) => {
-    try { if (v) localStorage.setItem(fxKey, String(v)); else localStorage.removeItem(fxKey); } catch { /* 저장이 막혀도 이번 화면에서는 쓴다 */ }
-    setMyRate(v); setRateOpen(false); if (v || view.krw) setInKrw(true);
-  };
-  const rate = cur === "KRW" ? null : myRate ?? view.krw;
-  const rateText = (v: number) => (v < 10 ? v.toFixed(2) : Math.round(v).toLocaleString("ko-KR"));
+  const rate = cur === "KRW" ? null : view.krw;
   const money = (minor: number) => (inKrw && rate ? `₩${Math.round((minor / 10 ** d) * rate).toLocaleString("ko-KR")}` : formatMoney(minor, cur));
   const editBtn = canEdit && (
     <button type="button" onClick={() => setEdit(true)} className="press inline-flex h-8 items-center rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">{view.budget ? "예산 수정" : "예산 정하기"}</button>
@@ -210,14 +164,14 @@ function Budget({ view, canEdit, busy, run, actual }: { view: PrepView; canEdit:
         {view.spent > 0 && <div className="flex items-center justify-between gap-2"><dt className="text-on-deep-sub">예상 경비 (장소에 적은 금액)</dt><dd className="font-semibold tabular-nums text-on-deep-sub">{money(view.spent)}</dd></div>}
       </dl>
       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-        <p className="min-w-0 flex-1 text-tiny text-on-deep-sub">{cur} 로 적은 경비만 더해요{inKrw && rate ? `. 1 ${cur} = ${rateText(rate)}원${myRate ? " (직접 정한 환율)" : ""} 기준 참고용이에요` : ""}</p>
-        {cur !== "KRW" && (inKrw || !rate) && (
+        <p className="min-w-0 flex-1 text-tiny text-on-deep-sub">{mixed ? "다른 통화 경비는 환율로 바꿔 더해요" : `${cur} 로 적은 경비를 더해요`}{(inKrw || mixed) && rate ? `. 1 ${cur} = ${rateText(rate)}원${view.krwCustom ? " (직접 정한 환율)" : ""} 기준` : ""}</p>
+        {cur !== "KRW" && (inKrw || mixed || !rate) && (
           <button type="button" onClick={() => setRateOpen(true)} className="press inline-flex h-8 flex-none items-center gap-1 rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">
             <Icon name="pencil" size={13} />환율 수정
           </button>
         )}
       </div>
-      {rateOpen && <RateDialog cur={cur} current={rate} auto={view.krw} custom={!!myRate} onSave={saveRate} onClose={() => setRateOpen(false)} />}
+      {rateOpen && <RateDialog tripId={view.tripId} cur={cur} current={rate} auto={view.krwAuto} custom={view.krwCustom} canEdit={canEdit} onClose={() => setRateOpen(false)} />}
     </section>
   );
 }

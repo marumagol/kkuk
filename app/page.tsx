@@ -16,8 +16,8 @@ import { getViewer, isIn, initialOf, avatarOf } from "@/lib/viewer";
 import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, md, type Trip, type Item } from "@/lib/mock";
 import { loadTrips, loadTrip, loadStamps, loadUnreadCount, loadPrep, loadExpenses, loadTripBook, type StampCard } from "@/lib/trips";
 import { StampClaim } from "@/components/stamp-claim";
-import { settle } from "@/lib/settle";
-import { formatMoney, flagOf } from "@/lib/countries";
+import { settle, toKrw, isMixed } from "@/lib/settle";
+import { formatMoney, flagOf, decimalsOf } from "@/lib/countries";
 import { mapsDirUrl, canMap } from "@/lib/maps-link";
 import { nextGoal, goalValue } from "@/lib/stamp-goals";
 import type { Viewer } from "@/lib/viewer";
@@ -217,7 +217,7 @@ async function After({ v, trip }: { v: Viewer; trip: Trip }) {
   const [book, exp] = v.kind === "user" ? await Promise.all([loadTripBook(v, trip.id), loadExpenses(v, trip.id)]) : [null, null];
   const got = book?.stamps ?? [];
   const me = exp?.me;
-  const mine = exp ? settle(exp.expenses).filter((t) => t.from === me || t.to === me) : [];
+  const mine = exp ? settle(isMixed(exp.expenses) ? toKrw(exp.expenses, exp.rates, decimalsOf) : exp.expenses).filter((t) => t.from === me || t.to === me) : [];
   const nameOf = (id: string) => exp?.people.find((p) => p.userId === id)?.name ?? "함께한 사람";
   return (
     <>

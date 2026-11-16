@@ -152,6 +152,30 @@ export const loadStampCities = cache(async (): Promise<string[] | null> => {
 });
 
 /*
+  여행 환율 (2026-11-17 마루님 "여러 나라 경비를 원화 하나로", migration 0040 trip_fx) : 통화마다 1 단위 = 몇 원
+  여행에 정한 환율(함께하는 사람 모두 같음)이 먼저, 없으면 그날 받아 온 환율. 둘 다 없으면 빠진다 (화면에서 통화별 따로)
+  0040 적용 전에도 깨지지 않게 표 읽기 오류는 무시
+*/
+export type Rate = { krw: number; custom: boolean; auto: number | null };
+async function tripRates(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, tripId: string, currencies: string[]): Promise<Record<string, Rate>> {
+  const list = [...new Set(currencies)].filter((c) => c !== "KRW" && /^[A-Z]{3}$/.test(c));
+  if (!list.length) return {};
+  const { krwPer } = await import("@/lib/fx");
+  const [{ data: mine }, autos] = await Promise.all([
+    sb.from("trip_fx").select("currency, krw_per").eq("trip_id", tripId),
+    Promise.all(list.map((c) => krwPer(c))),
+  ]);
+  const set = new Map(((mine ?? []) as { currency: string; krw_per: number | string }[]).map((x) => [x.currency, Number(x.krw_per)]));
+  const out: Record<string, Rate> = {};
+  list.forEach((c, i) => {
+    const custom = set.get(c);
+    const krw = custom && custom > 0 ? custom : autos[i];
+    if (krw) out[c] = { krw, custom: !!(custom && custom > 0), auto: autos[i] };
+  });
+  return out;
+}
+
+/*
   여행 통화 (2026-11-17 마루님 추천안) : 도시 통화(방문 순서)와 날짜별 기본 통화
   날짜별 : 그날 첫 위치 있는 장소에서 가장 가까운 여행 도시의 통화. 모르면 null (화면에서 첫 도시 통화)
 */
@@ -269,7 +293,8 @@ export type PrepView = {
   items: PrepItem[]; budget: { currency: string; total: number } | null;
   spent: number; // 예산 통화로 적은 장소 예상 비용 합 (최소 단위)
   byCategory: { category: Category; amount: number }[]; // 분류별 예상 비용 (많은 순)
-  krw: number | null; // 예산 통화 1 단위 = 원화 (참고용, lib/fx.ts). 원화거나 못 받으면 null
+  krw: number | null; // 예산 통화 1 단위 = 원화 (여행에 정한 환율 > 받아 온 환율). 원화거나 모르면 null
+  krwCustom: boolean; krwAuto: number | null; // 여행에 정한 환율인지, 받아 온 환율 (환율 수정 창)
   people: { userId: string; name: string; avatar?: string }[];
 };
 export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepView | null> => {
@@ -294,15 +319,15 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
   }
   const byCategory = [...byCat].map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
   const spent = byCategory.reduce((n, c) => n + c.amount, 0);
-  const { krwPer } = await import("@/lib/fx");
-  const krw = await krwPer(budget?.currency ?? currency);
+  const rate = (await tripRates(sb, tripId, [budget?.currency ?? currency]))[budget?.currency ?? currency];
+  const krw = rate?.krw ?? null;
   return {
     tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency,
     items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null; item_id: string | null; booking_code: string | null; files: string[] | null; important?: boolean | null }[])
       .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at, itemId: x.item_id, code: x.booking_code ?? undefined, files: x.files?.length ?? 0, important: !!x.important }))
       .sort((a, b) => Number(!!b.important) - Number(!!a.important)), // 중요 예약은 위로 (순서는 그대로 유지되는 안정 정렬)
     budget: budget ? { currency: budget.currency, total: Number(budget.total) } : null,
-    spent, byCategory, krw,
+    spent, byCategory, krw, krwCustom: !!rate?.custom, krwAuto: rate?.auto ?? null,
     people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name, avatar: m.avatar }] : [])),
   };
 });
@@ -552,6 +577,7 @@ export type ExpensesView = {
   people: { userId: string; name: string; active: boolean; avatar?: string }[]; // 나간 사람도 이름은 남김
   budget: { currency: string; total: number } | null; // 경비 탭 맨 위 "예산 중 얼마 썼어요" (2026-11-16)
   currencies: string[]; dayCurrency: (string | null)[]; // 여행 통화 칩, 날짜별 기본 통화 (2026-11-17)
+  rates: Record<string, Rate>; // 원화로 묶기 환율 (0040)
   importable: { id: string; title: string; amount: number; currency: string; date: string | null }[]; // 예상 비용이 적힌, 아직 경비로 안 가져온 장소 (0036)
 };
 export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<ExpensesView | null> => {
@@ -577,8 +603,9 @@ export const loadExpenses = cache(async (v: Viewer, tripId: string): Promise<Exp
     .map((e) => ({ id: e.id, title: e.title, amount: Number(e.amount), currency: e.currency, paidBy: e.paid_by, splitWith: e.split_with, spentOn: e.spent_on, itemId: e.item_id }));
   const taken = new Set(expenses.flatMap((e) => (e.itemId ? [e.itemId] : [])));
   const fx = await tripCurrencies(sb, tripId, r.trip);
+  const rates = await tripRates(sb, tripId, [...fx.currencies, ...expenses.map((e) => e.currency), ...(budget?.currency ? [budget.currency] : [])]);
   return {
-    ...fx,
+    ...fx, rates,
     tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency: budget?.currency ?? currencyOf(city?.country_code), me: v.id,
     expenses,
     people: [...people.values()].map((p) => ({ ...p, avatar: face.get(p.userId) })),

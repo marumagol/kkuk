@@ -545,6 +545,18 @@ export async function saveBudget(tripId: string, currency: string, amount: strin
   revalidatePath(`/trips/${tripId}/prep`); revalidatePath(`/trips/${tripId}/expenses`);
 }
 
+/* 여행 환율 (0040) : 1 통화 = 몇 원. null 이면 지워서 그날 받아 온 환율로. 주인과 편집 가능만 (RLS) */
+export async function saveFxRate(tripId: string, currency: string, krwPer: number | null): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !/^[A-Z]{3}$/.test(currency) || currency === "KRW") return PREP_FAIL;
+  if (krwPer != null && !(Number.isFinite(krwPer) && krwPer > 0 && krwPer <= 1_000_000)) return { error: "0보다 큰 숫자로 적어 주세요" };
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const { error } = krwPer == null
+    ? await c.sb.from("trip_fx").delete().eq("trip_id", tripId).eq("currency", currency)
+    : await c.sb.from("trip_fx").upsert({ trip_id: tripId, currency, krw_per: Math.round(krwPer * 1e6) / 1e6, updated_by: c.uid, updated_at: new Date().toISOString() }, { onConflict: "trip_id,currency" });
+  if (error) return { error: error.message?.includes("trip_fx") || error.code === "42P01" ? "환율 저장 준비가 아직 안 됐어요. 잠시 뒤 다시 시도해 주세요" : "환율을 저장하지 못했어요. 수정 권한이 있는지 확인해 주세요" };
+  revalidatePath(`/trips/${tripId}/expenses`); revalidatePath(`/trips/${tripId}/prep`); revalidatePath("/");
+}
+
 /* ───────── 경비 (6단계 3번, migration 0026) : 주인과 편집 가능만 (RLS + 트리거가 함께하는 사람인지 검사) ───────── */
 export type ExpenseInput = { title: string; amount: string; currency: string; paidBy: string; splitWith: string[]; spentOn?: string | null; itemId?: string | null };
 export async function saveExpense(tripId: string, id: string | null, input: ExpenseInput): Promise<CreateTripResult> {

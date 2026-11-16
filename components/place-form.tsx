@@ -13,7 +13,8 @@ import { shrinkImage } from "@/lib/image";
 import { AlertDialog } from "@/components/gate";
 import { savePlace, removePlace } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
-import { decimalsOf, curName, currencyOptions, ALL_CURRENCIES, keepScroll } from "@/lib/countries";
+import { decimalsOf, curName, currencyOptions } from "@/lib/countries";
+import { CurrencySelect } from "@/components/currency-select";
 import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
@@ -319,16 +320,8 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
               <Field label="예상 경비 (선택)" name="cost" inputMode={decimalsOf(currency) ? "decimal" : "numeric"} placeholder="0" value={cost}
                 onChange={(e) => { setCost(e.target.value.replace(/[^\d.,]/g, "")); setError(""); }} disabled={busy} />
             </div>
-            <label className="flex w-28 flex-none flex-col gap-2">
-              <span className="sr-only">통화</span>
-              <select value={currency} onChange={(e) => { keepScroll(e.target); setCurrency(e.target.value); curTouched.current = true; }} disabled={busy}
-                className="h-14 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15">
-                {currencies.map((c) => <option key={c} value={c}>{curName(c)}</option>)}
-                <optgroup label="기타">
-                  {ALL_CURRENCIES.filter((c) => !currencies.includes(c)).map((c) => <option key={c} value={c}>{curName(c)} ({c})</option>)}
-                </optgroup>
-              </select>
-            </label>
+            <CurrencySelect className="w-28 flex-none" value={currency} main={currencies} disabled={busy}
+              onChange={(c) => { setCurrency(c); curTouched.current = true; }} />
           </div>
             </FormCard>
           )}
