@@ -14,7 +14,7 @@ import { feature } from "topojson-client";
 import type { Topology } from "topojson-specification";
 import type { FeatureCollection } from "geojson";
 import { TripRow } from "@/components/screen";
-import { Icon, Stamp } from "@/components/kit";
+import { Icon } from "@/components/kit";
 import { countryNameOf, COUNTRY_CENTER } from "@/lib/countries";
 import type { MapTrip } from "@/lib/trips";
 
@@ -25,7 +25,7 @@ let landCache: Promise<FeatureCollection> | null = null;
 const loadLand = () => (landCache ??= fetch("/geo/land-50m.json").then((r) => r.json()).then((t: Topology) => feature(t, t.objects.land) as unknown as FeatureCollection)
   .catch((e) => { landCache = null; throw e; }));
 
-export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { earned: { name: string; country: string }[]; total: number } }) {
+export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
   const router = useRouter();
   const [land, setLand] = useState<FeatureCollection | null>(null);
   const [failed, setFailed] = useState(false);
@@ -80,8 +80,6 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
   const pickedGroup = groups.find((g) => g.key === picked);
   const tap = (g: (typeof groups)[number]) => { if (g.trips.length === 1) router.push(`/trips/${g.trips[0].id}`); else setPicked(g.key === picked ? null : g.key); };
 
-  const cityCount = new Set(shown.flatMap((t) => t.cities.map((c) => `${c.country}:${c.name}`))).size;
-  const countryCount = new Set(shown.flatMap((t) => t.countries)).size;
   const noPin = shown.filter((t) => !t.cities.length).length;
   const upcoming = shown.filter((t) => t.status !== "past").sort((a, b) => a.start.localeCompare(b.start)); // 가까운 순
   const past = shown.filter((t) => t.status === "past").sort((a, b) => b.start.localeCompare(a.start)); // 최근 순
@@ -190,27 +188,7 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
             <p className="rounded-pin bg-bg px-4 py-6 text-center text-sub text-ink-sub">{tab === "past" ? "아직 다녀온 여행이 없어요" : "다가오는 여행이 없어요"}</p>
           )}
         </div>
-        <dl className="grid grid-cols-3 gap-2 border-t border-line pt-5" aria-label="여행 숫자">
-          {[["여행", shown.length], ["도시", cityCount], ["나라", countryCount]].map(([k, n]) => (
-            <div key={String(k)} className="flex flex-col-reverse">
-              <dt className="text-sub text-ink-sub">{k}</dt>
-              <dd className={"text-[34px] font-extrabold leading-tight tabular-nums " + "text-ink"}>{n}</dd>
-            </div>
-          ))}
-        </dl>
-        {stamps && (
-          <div className="border-t border-line pt-5">
-            <Link href="/stamps" className="press flex items-center justify-between gap-2">
-              <h2 className="text-body font-bold text-ink">모은 도장</h2>
-              <span className="flex items-center gap-0.5 text-sub font-semibold text-ink-sub">{stamps.earned.length} / {stamps.total}<Icon name="right" size={16} /></span>
-            </Link>
-            {stamps.earned.length > 0 ? (
-              <Link href="/stamps" aria-label="도장 모두 보기" className="-mx-5 mt-3 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-                {stamps.earned.map((x) => <div key={`${x.country}:${x.name}`} className="flex-none"><Stamp name={x.name} country={x.country} tilt={([...x.name].reduce((a, c) => a + c.charCodeAt(0), 0) % 17) - 8} /></div>)}
-              </Link>
-            ) : <p className="mt-2 text-sub text-ink-sub">여행 중에 그 도시에 있으면 도장이 찍혀요</p>}
-          </div>
-        )}
+        {/* 여행, 도시, 나라 숫자와 모은 도장 줄은 뺐다 (2026-11-16 마루님). 도장은 아래 탭바의 도장 탭 */}
       </section>
     </>
   );

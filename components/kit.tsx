@@ -386,10 +386,11 @@ export function SkeletonPinCard() {
 /* 하단 탭 5개 : 홈/여행/일기/도장/설정. 가운데 + 는 뺐음 (2026-11-14 마루님) */
 /* 2026-11-15 마루님 : 도장은 여행 탭 안으로 합침 (아래 탭 4칸). 도장 화면에서는 여행 탭이 켜진다 */
 export function TabBar({ active: asked = "홈" }: { active?: "홈" | "여행" | "일기" | "도장" | "설정" }) {
-  const active = asked === "도장" ? "여행" : asked;
-  const tabs: { name: "홈" | "여행" | "일기" | "설정"; icon: IconName; href: string }[] = [
+  const active = asked;
+  // 도장은 따로 탭 (2026-11-16 마루님 "도장을 새로운 탭 메뉴로")
+  const tabs: { name: "홈" | "여행" | "일기" | "도장" | "설정"; icon: IconName; href: string }[] = [
     { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" }, { name: "일기", icon: "book", href: "/diary" },
-    { name: "설정", icon: "gear", href: "/me" },
+    { name: "도장", icon: "stamp", href: "/stamps" }, { name: "설정", icon: "gear", href: "/me" },
   ].filter((t) => FEATURES.diary || t.name !== "일기") as typeof tabs;
   const item = (t: (typeof tabs)[number]) => (
     <Link key={t.name} href={t.href} aria-label={t.name} aria-current={active === t.name ? "page" : undefined}

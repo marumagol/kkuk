@@ -8,7 +8,7 @@ import { GateButton, GateCta } from "@/components/gate";
 import { Icon } from "@/components/kit";
 import { getViewer } from "@/lib/viewer";
 import { upcomingOf, pastOf, periodText, placeCount, ddayOf } from "@/lib/mock";
-import { loadTrips, loadMapTrips, loadStamps } from "@/lib/trips";
+import { loadTrips, loadMapTrips } from "@/lib/trips";
 import { WorldTrips } from "@/components/world-trips";
 
 export const metadata = { title: "여행" };
@@ -22,7 +22,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
 
   // 보기 방식은 지도 하나 (2026-11-16 마루님 "목록 유형은 필요 없겠다"). 목록은 지도 아래 다가오는/다녀온 여행 탭
   const asMap = next.length + past.length > 0;
-  const [map, stamps] = asMap ? await Promise.all([loadMapTrips(viewer, trips), loadStamps(viewer)]) : [[], null];
+  const map = asMap ? await loadMapTrips(viewer, trips) : [];
   const addBtn = (
     <GateButton label="여행 만들기" href="/trips/new"
       className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink">
@@ -50,7 +50,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
           </header>
           {viewer.kind === "preview" && <MockNote />}
           {notes}
-          <WorldTrips stamps={stamps ? { earned: stamps.earned.map((x) => ({ name: x.name, country: x.country })), total: stamps.earned.length + stamps.missing.length } : undefined} trips={map.map((m) => ({ ...m, row: rowOf(trips.find((t) => t.id === m.id)!) }))} />
+          <WorldTrips trips={map.map((m) => ({ ...m, row: rowOf(trips.find((t) => t.id === m.id)!) }))} />
           <div className="flex-1 bg-surface pb-32" />
         </div>
         <MainTabs active="여행" />
