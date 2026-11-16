@@ -12,7 +12,7 @@ import { TripTabs, TripHeader } from "@/components/trip-tabs";
 import { StampClaim } from "@/components/stamp-claim";
 import { getViewer, isIn } from "@/lib/viewer";
 import { placeCount, statusOf, daysBetween, todayOf, tripLength } from "@/lib/mock";
-import { loadTrip, tripOpenLogger, coordsRefiller } from "@/lib/trips";
+import { loadTrip, tripOpenLogger, coordsRefiller, loadPlaceContext } from "@/lib/trips";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ day?: string; saved?: string; restored?: string; removed?: string; undated?: string; joined?: string }> };
 
@@ -69,6 +69,9 @@ export default async function TripDetail({ params, searchParams }: Props) {
   const editable = canEdit && viewer.kind === "user";
   const valid = Number.isInteger(asked) && asked >= 1 && asked <= len;
   const day = valid ? asked : fallback;
+  // 빠른 추가 창의 장소 검색 (첫 도시 근처 먼저)
+  const pc = editable ? await loadPlaceContext(viewer, trip.id) : null;
+  const search = pc ? { searchable: pc.searchable, bias: pc.bias } : undefined;
 
   return (
     <AppShell>
@@ -85,7 +88,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
 
       <DayBoard tripId={trip.id} start={trip.start} days={trip.days.slice(0, len)} undated={trip.undated}
         editable={editable} canAdd={canEdit} user={viewer.kind === "user"} initialDay={day}
-        jump={(valid && asked > 1) || (!valid && ongoing && day > 1)} jumpUndated={!!sp.undated} />
+        jump={(valid && asked > 1) || (!valid && ongoing && day > 1)} jumpUndated={!!sp.undated} search={search} />
     </AppShell>
   );
 }
