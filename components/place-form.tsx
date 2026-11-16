@@ -62,9 +62,6 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const [confirm, setConfirm] = useState(false);
   const [busy, startBusy] = useTransition();
   const catTouched = useRef(!!p); // 분류를 직접 골랐으면 검색해도 바꾸지 않는다
-  // 더 적기 (2026-11-16 마루님) : 처음엔 날짜, 이름, 분류, 시간만. 고칠 때 선택 칸에 값이 있으면 펼친 채로
-  const [more, setMore] = useState(() => !!p && (p.estimated_cost != null || !!p.address || !!p.memo || (ctx.photos?.length ?? 0) > 0 || ctx.reserved
-    || Object.entries(p.details ?? {}).some(([k, v]) => v && k !== "mode" && !MOVE_TIME_KEYS.includes(k))));
   const [photos, setPhotos] = useState<{ path: string; url: string }[]>(ctx.photos ?? []);
   const [uploading, setUploading] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -228,17 +225,8 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           )}
         </fieldset>}
 
-        {/* 더 적기 : 예약, 비용, 주소, 메모, 사진 (2026-11-16 마루님) */}
-        {!isMemo && (
-          <button type="button" aria-expanded={more} onClick={() => setMore((m) => !m)} disabled={busy}
-            className="press -mt-2 flex min-h-12 items-center justify-between rounded-field bg-surface px-4 text-left">
-            <span><span className="block text-body font-semibold text-ink">{more ? "접기" : "더 적기"}</span>
-              {!more && <span className="block text-tiny text-ink-sub">예약, 예상 비용, 주소, 메모, 사진</span>}</span>
-            <Icon name="right" size={18} className={"text-ink-sub transition-transform " + (more ? "-rotate-90" : "rotate-90")} />
-          </button>
-        )}
-        {(more || isMemo) && (
-          <div className="flex flex-col gap-6">
+        {/* 예약, 비용, 주소, 메모, 사진은 늘 펼쳐 둔다 (2026-11-16 마루님 "더 적기는 별로") */}
+        <div className="flex flex-col gap-6">
           {/* 맞춤 칸 + 예약 필요를 한 카드에 (예약번호 옆에 예약 체크) */}
           {!isMemo && (
             <div className="flex flex-col gap-3 rounded-card bg-surface-soft p-4">
@@ -324,8 +312,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             <p className="text-tiny text-ink-sub">함께하는 사람만 볼 수 있어요. 올릴 때 크기를 줄여요</p>
           </div>}
 
-          </div>
-        )}
+        </div>
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
 
         {p && (
