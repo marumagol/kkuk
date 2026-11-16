@@ -32,6 +32,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const [category, setCategory] = useState(p?.category ?? (startMemo ? "memo" : "sight"));
   const isMemo = category === "memo";
   const [time, setTime] = useState(p?.start_time?.slice(0, 5) ?? "");
+  const [timed, setTimed] = useState(!!p?.start_time);
   const [address, setAddress] = useState(p?.address ?? "");
   const [currency, setCurrency] = useState(startCur);
   const [cost, setCost] = useState(p?.estimated_cost != null ? String(p.estimated_cost / 10 ** decimalsOf(startCur)) : "");
@@ -85,7 +86,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     setError("");
     if (!titleLen) return setError(isMemo ? "메모 제목을 적어 주세요" : "장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo ? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: extra, reserve, ...(linked !== undefined ? { place: linked } : {}) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo || !timed ? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: extra, reserve, ...(linked !== undefined ? { place: linked } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -111,7 +112,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           </div>
         )}
 
-        <fieldset className="flex flex-col gap-2">
+        <fieldset className="flex min-w-0 flex-col gap-2">
           <legend className="mb-2 text-sub font-bold text-ink-sub">분류</legend>
           <div className="flex flex-wrap gap-2">
             {CATS.map((c) => (
@@ -161,7 +162,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
         )}
 
         {/* 날짜 : 여행 기간의 날을 칩으로 골라요 (2026-11-16 마루님). 고른 날이 보이게 가운데로 */}
-        <fieldset className="flex flex-col gap-2">
+        <fieldset className="flex min-w-0 flex-col gap-2">
           <legend className="mb-2 text-sub font-bold text-ink-sub">날짜</legend>
           <div ref={dayRow} className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
             {[...Array.from({ length: ctx.days }, (_, i) => String(i)), "none"].map((v) => {
@@ -179,9 +180,21 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             })}
           </div>
         </fieldset>
-        {!isMemo && <div className="grid grid-cols-2 gap-3">
-          <Field label="시간 (선택)" name="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} />
-        </div>}
+        {/* 시간 : 기본은 "시간 없음", [시간 정하기] 를 누르면 시간 칸이 열린다 (2026-11-16 마루님) */}
+        {!isMemo && <fieldset className="flex min-w-0 flex-col gap-2">
+          <legend className="mb-2 text-sub font-bold text-ink-sub">시간</legend>
+          <div className="flex flex-wrap items-center gap-2">
+            {[false, true].map((on) => (
+              <button key={String(on)} type="button" aria-pressed={timed === on} disabled={busy}
+                onClick={() => { setTimed(on); if (!on) setTime(""); }}
+                className={"press inline-flex h-11 items-center rounded-full px-4 text-sub font-semibold " + (timed === on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
+                {on ? "시간 정하기" : "시간 없음"}
+              </button>
+            ))}
+            {timed && <input type="time" aria-label="시간" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} autoFocus={!p?.start_time}
+              className="h-11 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15" />}
+          </div>
+        </fieldset>}
 
         {!isMemo && <div className="flex items-end gap-2">
           <div className="min-w-0 flex-1">
