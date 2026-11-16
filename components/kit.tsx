@@ -174,13 +174,23 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, mark, time, category, title, desc, detail, editedBy, last, href, photo, photoCount, warn, corner }: {
-  index: number; mark?: "plane" | "dot"; /* 비행기(공항, 항공) / 점(메모) : 번호 대신 (2026-11-16) */ time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
+export function PinCard({ index, mark, time, category, title, desc, detail, editedBy, editedFace, editedAgo, last, href, photo, photoCount, warn, corner }: {
+  index: number; mark?: "plane" | "dot"; /* 비행기(공항, 항공) / 점(메모) : 번호 대신 (2026-11-16) */ time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; editedFace?: string; editedAgo?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
   warn?: string /* 영업시간 경고 */; corner?: ReactNode /* 오른쪽 위 작은 버튼 (길찾기). 링크 밖에 겹쳐 두어 따로 눌린다 (2026-11-16 마루님 "카드가 길어지지 않게") */;
 }) {
+  /* 누가 고쳤는지 (2026-11-16 마루님 "더 간략하게") : 카드 오른쪽 아래 작은 얼굴만. 머리 줄 오른쪽(길찾기 왼쪽). 누르면 "○○님 · 2시간 전 수정" (다른 사람이 24시간 안에 고친 것만) */
+  const editor = editedBy ? (
+    <details className={"absolute top-3.5 " + (corner ? "right-12" : "right-3")}>
+      <summary aria-label={`${editedBy}님이 ${editedAgo ?? ""} 수정`} className="press flex size-7 cursor-pointer list-none items-center justify-center overflow-hidden rounded-full bg-point-soft text-[11px] font-extrabold text-point-text ring-2 ring-surface [&::-webkit-details-marker]:hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {editedFace ? <img src={editedFace} alt="" className="size-full object-cover" /> : [...editedBy][0]}
+      </summary>
+      <span className="absolute right-0 top-full z-10 mt-1.5 whitespace-nowrap rounded-full bg-deep px-3 py-1.5 text-tiny font-bold text-on-deep shadow-float">{editedBy}님 · {editedAgo ? `${editedAgo} ` : ""}수정</span>
+    </details>
+  ) : null;
   const Box = ({ children }: { children: ReactNode }) => {
-    const inner = href ? <Link href={href} className="press block px-4 py-3.5">{children}</Link> : <div className="px-4 py-3.5">{children}</div>;
-    return <article className="relative mb-3 min-w-0 flex-1 overflow-hidden rounded-pin bg-surface">{inner}{corner && <div className="absolute right-2.5 top-2.5">{corner}</div>}</article>;
+    const inner = href ? <Link href={href} className="press block rounded-pin px-4 py-3.5">{children}</Link> : <div className="px-4 py-3.5">{children}</div>;
+    return <article className="relative mb-3 min-w-0 flex-1 rounded-pin bg-surface">{inner}{corner && <div className="absolute right-2.5 top-2.5">{corner}</div>}{editor}</article>;
   };
   return (
     <div className="flex gap-3">
@@ -192,12 +202,11 @@ export function PinCard({ index, mark, time, category, title, desc, detail, edit
         {!last && <span className="w-0 flex-1 border-l-2 border-dashed border-line-strong/60" />}
       </div>
       <Box>
-        <div className={"flex min-h-7 items-center justify-between gap-2 " + (corner ? "pr-9" : "")}>
+        <div className={"flex min-h-7 items-center justify-between gap-2 " + (corner && editedBy ? "pr-[4.5rem]" : corner || editedBy ? "pr-9" : "")}>
           <div className="flex items-center gap-2">
             {time && <span className="text-sub font-bold text-ink">{time}</span>}
             {category !== "메모" && <CategoryChip category={category} />}
           </div>
-          {editedBy && <span className="text-tiny font-bold text-point-text">{editedBy}님이 고쳤어요</span>}
         </div>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">

@@ -68,6 +68,12 @@ export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {
   return trips.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m, avatar: m.userId ? face.get(m.userId) : undefined })), places: count.get(t.id) ?? 0 }));
 });
 
+/* "방금 전", "15분 전", "2시간 전" (고친 사람 표시는 24시간 안만) */
+function agoText(at: string): string {
+  const m = Math.max(0, Math.floor((Date.now() - Date.parse(at)) / 60000));
+  return m < 1 ? "방금 전" : m < 60 ? `${m}분 전` : `${Math.floor(m / 60)}시간 전`;
+}
+
 /* 이동의 도착지 : 출발지도 있을 때만 지도에 점을 하나 더 (출발지가 없으면 도착지가 일정 위치라 겹친다) */
 function arriveOf(it: { category: string; details?: Record<string, string> | null }): { arrive?: { lat: number; lng: number; name: string } } {
   if (it.category !== "transport" || !it.details?.from_pos) return {};
@@ -129,7 +135,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
     // 목록 카드에는 주소를 보이지 않는다 (2026-11-16 마루님). 출발 → 도착이 이름에 보이면 아래 줄의 경로는 뺀다 (2026-11-16)
     const desc = it.category === "memo" ? it.memo ?? "" : [cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
     const mt = moveTitle(it.category, it.title, it.details);
-    const item: Item = { id: it.id, title: mt.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details, mt.route) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), addr: it.address || undefined, gpid: it.google_place_id || undefined, ...(it.estimated_cost != null && it.cost_currency ? { cost: it.estimated_cost, cur: it.cost_currency } : {}), hours: it.details?._hours || undefined, ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), ...arriveOf(it), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
+    const item: Item = { id: it.id, title: mt.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details, mt.route) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), ...(editorOf(it) && it.updated_by ? { editedFace: face.get(it.updated_by), editedAgo: agoText(it.updated_at!) } : {}), addr: it.address || undefined, gpid: it.google_place_id || undefined, ...(it.estimated_cost != null && it.cost_currency ? { cost: it.estimated_cost, cur: it.cost_currency } : {}), hours: it.details?._hours || undefined, ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), ...arriveOf(it), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }
