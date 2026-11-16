@@ -48,8 +48,8 @@ export function AvatarEditor({ initial, src, userId }: { initial: string; src: s
       </button>
       {src && <button type="button" disabled={busy} onClick={remove} className="press h-8 px-1 text-tiny font-semibold text-ink-sub underline underline-offset-2">사진 빼기</button>}
       {busy && <span className="text-tiny text-ink-sub" role="status">저장하는 중</span>}
-      {error && <span role="alert" className="max-w-24 text-center text-tiny font-semibold text-point-text">{error}</span>}
-      <input ref={file} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; if (!f.type.startsWith("image/")) return setError("그림 파일만 올릴 수 있어요"); setError(""); setPicked(f); }} />
+      {error && <span role="alert" className="max-w-40 text-center text-tiny font-semibold text-point-text">{error}</span>}
+      <input ref={file} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; setError(""); setPicked(f); /* 파일 앱에서 고르면 종류가 비어 올 때가 있어 거르지 않는다. 못 여는 파일은 자르기 창이 알려 준다 */ }} />
       {picked && <AvatarCropper file={picked} onCancel={() => setPicked(null)} onDone={(b) => void upload(b)} />}
     </div>
   );

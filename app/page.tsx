@@ -119,19 +119,19 @@ async function Before({ v, trip, today, missing }: { v: Viewer; trip: Trip; toda
           </div>
           {items.length === 0 ? (
             <Link href={`/trips/${trip.id}/prep`} className="press flex min-h-11 items-center justify-between rounded-field bg-bg px-3 text-sub text-ink">
-              예약과 챙길 것을 적어 두세요<Icon name="right" size={16} />
+              예약과 체크리스트를 적어 두세요<Icon name="right" size={16} />
             </Link>
           ) : todo.length === 0 ? (
             <p className="text-sub font-semibold text-ink">준비를 모두 끝냈어요. 떠나기만 하면 돼요</p>
           ) : (
             <>
-              <p className="text-tiny text-ink-sub">{resLeft ? `예약 ${resLeft}건, ` : ""}챙길 것 {todo.length - resLeft}개가 남았어요</p>
+              <p className="text-tiny text-ink-sub">{resLeft ? `예약 ${resLeft}건, ` : ""}체크리스트 {todo.length - resLeft}개가 남았어요</p>
               <ul className="flex flex-col gap-1.5">
                 {todo.slice(0, 3).map((i) => (
                   <li key={i.id}>
                     <Link href={i.kind === "reservation" ? `/trips/${trip.id}/bookings/${i.id}` : `/trips/${trip.id}/prep`}
                       className="press flex min-h-11 items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
-                      <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-bold ${i.kind === "reservation" ? "bg-point-soft text-point-text" : "bg-surface text-ink-sub"}`}>{i.kind === "reservation" ? "예약" : "챙길 것"}</span>
+                      <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-bold ${i.kind === "reservation" ? "bg-point-soft text-point-text" : "bg-surface text-ink-sub"}`}>{i.kind === "reservation" ? "예약" : "체크리스트"}</span>
                       <span className="min-w-0 flex-1 truncate font-semibold text-ink">{i.title}</span>
                       {i.due && <span className="flex-none text-tiny text-ink-sub">{md(i.due)}</span>}
                     </Link>

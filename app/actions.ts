@@ -504,7 +504,7 @@ export async function saveBooking(tripId: string, id: string, input: { title: st
   revalidatePath(`/trips/${tripId}/prep`);
   redirect(`/trips/${tripId}/prep`);
 }
-export async function updatePrepItem(tripId: string, id: string, patch: { done?: boolean; assignee?: string | null; remove?: boolean; title?: string; due?: string | null }): Promise<CreateTripResult> {
+export async function updatePrepItem(tripId: string, id: string, patch: { done?: boolean; assignee?: string | null; remove?: boolean; title?: string; due?: string | null; important?: boolean }): Promise<CreateTripResult> {
   if (!isUuid(tripId) || !isUuid(id)) return PREP_FAIL;
   const t = patch.title === undefined ? undefined : String(patch.title).trim();
   if (t !== undefined && ![...t].length) return { error: "내용을 적어 주세요" };
@@ -518,8 +518,17 @@ export async function updatePrepItem(tripId: string, id: string, patch: { done?:
   if (patch.remove) row.removed_at = new Date().toISOString();
   if (t !== undefined) row.title = t;
   if (patch.due !== undefined) row.due_date = patch.due || null;
+  if (patch.important !== undefined) row.important = !!patch.important; // 예약 중요 표시 (0038)
   const { data, error } = await c.sb.from("checklist_items").update(row).eq("trip_id", tripId).eq("id", id).select("id");
   if (error || !data?.length) return PREP_FAIL;
+  revalidatePath(`/trips/${tripId}/prep`);
+}
+/* 준비 목록 순서 바꾸기 (2026-11-16 마루님 "길게 눌러 위치 이동") : 받은 순서대로 sort_order 를 다시 매긴다 */
+export async function reorderPrep(tripId: string, ids: string[]): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !Array.isArray(ids) || !ids.length || ids.length > 200 || !ids.every(isUuid)) return PREP_FAIL;
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const res = await Promise.all(ids.map((id, i) => c.sb!.from("checklist_items").update({ sort_order: i }).eq("trip_id", tripId).eq("id", id).select("id")));
+  if (res.some((r) => r.error || !r.data?.length)) return { error: "순서를 저장하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   revalidatePath(`/trips/${tripId}/prep`);
 }
 export async function saveBudget(tripId: string, currency: string, amount: string): Promise<CreateTripResult> {

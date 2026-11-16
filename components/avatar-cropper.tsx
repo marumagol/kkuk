@@ -106,7 +106,7 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
           aria-label="확대" className="min-w-0 flex-1 accent-[var(--point)]" />
         <span className="flex-none">크게</span>
       </label>
-      {failed && <p role="alert" className="text-sub font-semibold text-white">이 사진은 열 수 없어요. 다른 사진을 골라 주세요</p>}
+      {failed && <p role="alert" className="text-center text-sub font-semibold text-white">이 파일은 열 수 없어요. JPG나 PNG 사진을 골라 주세요{/\.(heic|heif)$/i.test(file.name) ? " (HEIC 사진은 이 브라우저에서 열리지 않아요)" : ""}</p>}
       <div className="flex w-full max-w-[320px] gap-2">
         <Button variant="secondary" onClick={onCancel} disabled={busy} className="flex-1">취소</Button>
         <Button onClick={done} disabled={!nat || busy || failed} className="flex-1">{busy ? "자르는 중" : "완료"}</Button>

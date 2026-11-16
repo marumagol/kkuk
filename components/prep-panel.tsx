@@ -1,5 +1,5 @@
 "use client";
-/* 준비 탭 내용 : 챙길 것, 예약 (예산 카드는 2026-11-16 경비 탭으로 옮김, BudgetSection). 저장은 app/actions.ts (RLS 가 권한 검사) */
+/* 준비 탭 내용 : 체크리스트, 예약 (예산 카드는 2026-11-16 경비 탭으로 옮김, BudgetSection). 저장은 app/actions.ts (RLS 가 권한 검사) */
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -25,7 +25,7 @@ export function PrepPanel({ view }: { view: PrepView }) {
       <PrepSummary view={view} />
       {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
       <List title="예약" kind="reservation" view={view} canEdit={canEdit} busy={busy} run={run} />
-      <List title="챙길 것" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} />
+      <List title="체크리스트" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} />
       {!canEdit && <p className="text-tiny text-ink-sub">보기만 권한이라 준비 목록을 고칠 수 없어요</p>}
     </div>
   );
@@ -47,7 +47,7 @@ function PrepSummary({ view }: { view: PrepView }) {
     <section className="flex flex-col gap-3 rounded-deep bg-deep p-5 text-on-deep" aria-label="준비 요약">
       <dl className="grid grid-cols-3 gap-2">
         {tile("예약", res, "건")}
-        {tile("챙길 것", item, "개")}
+        {tile("체크리스트", item, "개")}
         <div className="flex flex-col gap-0.5">
           <dt className="text-tiny font-semibold text-on-deep-sub">준비</dt>
           <dd className="text-title font-extrabold tabular-nums">{pct}%</dd>
@@ -56,7 +56,7 @@ function PrepSummary({ view }: { view: PrepView }) {
       <div className="h-2 overflow-hidden rounded-full bg-deep-soft" role="img" aria-label={`준비 ${pct}% 끝냄`}>
         <span className="block h-full rounded-full bg-point" style={{ width: `${pct}%` }} />
       </div>
-      <p className="text-tiny text-on-deep-sub">{all === 0 ? "아래에서 예약과 챙길 것을 추가해 보세요" : all === done ? "준비를 모두 끝냈어요" : `${all - done}개 남았어요`}</p>
+      <p className="text-tiny text-on-deep-sub">{all === 0 ? "아래에서 예약과 체크리스트를 추가해 보세요" : all === done ? "준비를 모두 끝냈어요" : `${all - done}개 남았어요`}</p>
     </section>
   );
 }

@@ -229,7 +229,7 @@ export const loadMembers = cache(async (v: Viewer, tripId: string): Promise<Memb
 });
 
 /* 준비 탭 (2단계 6~7) : 챙길 것, 예약, 예산 */
-export type PrepItem = { id: string; kind: "item" | "reservation"; title: string; due: string | null; assignee: string | null; done: boolean; itemId: string | null /* 장소에서 온 예약 (0032) */; code?: string; files?: number /* 예약 지갑 (0034) */ };
+export type PrepItem = { id: string; kind: "item" | "reservation"; title: string; due: string | null; assignee: string | null; done: boolean; itemId: string | null /* 장소에서 온 예약 (0032) */; code?: string; files?: number /* 예약 지갑 (0034) */; important?: boolean /* 0038 */ };
 export type PrepView = {
   tripId: string; tripTitle: string; start: string; end: string; role: Role; currency: string;
   items: PrepItem[]; budget: { currency: string; total: number } | null;
@@ -244,7 +244,7 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
   if (!("trip" in r)) return null;
   const sb = (await createClient())!;
   const [{ data: rows }, { data: budget }, { data: city }, mv] = await Promise.all([
-    sb.from("checklist_items").select("id, kind, title, due_date, assignee_id, done_at, sort_order, created_at, item_id, booking_code, files")
+    sb.from("checklist_items").select("id, kind, title, due_date, assignee_id, done_at, sort_order, created_at, item_id, booking_code, files, important")
       .eq("trip_id", tripId).is("removed_at", null).order("sort_order").order("created_at"),
     sb.from("trip_budgets").select("currency, total").eq("trip_id", tripId).maybeSingle(),
     sb.from("trip_cities").select("country_code").eq("trip_id", tripId).order("sort_order").limit(1).maybeSingle(),
@@ -264,8 +264,9 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
   const krw = await krwPer(budget?.currency ?? currency);
   return {
     tripId, tripTitle: r.trip.title, start: r.trip.start, end: r.trip.end, role: r.role, currency,
-    items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null; item_id: string | null; booking_code: string | null; files: string[] | null }[])
-      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at, itemId: x.item_id, code: x.booking_code ?? undefined, files: x.files?.length ?? 0 })),
+    items: ((rows ?? []) as { id: string; kind: "item" | "reservation"; title: string; due_date: string | null; assignee_id: string | null; done_at: string | null; item_id: string | null; booking_code: string | null; files: string[] | null; important?: boolean | null }[])
+      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, due: x.due_date, assignee: x.assignee_id, done: !!x.done_at, itemId: x.item_id, code: x.booking_code ?? undefined, files: x.files?.length ?? 0, important: !!x.important }))
+      .sort((a, b) => Number(!!b.important) - Number(!!a.important)), // 중요 예약은 위로 (순서는 그대로 유지되는 안정 정렬)
     budget: budget ? { currency: budget.currency, total: Number(budget.total) } : null,
     spent, byCategory, krw,
     people: (mv?.members ?? []).flatMap((m) => (m.userId ? [{ userId: m.userId, name: m.name, avatar: m.avatar }] : [])),
