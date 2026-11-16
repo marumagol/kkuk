@@ -342,10 +342,10 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
             {showUndated && chip(U, `미정 ${cols[U].length}`)}
           </div>
           {editable && sel !== ALL && (
-            /* 아이콘만 (2026-11-17 마루님). 글자는 화면 읽기용 이름으로 */
+            /* 아이콘만 (2026-11-17 마루님). 글자는 화면 읽기용 이름으로. 점 6개(옮기기 손잡이와 같아 보임) 대신 연필 (2026-11-17) */
             <button type="button" onClick={() => setEditing((v) => !v)} aria-pressed={editing} aria-label={editing ? "편집 완료" : "일정 편집"}
               className={"press flex size-10 flex-none items-center justify-center rounded-full " + (editing ? "bg-point text-white" : "border border-line-strong bg-surface text-ink")}>
-              <Icon name={editing ? "check" : "grip"} size={18} strokeWidth={editing ? 2.25 : 1.75} />
+              <Icon name={editing ? "check" : "pencil"} size={18} strokeWidth={editing ? 2.25 : 2} />
             </button>
           )}
         </nav>
