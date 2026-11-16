@@ -397,7 +397,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
             {/* 예상 비용 알약 (2026-11-17 마루님 "이날" 빼고 다듬기) */}
             {dayCost && (
               <span className="mt-1.5 flex w-fit max-w-full items-center gap-1 rounded-full bg-surface-soft px-2.5 py-1 text-tiny font-semibold text-ink-sub">
-                예상 비용
+                예상 경비
                 <span className="min-w-0 truncate font-extrabold text-ink tabular-nums">{dayCost}</span>
               </span>
             )}

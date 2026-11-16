@@ -131,7 +131,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   const len = daysBetween(trip.start, trip.end) + 1;
   trip.days = Array.from({ length: len }, () => ({ items: [] as Item[] }));
   for (const it of (rows ?? []) as PlaceRow[]) {
-    const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
+    const cost = it.estimated_cost != null && it.cost_currency ? formatMoney(it.estimated_cost, it.cost_currency) : "";
     // 목록 카드에는 주소를 보이지 않는다 (2026-11-16 마루님). 출발 → 도착이 이름에 보이면 아래 줄의 경로는 뺀다 (2026-11-16)
     const desc = it.category === "memo" ? it.memo ?? "" : [cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
     const mt = moveTitle(it.category, it.title, it.details);

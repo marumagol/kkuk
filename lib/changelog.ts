@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 08:15", version: "0.65.2", items: ["\"예상 비용\"을 \"예상 경비\"로 이름을 맞췄어요", "일정 카드에는 \"예상\" 글자 없이 금액만 보여요"] },
   { at: "2026-11-17 08:10", version: "0.65.1", items: [
     "일정의 이동에 수단 아이콘(기차, 버스, 배, 자동차, 도보)이 번호 대신 보여요",
     "이동 수단 \"차\"를 \"자동차\"로 바꾸고 \"도보\"를 더했어요",

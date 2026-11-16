@@ -314,7 +314,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
               </label>
           <div className="flex items-end gap-2">
             <div className="min-w-0 flex-1">
-              <Field label="예상 비용 (선택)" name="cost" inputMode={decimalsOf(currency) ? "decimal" : "numeric"} placeholder="0" value={cost}
+              <Field label="예상 경비 (선택)" name="cost" inputMode={decimalsOf(currency) ? "decimal" : "numeric"} placeholder="0" value={cost}
                 onChange={(e) => { setCost(e.target.value.replace(/[^\d.,]/g, "")); setError(""); }} disabled={busy} />
             </div>
             <label className="flex w-28 flex-none flex-col gap-2">

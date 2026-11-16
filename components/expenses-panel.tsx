@@ -128,7 +128,7 @@ export function ExpensesPanel({ view, budget, openAdd }: { view: ExpensesView; b
 
       {picking && (
         <Modal title="장소에서 가져오기" onClose={() => setPicking(false)}>
-          <p className="text-sub text-ink-sub">장소에 적은 예상 비용으로 채워요. 실제 낸 금액으로 고쳐서 저장해 주세요</p>
+          <p className="text-sub text-ink-sub">장소에 적은 예상 경비로 채워요. 실제 낸 금액으로 고쳐서 저장해 주세요</p>
           <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface">
             {view.importable.map((p) => (
               <li key={p.id}>
@@ -239,7 +239,7 @@ function ExpenseSheet({ view, draft, onClose }: { view: ExpensesView; draft: Dra
 
   return (
     <Modal title={editing ? "경비 수정" : "경비 추가"} onClose={onClose}>
-      {draft.fromPlace && <p className="rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink-sub">장소의 예상 비용으로 채웠어요. 실제 낸 금액으로 고쳐 주세요</p>}
+      {draft.fromPlace && <p className="rounded-field bg-surface px-3 py-2 text-tiny font-semibold text-ink-sub">장소의 예상 경비으로 채웠어요. 실제 낸 금액으로 고쳐 주세요</p>}
       {/* 금액이 맨 위, 통화는 금액 바로 아래 칩 */}
       <label className="flex flex-col gap-2">
         <span className="text-sub font-semibold text-ink">금액</span>

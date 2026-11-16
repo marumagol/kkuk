@@ -210,7 +210,7 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   let cost: number | null = null;
   if (costText) {
     const d = decimalsOf(currency);
-    if (!new RegExp(`^\\d{1,12}${d ? `(\\.\\d{1,${d}})?` : ""}$`).test(costText)) return { error: d ? `예상 비용은 숫자로, 소수점 ${d}자리까지 적어 주세요` : "예상 비용은 숫자로만 적어 주세요" };
+    if (!new RegExp(`^\\d{1,12}${d ? `(\\.\\d{1,${d}})?` : ""}$`).test(costText)) return { error: d ? `예상 경비는 숫자로, 소수점 ${d}자리까지 적어 주세요` : "예상 경비는 숫자로만 적어 주세요" };
     cost = Math.round(Number(costText) * 10 ** d);
   }
 

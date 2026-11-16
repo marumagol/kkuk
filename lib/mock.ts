@@ -29,8 +29,8 @@ export const TRIPS: Trip[] = [
       ] },
       { title: "오타루 당일치기", items: [
         { time: "08:40", category: "이동", title: "JR 쾌속 에어포트, 삿포로 → 오타루", desc: "약 40분, 오른쪽 창가 자리가 바다 쪽" },
-        { time: "09:30", category: "쇼핑", title: "오타루 오르골당 본관", desc: "예상 2,000엔, 오전에 덜 붐빔", editedBy: "윤" },
-        { time: "12:30", category: "식사", title: "나루토 반마리 닭튀김", desc: "예상 1,500엔, 현금만" },
+        { time: "09:30", category: "쇼핑", title: "오타루 오르골당 본관", desc: "2,000엔, 오전에 덜 붐빔", editedBy: "윤" },
+        { time: "12:30", category: "식사", title: "나루토 반마리 닭튀김", desc: "1,500엔, 현금만" },
         { time: "15:00", category: "관광", title: "Otaru Canal Gas Lamp Evening Walking Course", desc: "16시 전후 가스등 점등" },
       ] },
       { title: "노보리베츠 온천", items: [
