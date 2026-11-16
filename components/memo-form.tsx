@@ -4,6 +4,7 @@
   - 화면 전체가 글 칸. 위 오른쪽 [완료] 로 저장, 사진은 최대 5장 (장소 사진과 같은 저장소)
   - DB 는 그대로 : title = 첫 줄(80자까지), memo = 글 전체. 예전 메모(제목 + 내용 따로)는 "제목\n내용" 으로 합쳐서 연다
 */
+import { LeaveGuard } from "@/components/leave-guard";
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/kit";
@@ -69,7 +70,7 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
   });
 
   return (
-    <>
+    <LeaveGuard>
       <div className="sticky top-0 z-10 flex items-center gap-2 bg-bg px-5 pb-2 pt-4">
         <Link href={back} aria-label="일정으로" className="press flex size-11 flex-none items-center justify-center rounded-full bg-surface text-ink">
           <Icon name="back" size={20} />
@@ -123,6 +124,6 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
 
       {confirm && <AlertDialog title="메모를 삭제할까요?" desc="일정에서 이 메모가 사라져요" confirmLabel="삭제"
         confirm={remove} onClose={() => setConfirm(false)} />}
-    </>
+    </LeaveGuard>
   );
 }

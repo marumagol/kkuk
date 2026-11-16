@@ -3,6 +3,7 @@
   S06 여행 만들기 : 1/3 도시(여러 개) → 2/3 기간(달력) → 3/3 이름
   넘기는 동안 입력한 값은 화면에 남아 있고, 마지막에 한 번만 저장한다 (app/actions.ts createTrip)
 */
+import { LeaveGuard } from "@/components/leave-guard";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Field, Icon } from "@/components/kit";
@@ -54,7 +55,7 @@ export function TripCreate({ today, searchable }: { today: string; searchable?: 
   const goBack = () => { setError(""); if (step === 0) router.push("/trips"); else setStep(step - 1); };
 
   return (
-    <>
+    <LeaveGuard>
       <div className="flex items-center justify-between px-5 pt-4">
         <button type="button" onClick={goBack} aria-label={step === 0 ? "여행 목록으로" : "이전 단계로"}
           className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink">
@@ -103,6 +104,6 @@ export function TripCreate({ today, searchable }: { today: string; searchable?: 
       <div className="sticky bottom-0 bg-bg px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
         <Button full onClick={goNext} disabled={saving}>{step < 2 ? "다음" : saving ? "만드는 중" : "여행 만들기"}</Button>
       </div>
-    </>
+    </LeaveGuard>
   );
 }

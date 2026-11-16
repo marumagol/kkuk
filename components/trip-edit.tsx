@@ -5,6 +5,7 @@
   - 시작 날짜를 옮기면 장소는 일차(1일차, 2일차)를 따라간다
   - 여행 삭제는 여행 주인만, 확인 창을 거친다
 */
+import { LeaveGuard } from "@/components/leave-guard";
 import { useState, useTransition } from "react";
 import { Button, Field } from "@/components/kit";
 import { AlertDialog } from "@/components/gate";
@@ -65,7 +66,7 @@ export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) 
   });
 
   return (
-    <>
+    <LeaveGuard>
       <div className="flex flex-1 flex-col gap-8 px-5 pt-6">
         <Field label="여행 이름" name="title" value={title} maxLength={40} disabled={busy}
           onChange={(e) => { setTitle(e.target.value); setError(""); }} hint={`${titleLen}/${MAX_TRIP_TITLE}자`} />
@@ -103,6 +104,6 @@ export function TripEdit({ trip, today }: { trip: TripForEdit; today: string }) 
 
       {confirm && <AlertDialog title={confirm.title} desc={confirm.desc} confirmLabel={confirm.label}
         confirm={confirm.run} onClose={() => setConfirm(null)} />}
-    </>
+    </LeaveGuard>
   );
 }

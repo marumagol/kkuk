@@ -41,4 +41,5 @@ export const PATH_HEADER = "x-kkuk-path";
 export const isIn = (v: Viewer) => v.kind !== "guest";
 
 /* 로그인 뒤 돌아갈 주소. 다른 사이트로 튀지 않게 "/" 로 시작하는 것만 */
-export const safeNext = (n?: string | null) => (n && n.startsWith("/") && !n.startsWith("//") ? n : "/");
+/* "/\\evil.com" 은 브라우저가 "//evil.com" 처럼 읽어서 막는다. 줄바꿈 같은 제어 문자도 막는다 */
+export const safeNext = (n?: string | null) => (n && n.startsWith("/") && !n.startsWith("//") && !n.includes("\\") && !/[\u0000-\u001f]/.test(n) ? n : "/");

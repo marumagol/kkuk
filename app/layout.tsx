@@ -43,7 +43,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // 첫 로그인 : 이름을 정하기 전에는 어느 화면으로 가도 이름 정하기로 보낸다
   if (v.kind === "user" && !v.name) {
     const path = (await headers()).get(PATH_HEADER) ?? "/";
-    if (!path.startsWith("/welcome")) redirect(`/welcome?next=${encodeURIComponent(path.startsWith("/login") ? "/" : path)}`);
+    // 약관, 개인정보 처리방침은 이름을 정하기 전에도 읽을 수 있게
+    if (!/^\/(welcome|privacy|terms)(\/|\?|$)/.test(path)) redirect(`/welcome?next=${encodeURIComponent(path.startsWith("/login") ? "/" : path)}`);
   }
   const theme = (await cookies()).get("kkuk-theme")?.value;
   return (

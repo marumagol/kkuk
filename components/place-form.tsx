@@ -5,6 +5,7 @@
   날짜를 바꾸면 그 날 맨 뒤로 간다. 삭제는 확인 창을 거쳐 removed_at
   사진은 최대 5장 (2026-11-14). 고르는 즉시 줄여서 비공개 저장소 place-photos/<여행 id>/ 에 올리고, 저장할 때 위치 목록을 함께 저장
 */
+import { LeaveGuard } from "@/components/leave-guard";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button, Field, Icon } from "@/components/kit";
 import { createClient } from "@/lib/supabase/client";
@@ -96,7 +97,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   });
 
   return (
-    <>
+    <LeaveGuard>
       <div className="flex flex-1 flex-col gap-6 px-5 pt-6">
         <Field label={isMemo ? "메모 제목" : "장소 이름"} name="title" placeholder={isMemo ? "예 : 체크아웃 전에 짐 맡기기" : "예 : 오타루 운하"} value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
           onChange={(e) => { setTitle(e.target.value); setError(""); }} autoFocus={!p}
@@ -263,6 +264,6 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
 
       {confirm && <AlertDialog title={isMemo ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${p?.title}"이(가) 일정에서 사라져요`} confirmLabel="삭제"
         confirm={remove} onClose={() => setConfirm(false)} />}
-    </>
+    </LeaveGuard>
   );
 }
