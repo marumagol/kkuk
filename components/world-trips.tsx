@@ -83,6 +83,12 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
   const cityCount = new Set(shown.flatMap((t) => t.cities.map((c) => `${c.country}:${c.name}`))).size;
   const countryCount = new Set(shown.flatMap((t) => t.countries)).size;
   const noPin = shown.filter((t) => !t.cities.length).length;
+  const upcoming = shown.filter((t) => t.status !== "past").sort((a, b) => a.start.localeCompare(b.start)); // 가까운 순
+  const past = shown.filter((t) => t.status === "past").sort((a, b) => b.start.localeCompare(a.start)); // 최근 순
+  // 처음에는 다가오는 여행. 다가오는 여행이 없으면 다녀온 여행
+  const [tabPick, setTab] = useState<"upcoming" | "past" | null>(null);
+  const tab = tabPick ?? (upcoming.length || !past.length ? "upcoming" : "past");
+  const list = tab === "past" ? past : upcoming;
   const chip = (key: string, label: string) => (
     <button key={key} type="button" onClick={() => { setFilter(key); setPicked(null); }} aria-pressed={filter === key}
       className={"press inline-flex h-10 flex-none items-center rounded-full px-4 text-sub font-semibold " + (filter === key ? "bg-deep text-on-deep" : "bg-surface text-ink")}>
@@ -162,17 +168,26 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
             ) : <p className="mt-2 text-sub text-ink-sub">여행 중에 그 도시에 있으면 도장이 찍혀요</p>}
           </div>
         )}
-        <div className="flex items-center gap-3 text-tiny text-ink-sub">
-          <span className="flex items-center gap-1"><span className="size-2.5 rounded-full bg-point" />다녀온 여행</span>
-          <span className="flex items-center gap-1"><span className="size-2.5 rounded-full bg-deep" />다가오는 여행</span>
-          {noPin > 0 && <span className="ml-auto">위치 모르는 여행 {noPin}개</span>}
+        {/* 목록은 다가오는 여행 / 다녀온 여행 탭으로 나눠 본다 (2026-11-16 마루님). 점 색은 지도 핀 색과 같다 */}
+        <div className="flex flex-col gap-3">
+          <div role="tablist" aria-label="여행 나눠 보기" className="flex gap-1 rounded-btn bg-bg p-1">
+            {([["upcoming", "다가오는 여행", upcoming.length, "bg-deep"], ["past", "다녀온 여행", past.length, "bg-point"]] as const).map(([k, label, n, dot]) => (
+              <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+                className={"press flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[14px] text-sub font-bold " + (tab === k ? "bg-surface text-ink shadow-sm" : "text-ink-sub")}>
+                <span className={"size-2.5 rounded-full " + dot} />{label} {n}
+              </button>
+            ))}
+          </div>
+          {noPin > 0 && <p className="text-tiny text-ink-sub">위치 모르는 여행 {noPin}개는 지도에 핀이 없어요</p>}
         </div>
-        <div className="flex flex-col gap-2">
-          {[...shown].sort((a, b) => (a.status === "past") === (b.status === "past") ? (a.status === "past" ? b.start.localeCompare(a.start) : a.start.localeCompare(b.start)) : a.status === "past" ? 1 : -1).map((t) => (
+        <div role="tabpanel" className="flex flex-col gap-2">
+          {list.length ? list.map((t) => (
             <div key={t.id} className="[&>a]:bg-bg">
               <TripRow href={`/trips/${t.id}`} {...t.row} />
             </div>
-          ))}
+          )) : (
+            <p className="rounded-pin bg-bg px-4 py-6 text-center text-sub text-ink-sub">{tab === "past" ? "아직 다녀온 여행이 없어요" : "다가오는 여행이 없어요"}</p>
+          )}
         </div>
       </section>
     </>
