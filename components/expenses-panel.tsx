@@ -28,6 +28,7 @@ export function ExpensesPanel({ view, budget }: { view: ExpensesView; budget?: R
   const nameOf = (id: string) => (id === view.me ? "나" : person(id)?.name ?? "나간 사람");
   const transfers = useMemo(() => settle(view.expenses), [view.expenses]);
   const mine = useMemo(() => balances(view.expenses).filter((b) => b.userId === view.me && (b.paid || b.share)), [view.expenses, view.me]);
+  const active = view.people.filter((p) => p.active);
   const [sheet, setSheet] = useState<Draft | null>(null);
   const [picking, setPicking] = useState(false);
 
@@ -44,31 +45,32 @@ export function ExpensesPanel({ view, budget }: { view: ExpensesView; budget?: R
 
   return (
     <div className="flex flex-col gap-5 px-5 pb-32 pt-5">
-      {budget}
-      {/* 정산 요약 */}
-      <section className="flex flex-col gap-3 rounded-deep bg-deep p-5 text-on-deep" aria-labelledby="settle-title">
-        <h2 id="settle-title" className="text-sub font-semibold text-on-deep-sub">정산</h2>
+      {/* 예산, 정산, 경비 세 구역 (2026-11-16 마루님 "혼란스럽지 않게 명확히"). 어두운 카드는 예산 하나만 */}
+      {budget && <Part title="예산" desc="얼마까지 쓸지 정하고, 실제로 쓴 돈과 비교해요">{budget}</Part>}
+      {/* 정산 : 함께하는 사람이 2명 이상일 때만 */}
+      {active.length > 1 && <Part title="정산" desc="적은 경비로 누가 누구에게 얼마를 보내면 되는지 계산해요">
+      <section className="flex flex-col gap-3 rounded-card bg-surface p-5" aria-label="정산 결과">
         {view.expenses.length === 0 ? (
-          <p className="text-body font-semibold">경비를 적으면 누가 누구에게 얼마를 보내면 되는지 알려 줘요</p>
+          <p className="text-sub text-ink-sub">아래에 경비를 적으면 누가 누구에게 얼마를 보내면 되는지 알려 줘요</p>
         ) : mine.length === 0 || mine.every((b) => b.net === 0) ? (
-          <p className="text-title font-extrabold">{transfers.length ? "내가 주고받을 돈은 없어요" : "주고받을 돈이 없어요"}</p>
+          <p className="text-title font-extrabold text-ink">{transfers.length ? "내가 주고받을 돈은 없어요" : "주고받을 돈이 없어요"}</p>
         ) : (
           <div className="flex flex-col gap-1">
             {mine.filter((b) => b.net !== 0).map((b) => (
               <p key={b.currency} className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-sub font-semibold text-on-deep-sub">{b.net > 0 ? "받을 돈" : "보낼 돈"}</span>
-                <span className={"text-number font-extrabold tabular-nums " + (b.net > 0 ? "" : "text-[#FF8466]")}>{formatMoney(Math.abs(b.net), b.currency)}</span>
+                <span className="text-sub font-semibold text-ink-sub">{b.net > 0 ? "받을 돈" : "보낼 돈"}</span>
+                <span className={"text-number font-extrabold tabular-nums " + (b.net > 0 ? "text-ink" : "text-point-text")}>{formatMoney(Math.abs(b.net), b.currency)}</span>
               </p>
             ))}
           </div>
         )}
         {transfers.length > 0 && (
-          <ul className="flex flex-col gap-2 border-t border-deep-soft pt-3">
+          <ul className="flex flex-col gap-2 border-t border-line pt-3">
             {transfers.map((t, i) => (
-              <li key={i} className="flex items-center gap-2 text-sub">
+              <li key={i} className="flex items-center gap-2 text-sub text-ink">
                 <Face id={t.from} view={view} size={26} />
                 <span className="font-bold">{nameOf(t.from)}</span>
-                <Icon name="right" size={14} className="text-on-deep-sub" />
+                <Icon name="right" size={14} className="text-ink-sub" />
                 <Face id={t.to} view={view} size={26} />
                 <span className="min-w-0 flex-1 truncate font-bold">{nameOf(t.to)}</span>
                 <span className="flex-none font-bold tabular-nums">{formatMoney(t.amount, t.currency)}</span>
@@ -77,7 +79,9 @@ export function ExpensesPanel({ view, budget }: { view: ExpensesView; budget?: R
           </ul>
         )}
       </section>
+      </Part>}
 
+      <Part title="경비" desc="실제로 낸 돈을 적어요">
       {canEdit ? (
         <div className="flex gap-2">
           <Button type="button" size="lg" full onClick={() => setSheet({})}><Icon name="plus" size={18} />경비 추가</Button>
@@ -93,7 +97,7 @@ export function ExpensesPanel({ view, budget }: { view: ExpensesView; budget?: R
       ) : groups.map(([date, list]) => (
         <section key={date || "none"} className="flex flex-col gap-2" aria-label={date ? md(date) : "날짜 없음"}>
           <div className="flex items-end justify-between px-1">
-            <h2 className="text-sub font-bold text-ink">{date ? `${md(date)} (${weekday(date)})` : "날짜 없음"}</h2>
+            <h3 className="text-sub font-bold text-ink">{date ? `${md(date)} (${weekday(date)})` : "날짜 없음"}</h3>
             <span className="text-tiny font-semibold text-ink-sub tabular-nums">{sumText(list)}</span>
           </div>
           <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface">
@@ -119,7 +123,8 @@ export function ExpensesPanel({ view, budget }: { view: ExpensesView; budget?: R
           </ul>
         </section>
       ))}
-      {view.expenses.length > 0 && <p className="px-1 text-tiny text-ink-sub">통화가 다르면 따로 계산해요. 나누어떨어지지 않는 나머지는 낸 사람이 떠안아요</p>}
+      {view.expenses.length > 0 && active.length > 1 && <p className="px-1 text-tiny text-ink-sub">통화가 다르면 따로 계산해요. 나누어떨어지지 않는 나머지는 낸 사람이 떠안아요</p>}
+      </Part>
 
       {picking && (
         <Modal title="장소에서 가져오기" onClose={() => setPicking(false)}>
@@ -143,6 +148,18 @@ export function ExpensesPanel({ view, budget }: { view: ExpensesView; budget?: R
       )}
       {sheet && <ExpenseSheet view={view} draft={sheet} onClose={() => setSheet(null)} />}
     </div>
+  );
+}
+
+function Part({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3" aria-label={title}>
+      <div className="px-1">
+        <h2 className="text-title font-bold text-ink">{title}</h2>
+        <p className="text-tiny text-ink-sub">{desc}</p>
+      </div>
+      {children}
+    </section>
   );
 }
 

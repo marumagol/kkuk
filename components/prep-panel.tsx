@@ -77,8 +77,6 @@ export function BudgetSection({ view, actual }: { view: PrepView; actual: number
   );
 }
 
-/* 어두운 카드 위 분류 색 (바탕 #2D3139 와 4.5 : 1 이상) */
-const CAT_BAR: Record<string, string> = { "식사": "#FF8466", "쇼핑": "#B4A5FF", "이동": "#6FD3A8", "관광": "#FFD479", "숙소": "#8EC5FF" };
 
 const DEFAULT_ITEMS = ["여권", "충전기", "보조배터리", "상비약", "환전", "여행자 보험", "유심 또는 eSIM", "세면도구"];
 
@@ -90,11 +88,9 @@ function Budget({ view, canEdit, busy, run, actual }: { view: PrepView; canEdit:
   const [edit, setEdit] = useState(false);
   const [amount, setAmount] = useState(view.budget ? String(view.budget.total / 10 ** d) : "");
   const total = view.budget?.total ?? 0;
-  const left = total - view.spent;
   /* [원화로 보기] (2026-11-16 마루님) : 누르면 카드의 외화 금액이 모두 원화로 바뀐다. 다시 누르면 원래 통화 */
   const [inKrw, setInKrw] = useState(false);
   const money = (minor: number) => (inKrw && view.krw ? `₩${Math.round((minor / 10 ** d) * view.krw).toLocaleString("ko-KR")}` : formatMoney(minor, cur));
-  const pct = total ? Math.min(100, Math.round((view.spent / total) * 100)) : 0;
   const editBtn = canEdit && (
     <button type="button" onClick={() => setEdit(true)} className="press inline-flex h-8 items-center rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">{view.budget ? "예산 수정" : "예산 정하기"}</button>
   );
@@ -110,11 +106,18 @@ function Budget({ view, canEdit, busy, run, actual }: { view: PrepView; canEdit:
       <button type="button" onClick={() => setEdit(false)} className="press h-9 self-start px-1 text-tiny font-semibold text-ink-sub underline underline-offset-2">닫기</button>
     </section>
   );
-  /* 어두운 남은 예산 카드 (피그마 06 준비). 도장처럼 테마를 따라가지 않는 카드라 막대 색은 여기서 정한다 */
+  /*
+    예산 카드 (2026-11-16 마루님 "예산, 경비, 정산을 명확히") : 실제로 쓴 돈(경비) 기준
+    - 큰 숫자 : 남은 예산 (예산이 없으면 쓴 돈), 막대 하나 = 쓴 돈 / 예산
+    - 장소 예상 비용은 "예상" 한 줄로만 작게
+  */
+  const remain = total - actual;
+  const used = total ? Math.min(100, Math.round((actual / total) * 100)) : 0;
+  const over = !!view.budget && remain < 0;
   return (
     <section className="flex flex-col gap-3 rounded-deep bg-deep p-5 text-on-deep" aria-labelledby="budget-title">
       <div className="flex items-center justify-between gap-2">
-        <h2 id="budget-title" className="text-sub font-semibold text-on-deep-sub">{view.budget ? (left < 0 ? "예산을 넘었어요" : "남은 예산") : "예상 비용"}</h2>
+        <h2 id="budget-title" className="text-sub font-semibold text-on-deep-sub">{view.budget ? (over ? "예산을 넘었어요" : "남은 예산") : "쓴 돈"}</h2>
         <span className="flex items-center gap-1.5">
           {view.krw && <button type="button" onClick={() => setInKrw((v) => !v)} aria-pressed={inKrw}
             className="press inline-flex h-8 items-center rounded-full border border-deep-soft px-3 text-tiny font-semibold text-on-deep">{inKrw ? `${cur}로 보기` : "원화로 보기"}</button>}
@@ -122,34 +125,19 @@ function Budget({ view, canEdit, busy, run, actual }: { view: PrepView; canEdit:
         </span>
       </div>
       <p className="flex flex-wrap items-baseline gap-x-2">
-        <span className="text-number font-extrabold tabular-nums">{inKrw && "약 "}{money(view.budget ? left : view.spent)}</span>
-        {view.budget && <span className="text-sub text-on-deep-sub">/ {money(total)}</span>}
+        <span className={"text-number font-extrabold tabular-nums " + (over ? "text-[#FF8466]" : "")}>{inKrw && view.krw ? "약 " : ""}{money(view.budget ? Math.abs(remain) : actual)}</span>
+        {view.budget && <span className="text-sub text-on-deep-sub">/ 예산 {money(total)}</span>}
       </p>
-      {/* 원화 환산 (참고용, 2026-11-16 마루님) */}
-      <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-deep-soft" role="img"
-        aria-label={view.budget ? `예산의 ${pct}% 사용` : "분류별 예상 비용"}>
-        {view.byCategory.map((c) => (
-          <span key={c.category} className="h-full" style={{ width: `${(c.amount / Math.max(total, view.spent, 1)) * 100}%`, background: CAT_BAR[c.category] }} />
-        ))}
-      </div>
-      {view.byCategory.length > 0 ? (
-        <ul className="flex flex-wrap gap-x-4 gap-y-1">
-          {view.byCategory.map((c) => (
-            <li key={c.category} className="flex items-center gap-1.5 text-tiny font-semibold" style={{ color: CAT_BAR[c.category] }}>
-              <span aria-hidden className="size-2 rounded-full" style={{ background: CAT_BAR[c.category] }} />
-              {c.category} <span className="tabular-nums">{money(c.amount)}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-tiny text-on-deep-sub">장소에 예상 비용을 적으면 분류별로 여기에 모여요</p>
+      {view.budget && (
+        <div className="h-2 overflow-hidden rounded-full bg-deep-soft" role="img" aria-label={`예산의 ${used}% 씀`}>
+          <span className="block h-full rounded-full" style={{ width: `${used}%`, background: over ? "#FF8466" : "#6FD3A8" }} />
+        </div>
       )}
-      {/* 실제 쓴 돈 (경비 탭에 적은 것) */}
-      <p className="flex items-center justify-between gap-2 border-t border-deep-soft pt-3 text-sub">
-        <span className="font-semibold text-on-deep-sub">실제로 쓴 돈 (경비)</span>
-        <span className="font-bold tabular-nums">{inKrw && view.krw ? "약 " : ""}{money(actual)}</span>
-      </p>
-      <p className="text-tiny text-on-deep-sub">막대와 분류는 {cur} 로 적은 장소 예상 비용이에요{inKrw && view.krw ? `. 원화는 1 ${cur} = ${view.krw < 10 ? view.krw.toFixed(2) : Math.round(view.krw).toLocaleString("ko-KR")}원 기준 참고용이에요` : ""}</p>
+      <dl className="flex flex-col gap-1 text-sub">
+        {view.budget && <div className="flex items-center justify-between gap-2"><dt className="text-on-deep-sub">쓴 돈 (경비)</dt><dd className="font-bold tabular-nums">{money(actual)}</dd></div>}
+        {view.spent > 0 && <div className="flex items-center justify-between gap-2"><dt className="text-on-deep-sub">예상 (장소에 적은 비용)</dt><dd className="font-semibold tabular-nums text-on-deep-sub">{money(view.spent)}</dd></div>}
+      </dl>
+      <p className="text-tiny text-on-deep-sub">{cur} 로 적은 경비만 더해요{inKrw && view.krw ? `. 원화는 1 ${cur} = ${view.krw < 10 ? view.krw.toFixed(2) : Math.round(view.krw).toLocaleString("ko-KR")}원 기준 참고용이에요` : ""}</p>
     </section>
   );
 }
