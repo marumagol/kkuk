@@ -12,7 +12,7 @@ import { TRIPS, getTrip, daysBetween, addDays, todayKST, type Trip, type Item } 
 import { currencyOf, formatMoney, iconUrl } from "@/lib/countries";
 import { avatarUrl } from "@/lib/storage";
 import { placesEnabled, details } from "@/lib/places";
-import { detailLine, parsePos } from "@/lib/place-fields";
+import { detailLine, moveTitle, parsePos } from "@/lib/place-fields";
 import type { Viewer } from "@/lib/viewer";
 
 const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소", memo: "메모" };
@@ -126,8 +126,10 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   trip.days = Array.from({ length: len }, () => ({ items: [] as Item[] }));
   for (const it of (rows ?? []) as PlaceRow[]) {
     const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
-    const desc = it.category === "memo" ? it.memo ?? "" : [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
-    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), addr: it.address || undefined, gpid: it.google_place_id || undefined, ...(it.estimated_cost != null && it.cost_currency ? { cost: it.estimated_cost, cur: it.cost_currency } : {}), hours: it.details?._hours || undefined, ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), ...arriveOf(it), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
+    // 이동은 주소 줄을 빼고, 출발 → 도착이 이름에 보이면 아래 줄의 경로는 뺀다 (2026-11-16)
+    const desc = it.category === "memo" ? it.memo ?? "" : [it.category === "transport" ? "" : it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
+    const mt = moveTitle(it.category, it.title, it.details);
+    const item: Item = { id: it.id, title: mt.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details, mt.route) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), addr: it.address || undefined, gpid: it.google_place_id || undefined, ...(it.estimated_cost != null && it.cost_currency ? { cost: it.estimated_cost, cur: it.cost_currency } : {}), hours: it.details?._hours || undefined, ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), ...arriveOf(it), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }

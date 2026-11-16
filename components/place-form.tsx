@@ -18,7 +18,7 @@ import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
 import { PlaceSuggest, type Picked } from "@/components/place-search";
-import { fieldsOf, guessCategory, MODES, MOVE_PLACE_KEYS, MOVE_TIME_KEYS, parsePos, posText, type Details } from "@/lib/place-fields";
+import { fieldsOf, guessCategory, moveTitle, MODES, MOVE_PLACE_KEYS, MOVE_TIME_KEYS, parsePos, posText, type Details } from "@/lib/place-fields";
 
 const CATS = [
   { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
@@ -35,7 +35,7 @@ const CUR_NAME: Record<string, string> = { KRW: "원", JPY: "엔", USD: "달러"
 export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceContext; day: number | null; memo?: boolean }) {
   const p = ctx.place;
   const startCur = p?.cost_currency ?? ctx.currency;
-  const [title, setTitle] = useState(p?.title ?? "");
+  const [title, setTitle] = useState(p ? moveTitle(p.category, p.title, p.details).title : ""); // 이동은 출발 → 도착으로 연다
   const [category, setCategory] = useState(p?.category ?? (startMemo ? "memo" : "sight"));
   const isMemo = category === "memo";
   const [time, setTime] = useState(p?.start_time?.slice(0, 5) ?? "");
@@ -55,7 +55,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const isMove = category === "transport";
   const fields = fieldsOf(category, extra.mode).filter((f) => !(isMove && (MOVE_TIME_KEYS.includes(f.key) || MOVE_PLACE_KEYS.includes(f.key))));
   // 이동 이름 자동 : 출발지/도착지를 고르면 "인천 → 신치토세". 이름을 직접 바꾸면 더는 바꾸지 않는다
-  const autoTitle = useRef<string | null>(null);
+  const autoTitle = useRef<string | null>(p && moveTitle(p.category, p.title, p.details).route ? moveTitle(p.category, p.title, p.details).title : null);
   const moveTouched = useRef(false); // 이번에 출발지/도착지 위치를 바꿨는지 (저장 때 일정 지도 위치를 맞춘다)
   const setStop = (k: "from" | "to", v: { name: string; lat?: number; lng?: number; id?: string }) => {
     moveTouched.current = true;
