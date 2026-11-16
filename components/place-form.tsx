@@ -80,7 +80,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     setError("");
     if (!titleLen) return setError(isMemo ? "메모 제목을 적어 주세요" : "장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: extra, reserve, ...(linked !== undefined ? { place: linked } : {}) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo ? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: extra, reserve, ...(linked !== undefined ? { place: linked } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -155,7 +155,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className={"grid gap-3 " + (isMemo ? "grid-cols-1" : "grid-cols-2")}>
           <label className="flex min-w-0 flex-col gap-2">
             <span className="text-sub font-bold text-ink-sub">날짜</span>
             <select value={dayValue} onChange={(e) => setDayValue(e.target.value)} disabled={busy}
@@ -167,7 +167,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
               <option value="none">날짜 미정</option>
             </select>
           </label>
-          <Field label="시간 (선택)" name="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} />
+          {!isMemo && <Field label="시간 (선택)" name="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} />}
         </div>
 
         {!isMemo && <div className="flex items-end gap-2">
