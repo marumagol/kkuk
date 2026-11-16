@@ -59,12 +59,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
           <>
             {statusOf(hero, today) === "ongoing" ? (
               <h1 className="text-title-xl font-extrabold text-ink">
-                {hero.cities[0]} 여행<br /><span className="text-point-text">{daysBetween(hero.start, today) + 1}일째</span>예요
+                {hero.cities[0]} 여행 <span className="text-point-text">{daysBetween(hero.start, today) + 1}일째</span>예요
               </h1>
             ) : (
               <h1 className="text-title-xl font-extrabold text-ink">
-                {left === 1 ? <>{hero.cities[0]},<br /><span className="text-point-text">내일</span> 떠나요</>
-                  : <>{hero.cities[0]}까지<br /><span className="text-point-text">{left}일</span> 남았어요</>}
+                {left === 1 ? <>{hero.cities[0]}, <span className="text-point-text">내일</span> 떠나요</>
+                  : <>{hero.cities[0]}까지 <span className="text-point-text">{left}일</span> 남았어요</>}
               </h1>
             )}
             <Link href={`/trips/${hero.id}`} aria-label={`${hero.title} 일정 보기`} className="press block rounded-deep">
@@ -97,7 +97,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
           </>
         ) : (
           <>
-            <h1 className="text-title-xl font-extrabold text-ink">어디로<br />떠나 볼까요?</h1>
+            <h1 className="text-title-xl font-extrabold text-ink">어디로 떠나 볼까요?</h1>
             <EmptyState title={loggedIn ? "다가오는 여행이 없어요" : "아직 여행이 없어요"} desc="도시와 날짜만 정하면 바로 시작할 수 있어요"
               action={<GateCta href="/trips/new">여행 만들기</GateCta>} />
           </>

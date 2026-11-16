@@ -22,7 +22,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           <Logo />
           <Link href={next} className="press inline-flex h-11 items-center px-1 text-sub font-semibold text-ink-sub underline underline-offset-4">둘러보기</Link>
         </div>
-        <h1 className="mt-8 text-title-xl font-extrabold text-ink">KKuK<br />시작해요</h1>
+        <h1 className="mt-8 text-title-xl font-extrabold text-ink">KKuK 시작해요</h1>
         <p className="mt-2 text-sub text-ink-sub">구글 계정으로 바로 시작하거나, 메일로 받은 6자리 코드로 로그인해요. 비밀번호는 없어요</p>
 
         <div className="mt-8">

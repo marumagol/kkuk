@@ -50,7 +50,7 @@ export default async function HomeScreen({ searchParams }: { searchParams: Promi
         {state === "ok" && (
           <>
             <h1 className="text-title-xl font-extrabold text-ink">
-              {trip.city}까지<br /><span className="text-point-text">{trip.days}일</span> 남았어요
+              {trip.city}까지 <span className="text-point-text">{trip.days}일</span> 남았어요
             </h1>
             <TicketCard dday={trip.dday} title={trip.title} period={trip.period} stops={trip.stops}
               pinCount={trip.pinCount} ready={trip.ready} members={trip.members} />
@@ -74,7 +74,7 @@ export default async function HomeScreen({ searchParams }: { searchParams: Promi
 
         {state === "empty" && (
           <>
-            <h1 className="text-title-xl font-extrabold text-ink">어디로<br />떠나 볼까요?</h1>
+            <h1 className="text-title-xl font-extrabold text-ink">어디로 떠나 볼까요?</h1>
             <EmptyState title="아직 여행이 없어요" desc="도시와 날짜만 정하면 바로 시작할 수 있어요"
               action={<Button full icon="arrow">여행 만들기</Button>} />
           </>
