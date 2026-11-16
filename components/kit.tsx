@@ -13,7 +13,7 @@ const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).jo
 /* ---------- 아이콘 (선 1.75, 둥근 끝) ---------- */
 type IconName =
   | "plus" | "bell" | "home" | "cal" | "map" | "user" | "arrow" | "camera"
-  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin" | "share" | "list" | "globe" | "trash" | "search" | "down";
+  | "clock" | "won" | "wifi-off" | "lock" | "grip" | "x" | "back" | "right" | "refresh" | "image" | "alert" | "stamp" | "pencil" | "gear" | "sun" | "moon" | "device" | "check" | "book" | "link" | "heart" | "chat" | "send" | "users" | "up" | "pin" | "share" | "list" | "globe" | "trash";
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
   bell: <><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7z" /><path d="M10 19a2 2 0 0 0 4 0" /></>,
@@ -51,8 +51,6 @@ const PATHS: Record<IconName, ReactNode> = {
   send: <><path d="M20 4 10.5 13.5" /><path d="M20 4l-6 16-3.5-6.5L4 10z" /></>,
   users: <><circle cx="9" cy="8.5" r="3" /><path d="M3.5 19c0-3 2.4-5 5.5-5s5.5 2 5.5 5" /><path d="M15.5 6a3 3 0 0 1 0 5.5M17 14.3c2.1.6 3.5 2.3 3.5 4.7" /></>,
   up: <path d="M12 19V5M6 11l6-6 6 6" />,
-  search: <><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></>,
-  down: <path d="m6 9 6 6 6-6" />,
   pin: <><path d="M12 21s-6-5.6-6-10.5a6 6 0 1 1 12 0C18 15.4 12 21 12 21z" /><circle cx="12" cy="10.5" r="2" /></>,
   stamp: <><circle cx="12" cy="12" r="8.5" strokeDasharray="3 2.6" /><circle cx="12" cy="12" r="4.5" /></>,
 };

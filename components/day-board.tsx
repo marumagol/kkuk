@@ -16,16 +16,14 @@ import { BottomDock } from "@/components/screen";
 import { reorderPlaces, moveItem, deletePlace, fillTripCoords, setItemTimes } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { safeCall } from "@/lib/safe-call";
-import { QuickAdd } from "@/components/quick-add";
 import { addDays, md, weekday, type Item } from "@/lib/mock";
 
 type Props = {
   tripId: string; start: string; days: { title?: string; items: Item[] }[]; undated: Item[];
   editable: boolean; canAdd: boolean; user: boolean; initialDay: number; jump: boolean; jumpUndated?: boolean;
-  search?: { searchable: boolean; bias: { lat: number; lng: number } | null }; // 빠른 추가 창의 장소 검색
 };
 
-export function DayBoard({ tripId, start, days, undated, editable, canAdd, user, initialDay, jump, jumpUndated, search }: Props) {
+export function DayBoard({ tripId, start, days, undated, editable, canAdd, user, initialDay, jump, jumpUndated }: Props) {
   const len = days.length;
   const U = len; // 날짜 미정 칸 번호
   const fromProps = useCallback(() => [...days.map((d) => d.items), undated], [days, undated]);
@@ -33,9 +31,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const [dragId, setDragId] = useState<string | null>(null);
   const [active, setActive] = useState(initialDay);
   const [msg, setMsg] = useState("");
-  // 빠른 추가 창 (장소/메모). day : 0 = 1일차, null = 날짜 미정
-  const [adding, setAdding] = useState<{ day: number | null; kind: "place" | "memo" } | null>(null);
-  const closeAdd = useCallback(() => setAdding(null), []);
   const colsRef = useRef(cols);
   colsRef.current = cols;
   const before = useRef<Item[][]>(cols);
@@ -331,12 +326,12 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               {cols[c].length ? list(c) : empty(c)}
               {canAdd && !dragId && user && (
                 <div className="-mt-1 flex gap-1.5 pl-10">
-                  <button type="button" onClick={() => setAdding({ day: c, kind: "place" })} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                  <Link href={`/trips/${tripId}/places/new?day=${c + 1}`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
                     <Icon name="plus" size={14} />장소
-                  </button>
-                  <button type="button" onClick={() => setAdding({ day: c, kind: "memo" })} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
+                  </Link>
+                  <Link href={`/trips/${tripId}/places/new?day=${c + 1}&kind=memo`} className="press inline-flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-tiny font-bold text-ink">
                     <Icon name="pencil" size={14} />메모
-                  </button>
+                  </Link>
                 </div>
               )}
             </section>
@@ -365,12 +360,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
       {asking && <AlertDialog title={asking.category === "메모" ? "메모를 지울까요?" : "장소를 지울까요?"} desc={`"${asking.title}"이(가) 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요`}
         confirmLabel="지우기" confirm={() => { const it = asking; setAsking(null); void remove(it); }} onClose={() => setAsking(null)} />}
-      {canAdd && <BottomDock align="end">{user
-        ? <button type="button" onClick={() => setAdding({ day: active >= 1 && active <= len ? active - 1 : null, kind: "place" })}
-            className="press inline-flex h-12 items-center gap-2 rounded-full bg-btn pl-4 pr-5 text-sub font-bold text-on-btn shadow-float"><Icon name="plus" size={20} />장소 추가</button>
-        : <GateFab />}</BottomDock>}
-      {adding && <QuickAdd tripId={tripId} start={start} days={len} day={adding.day} kind={adding.kind}
-        searchable={search?.searchable ?? false} bias={search?.bias ?? null} onClose={closeAdd} />}
+      {canAdd && <BottomDock align="end"><GateFab href={user ? `/trips/${tripId}/places/new?day=${active}` : undefined} /></BottomDock>}
     </>
   );
 }
