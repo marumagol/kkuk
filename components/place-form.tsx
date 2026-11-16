@@ -325,12 +325,13 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
 
 
           <FormCard title={isMemo ? "내용" : "메모와 첨부 파일"} desc={isMemo ? undefined : "함께하는 사람만 볼 수 있어요"}>
-          <label className="flex flex-col gap-2">
-            <span className="text-tiny font-bold text-ink-sub">{isMemo ? "내용 (선택)" : "메모 (선택)"}</span>
-            <textarea value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={MAX_PLACE_MEMO} rows={4} disabled={busy}
+          {/* 글 칸을 label 로 감싸지 않는다 : 아이폰/웨일에서 글 끝을 누르면 커서가 맨 앞으로 가는 문제 (2026-11-16 마루님) */}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="place-memo" className="text-tiny font-bold text-ink-sub">{isMemo ? "내용 (선택)" : "메모 (선택)"}</label>
+            <textarea id="place-memo" value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={MAX_PLACE_MEMO} rows={4} disabled={busy}
               placeholder={isMemo ? "그날 기억할 것, 할 일 등" : "가는 방법, 챙길 것 등"}
               className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
-          </label>
+          </div>
 
           {/* 첨부 파일 : 예약 화면과 같은 모양 (2026-11-16 마루님). PDF 는 카드에 그림 없이 개수에만 */}
           {!isMemo && <section className="flex flex-col gap-2" aria-label="첨부 파일">

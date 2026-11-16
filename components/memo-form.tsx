@@ -83,12 +83,13 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
       </div>
 
       <div className="flex flex-1 flex-col gap-5 px-5 pb-10 pt-2">
-        <label className="flex flex-col">
-          <span className="sr-only">메모 내용</span>
-          <textarea value={text} onChange={(e) => { setText(e.target.value); setError(""); }} maxLength={MAX_PLACE_MEMO} disabled={busy} autoFocus={!p}
+        {/* 글 칸을 label 로 감싸지 않는다 : 아이폰/웨일에서 글 끝을 누르면 커서가 맨 앞으로 가는 문제 (2026-11-16 마루님) */}
+        <div className="flex flex-col">
+          <label htmlFor="memo-text" className="sr-only">메모 내용</label>
+          <textarea id="memo-text" value={text} onChange={(e) => { setText(e.target.value); setError(""); }} maxLength={MAX_PLACE_MEMO} disabled={busy} autoFocus={!p}
             rows={8} placeholder={"잊기 쉬운 정보나 사진을 남겨 보세요.\n여권, 신분증 같은 개인 정보는 올릴 때 조심해 주세요."}
             className="min-h-[40dvh] w-full resize-none rounded-card border border-line-strong bg-surface px-4 py-4 text-body leading-relaxed text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
-        </label>
+        </div>
 
         <div className="flex flex-wrap gap-2">
           {photos.map((ph, i) => (
