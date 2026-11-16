@@ -174,25 +174,47 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
         {it.itemId && <Link href={`/trips/${view.tripId}/places/${it.itemId}`} className="inline-flex items-center gap-0.5 text-tiny text-ink-sub underline underline-offset-2"><Icon name="pin" size={12} />일정 장소</Link>}
       </div>
       {it.due && <span className={"flex-none rounded-full px-2.5 py-1 text-tiny font-semibold " + (it.done ? "bg-surface-soft text-ink" : "bg-warn-soft text-warn-text")}>{md(it.due)}</span>}
-      {canEdit ? (
-        <label className={"relative flex size-8 flex-none items-center justify-center rounded-full text-tiny font-bold " + (name ? "bg-accent-soft text-accent-text" : "border border-dashed border-line-strong text-ink-sub")}>
-          <span aria-hidden>{name ? [...name][0] : "+"}</span>
-          <span className="sr-only">{it.title} 담당자</span>
-          <select value={it.assignee ?? ""} disabled={busy} onChange={(e) => run(() => updatePrepItem(view.tripId, it.id, { assignee: e.target.value || null }))}
-            className="absolute inset-0 size-full cursor-pointer opacity-0">
-            <option value="">담당 없음</option>
-            {view.people.map((p) => <option key={p.userId} value={p.userId}>{p.name}</option>)}
-          </select>
-        </label>
-      ) : name ? <span title={name} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span> : null}
-      {canEdit && (
-        <button type="button" aria-label={`${it.title} 고치기`} disabled={busy} onClick={() => setEdit(true)}
-          className="press flex size-9 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="pencil" size={16} /></button>
-      )}
-      {canEdit && (
-        <button type="button" aria-label={`${it.title} 지우기`} disabled={busy} onClick={() => run(() => updatePrepItem(view.tripId, it.id, { remove: true }))}
-          className="press flex size-9 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="x" size={16} /></button>
-      )}
+      {name && <span title={`담당 ${name}`} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span>}
+      {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} onEdit={() => setEdit(true)} />}
     </li>
+  );
+}
+
+/* 줄 오른쪽 ⋯ 메뉴 : 담당자 지정, 고치기, 지우기 (2026-11-16 마루님 "버튼이 칸을 너무 차지해") */
+function RowMenu({ it, view, busy, run, onEdit }: { it: PrepItem; view: PrepView; busy: boolean; run: RunFn; onEdit: () => void }) {
+  const [open, setOpen] = useState<"menu" | "who" | null>(null);
+  const close = () => setOpen(null);
+  const item = "press flex min-h-11 w-full items-center gap-2.5 px-4 text-left text-body text-ink";
+  return (
+    <div className="relative flex-none">
+      <button type="button" aria-label={`${it.title} 메뉴`} aria-haspopup="menu" aria-expanded={!!open} disabled={busy}
+        onClick={() => setOpen(open ? null : "menu")}
+        className="press flex size-9 items-center justify-center rounded-full text-ink-sub"><Icon name="more" size={20} /></button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={close} aria-hidden />
+          <div role="menu" onKeyDown={(e) => e.key === "Escape" && close()}
+            className="absolute right-0 top-10 z-40 min-w-[168px] overflow-hidden rounded-field bg-surface py-1 shadow-float ring-1 ring-line">
+            {open === "menu" ? (
+              <>
+                <button type="button" role="menuitem" autoFocus className={item} onClick={() => setOpen("who")}><Icon name="user" size={18} className="text-ink-sub" />담당자 지정</button>
+                <button type="button" role="menuitem" className={item} onClick={() => { close(); onEdit(); }}><Icon name="pencil" size={18} className="text-ink-sub" />고치기</button>
+                <button type="button" role="menuitem" className={item + " text-point-text"} onClick={() => { close(); run(() => updatePrepItem(view.tripId, it.id, { remove: true })); }}>
+                  <Icon name="trash" size={18} />지우기
+                </button>
+              </>
+            ) : (
+              [{ userId: "", name: "담당 없음" }, ...view.people].map((p) => (
+                <button key={p.userId || "none"} type="button" role="menuitemradio" aria-checked={(it.assignee ?? "") === p.userId} className={item}
+                  onClick={() => { close(); if ((it.assignee ?? "") !== p.userId) run(() => updatePrepItem(view.tripId, it.id, { assignee: p.userId || null })); }}>
+                  <span className="flex-1 truncate">{p.name}</span>
+                  {(it.assignee ?? "") === p.userId && <Icon name="check" size={16} className="text-point-text" />}
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
