@@ -12,8 +12,8 @@ import { Icon } from "@/components/kit";
 
 const HOLD_MS = 450, SLOP = 8;
 
-export function SwipeRow({ children, onDelete, onLongPress, disabled, className = "", rounded = "rounded-pin" }: {
-  children: ReactNode; onDelete?: () => void; onLongPress?: (y: number) => void; disabled?: boolean; className?: string; rounded?: string;
+export function SwipeRow({ children, onDelete, onLongPress, disabled, className = "", rounded = "rounded-pin", bg = "bg-bg" }: {
+  children: ReactNode; onDelete?: () => void; onLongPress?: (y: number) => void; disabled?: boolean; className?: string; rounded?: string; bg?: string /* 미는 줄의 바탕 (뒤 빨간 칸이 비치지 않게) */;
 }) {
   const [dx, setDx] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -50,6 +50,7 @@ export function SwipeRow({ children, onDelete, onLongPress, disabled, className 
     <div ref={box} className={`relative touch-pan-y select-none [-webkit-touch-callout:none] ${className}`}
       onClickCapture={(e) => { if (eatClick.current) { e.preventDefault(); e.stopPropagation(); eatClick.current = false; } }}
       onContextMenu={(e) => { if (onLongPress) e.preventDefault(); }}
+      onDragStart={(e) => e.preventDefault() /* 링크 끌기(컴퓨터)가 밀기를 끊지 않게 */}
       onPointerDown={(e) => {
         if (disabled || e.button !== 0 || (e.target as Element).closest("button, a[target=_blank], input, textarea, select, [data-grip]")) return;
         eatClick.current = false;
@@ -80,7 +81,7 @@ export function SwipeRow({ children, onDelete, onLongPress, disabled, className 
           <Icon name="trash" size={18} />삭제
         </div>
       )}
-      <div className="relative" style={{ transform: dx ? `translateX(${dx}px)` : undefined, transition: g.current?.mode === "swipe" && !leaving ? "none" : "transform 180ms ease-out" }}>
+      <div className={`relative ${dx ? bg : ""}`} style={{ transform: dx ? `translateX(${dx}px)` : undefined, transition: g.current?.mode === "swipe" && !leaving ? "none" : "transform 180ms ease-out" }}>
         {children}
       </div>
     </div>

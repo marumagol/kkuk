@@ -12,6 +12,7 @@ import { FEATURES } from "@/lib/features";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon, PinCard } from "@/components/kit";
+import { SwipeRow } from "@/components/swipe-row";
 import { GateButton, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
 import { DayMap, type DayPoint } from "@/components/day-map";
@@ -132,6 +133,40 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   };
 
   /* 목록에서 바로 지우기 (확인 창 한 번). 실패하면 되돌리고 안내 */
+  /*
+    밀어서 삭제 (2026-11-16 마루님) : 목록에서 바로 빼고 5초 동안 [되돌리기]. 5초가 지나거나 다른 줄을 또 지우거나 화면을 떠나면 실제로 삭제
+  */
+  const pendingDel = useRef<{ it: Item; c: number; i: number; timer: number } | null>(null);
+  const [delUndo, setDelUndo] = useState(false);
+  const commitDel = (p: { it: Item; timer: number }) => {
+    clearTimeout(p.timer);
+    void safeCall(() => deletePlace(tripId, p.it.id!)).then((r) => { if (r?.error) { setMsg(r.error); setCols(fromProps()); } });
+  };
+  const flushDel = () => { const p = pendingDel.current; pendingDel.current = null; setDelUndo(false); if (p) commitDel(p); };
+  const swipeDelete = (it: Item) => {
+    if (busy.current || !it.id) return;
+    flushDel();
+    const prev = colsRef.current;
+    const at = where(prev, it.id);
+    if (!at) return;
+    const next = prev.map((c) => c.filter((x) => x.id !== it.id));
+    setCols(next); colsRef.current = next; setUndo(null);
+    pendingDel.current = { it, ...at, timer: window.setTimeout(flushDel, 5000) };
+    setDelUndo(true); setMsg(`"${it.title}"을(를) 삭제했어요`);
+  };
+  const undoDel = () => {
+    const p = pendingDel.current;
+    if (!p) return;
+    clearTimeout(p.timer); pendingDel.current = null; setDelUndo(false);
+    const next = colsRef.current.map((c, ci) => (ci === p.c ? [...c.slice(0, p.i), p.it, ...c.slice(p.i)] : c));
+    setCols(next); colsRef.current = next; setMsg("되돌렸어요");
+  };
+  useEffect(() => {
+    const leave = () => flushDel();
+    addEventListener("pagehide", leave);
+    return () => { removeEventListener("pagehide", leave); flushDel(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const remove = async (it: Item) => {
     if (busy.current) return;
     const prev = colsRef.current;
@@ -143,7 +178,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   };
 
   // 저장 뒤나 다른 사람이 고쳐서 새 목록이 오면 맞춘다 (끄는 중, 저장 중에는 그대로)
-  useEffect(() => { if (!dragId && !busy.current) setCols(fromProps()); }, [fromProps]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!dragId && !busy.current) { const pid = pendingDel.current?.it.id; setCols(fromProps().map((c) => (pid ? c.filter((x) => x.id !== pid) : c))); } }, [fromProps]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* 고른 날 : 칩을 가운데로, 주소에 남기기 */
   useEffect(() => {
@@ -225,7 +260,10 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     addEventListener("pointermove", move);
     addEventListener("pointerup", drop);
     addEventListener("pointercancel", drop);
-    return () => { removeEventListener("pointermove", move); removeEventListener("pointerup", drop); removeEventListener("pointercancel", drop); };
+    // 길게 눌러 옮기는 중에는 화면이 스크롤되지 않게 (휴대폰)
+    const noScroll = (e: TouchEvent) => e.preventDefault();
+    addEventListener("touchmove", noScroll, { passive: false });
+    return () => { removeEventListener("pointermove", move); removeEventListener("pointerup", drop); removeEventListener("pointercancel", drop); removeEventListener("touchmove", noScroll); };
   }, [dragId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* 끄는 동안 화면 아래 끝 근처면 저절로 스크롤 (위쪽은 날짜 칩이 있어 시트 맨 위까지만) */
@@ -388,6 +426,9 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                     {gap && !dragId && (
                       <span className="-mt-2 mb-1 -ml-1 w-fit rounded-full border border-line bg-bg px-2 py-0.5 text-tiny font-bold leading-4 text-ink-sub">{gap}</span>
                     )}
+                    <SwipeRow disabled={!editable || editing || !it.id || !!dragId}
+                      onDelete={editable && it.id ? () => swipeDelete(it) : undefined}
+                      onLongPress={editable && canSort && sel !== ALL && it.id ? (y) => { flushDel(); before.current = colsRef.current; lastY.current = y; setDragId(it.id!); setMsg(""); } : undefined}>
                     <div className="flex items-start gap-1">
                       <div className="min-w-0 flex-1">
                         <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
@@ -416,6 +457,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                         </div>
                       )}
                     </div>
+                    </SwipeRow>
                   </li>
                 );
               })}
@@ -435,6 +477,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         {msg && (
           <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-deep py-2 pl-4 pr-2 text-tiny font-semibold text-on-deep shadow-float">
             <span className="min-w-0">{msg}</span>
+            {delUndo && <button type="button" onClick={undoDel} className="press h-8 flex-none rounded-full bg-deep-soft px-3 font-bold">되돌리기</button>}
             {undo && <button type="button" onClick={() => { if (busy.current) return; const u = undo; void applyDay(u.c, u.items, "원래 순서로 돌렸어요", null); }}
               className="press h-8 flex-none rounded-full bg-deep-soft px-3 font-bold">되돌리기</button>}
           </p>

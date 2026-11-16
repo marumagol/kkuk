@@ -1,10 +1,11 @@
 "use client";
 /* 준비 탭 내용 : 체크리스트, 예약 (예산 카드는 2026-11-16 경비 탭으로 옮김, BudgetSection). 저장은 app/actions.ts (RLS 가 권한 검사) */
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { SwipeRow } from "@/components/swipe-row";
 import { useRouter } from "next/navigation";
 import { Button, Field, Icon } from "@/components/kit";
-import { addPrepItem, addPrepDefaults, updatePrepItem, saveBudget } from "@/app/actions";
+import { addPrepItem, addPrepDefaults, updatePrepItem, saveBudget, reorderPrep } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 import { decimalsOf, formatMoney } from "@/lib/countries";
 import { md } from "@/lib/mock";
@@ -19,14 +20,40 @@ export function PrepPanel({ view }: { view: PrepView }) {
     const r = await safeCall(fn);
     if (r && "error" in r && r.error) setError(r.error);
   });
+  /* 밀어서 삭제 (2026-11-16 마루님) : 바로 숨기고 5초 동안 [되돌리기]. 지나거나 화면을 떠나면 실제로 삭제 */
+  const [hidden, setHidden] = useState<string | null>(null);
+  const pending = useRef<{ id: string; timer: number } | null>(null);
+  const flush = () => { const p = pending.current; pending.current = null; if (!p) return; clearTimeout(p.timer); run(() => updatePrepItem(view.tripId, p.id, { remove: true })); };
+  const swipeDelete = (it: PrepItem) => {
+    flush();
+    pending.current = { id: it.id, timer: window.setTimeout(() => { flush(); }, 5000) };
+    setHidden(it.id);
+  };
+  const undo = () => { const p = pending.current; if (p) clearTimeout(p.timer); pending.current = null; setHidden(null); };
+  useEffect(() => {
+    const leave = () => flush();
+    addEventListener("pagehide", leave);
+    return () => { removeEventListener("pagehide", leave); flush(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const shown = hidden ? { ...view, items: view.items.filter((x) => x.id !== hidden) } : view;
+  const gone = hidden ? view.items.find((x) => x.id === hidden) : undefined;
 
   return (
     <div className="flex flex-col gap-6 px-5 pt-5">
       <PrepSummary view={view} />
       {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
-      <List title="예약" kind="reservation" view={view} canEdit={canEdit} busy={busy} run={run} />
-      <List title="체크리스트" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} />
+      <List title="예약" kind="reservation" view={shown} canEdit={canEdit} busy={busy} run={run} onSwipe={swipeDelete} />
+      <List title="체크리스트" kind="item" view={shown} canEdit={canEdit} busy={busy} run={run} onSwipe={swipeDelete} />
       {!canEdit && <p className="text-tiny text-ink-sub">보기만 권한이라 준비 목록을 고칠 수 없어요</p>}
+      {canEdit && <p className="text-tiny text-ink-sub">줄을 왼쪽으로 밀면 삭제, 길게 누르면 순서를 옮길 수 있어요</p>}
+      {gone && (
+        <div role="status" className="pointer-events-none fixed inset-x-0 bottom-[156px] z-30 mx-auto flex w-full max-w-[560px] justify-center px-5">
+          <p className="pointer-events-auto flex items-center gap-3 rounded-full bg-deep py-2 pl-4 pr-2 text-tiny font-semibold text-on-deep shadow-float">
+            <span className="min-w-0 truncate">&ldquo;{gone.title}&rdquo;을(를) 삭제했어요</span>
+            <button type="button" onClick={undo} className="press h-8 flex-none rounded-full bg-deep-soft px-3 font-bold">되돌리기</button>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -143,10 +170,41 @@ function Budget({ view, canEdit, busy, run, actual }: { view: PrepView; canEdit:
   );
 }
 
-function List({ title, kind, view, canEdit, busy, run }: {
-  title: string; kind: "item" | "reservation"; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn;
+function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
+  title: string; kind: "item" | "reservation"; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; onSwipe: (it: PrepItem) => void;
 }) {
-  const items = view.items.filter((x) => x.kind === kind);
+  const fromView = view.items.filter((x) => x.kind === kind);
+  /* 길게 눌러 순서 옮기기 (2026-11-16 마루님) : 끄는 동안은 이 목록 순서를 따로 들고 있다가, 놓으면 저장 */
+  const [order, setOrder] = useState<PrepItem[] | null>(null);
+  const items = order ?? fromView;
+  const orderRef = useRef(order);
+  orderRef.current = order;
+  const rowEls = useRef(new Map<string, HTMLLIElement>());
+  const [dragId, setDragId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!dragId) return;
+    const move = (e: PointerEvent) => {
+      setOrder((cur) => {
+        const list = cur ?? fromView;
+        const from = list.findIndex((x) => x.id === dragId);
+        let to = list.length - 1;
+        for (let i = 0; i < list.length; i++) { const r = rowEls.current.get(list[i].id)?.getBoundingClientRect(); if (r && e.clientY < r.top + r.height / 2) { to = i > from ? i - 1 : i; break; } }
+        if (to === from || from < 0) return list;
+        const next = [...list]; const [me] = next.splice(from, 1); next.splice(to, 0, me);
+        return next;
+      });
+    };
+    const drop = () => {
+      setDragId(null);
+      const cur = orderRef.current;
+      if (cur && cur.some((x, i) => x.id !== fromView[i]?.id)) run(async () => { const r = await reorderPrep(view.tripId, cur.map((x) => x.id)); setOrder(null); return r; });
+      else setOrder(null);
+    };
+    const noScroll = (e: TouchEvent) => e.preventDefault();
+    addEventListener("pointermove", move); addEventListener("pointerup", drop); addEventListener("pointercancel", drop);
+    addEventListener("touchmove", noScroll, { passive: false });
+    return () => { removeEventListener("pointermove", move); removeEventListener("pointerup", drop); removeEventListener("pointercancel", drop); removeEventListener("touchmove", noScroll); };
+  }, [dragId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [text, setText] = useState("");
   const [due, setDue] = useState("");
   const done = items.filter((x) => x.done).length;
@@ -164,7 +222,16 @@ function List({ title, kind, view, canEdit, busy, run }: {
         <div className="overflow-hidden rounded-card bg-surface">
           {items.length > 0 && (
             <ul className="divide-y divide-line">
-              {items.map((it) => <Row key={it.id} it={it} view={view} canEdit={canEdit} busy={busy} run={run} />)}
+              {items.map((it) => (
+                <li key={it.id} ref={(el) => { if (el) rowEls.current.set(it.id, el); else rowEls.current.delete(it.id); }}
+                  className={dragId === it.id ? "relative z-10 scale-[1.02] bg-surface shadow-float" : ""}>
+                  <SwipeRow rounded="" bg="bg-surface" disabled={!canEdit || busy || !!dragId}
+                    onDelete={canEdit ? () => onSwipe(it) : undefined}
+                    onLongPress={canEdit && items.length > 1 ? () => setDragId(it.id) : undefined}>
+                    <Row it={it} view={view} canEdit={canEdit} busy={busy} run={run} />
+                  </SwipeRow>
+                </li>
+              ))}
             </ul>
           )}
           {canEdit && kind === "item" && items.length === 0 && (
@@ -216,7 +283,7 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
     return r;
   });
   if (edit) return (
-    <li className="flex flex-col gap-2 px-4 py-3">
+    <div className="flex flex-col gap-2 px-4 py-3">
       <Field label="이름" name={`edit-${it.id}`} value={title} maxLength={80} disabled={busy} autoFocus
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && title.trim()) { e.preventDefault(); save(); } if (e.key === "Escape") setEdit(false); }} />
@@ -225,10 +292,10 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
         <Button type="button" variant="secondary" disabled={busy} onClick={() => { setEdit(false); setTitle(it.title); setDue(it.due ?? ""); }}>취소</Button>
         <Button type="button" disabled={busy || !title.trim()} onClick={save}>저장</Button>
       </div>
-    </li>
+    </div>
   );
   return (
-    <li className="flex min-h-14 items-center gap-3 px-4 py-2">
+    <div className="flex min-h-14 items-center gap-3 px-4 py-2">
       <button type="button" role="checkbox" aria-checked={it.done} aria-label={`${it.title} ${it.done ? "끝냄" : "안 끝냄"}`} disabled={!canEdit || busy}
         onClick={() => run(() => updatePrepItem(view.tripId, it.id, { done: !it.done }))}
         className={"press flex size-7 flex-none items-center justify-center rounded-full border-2 " + (it.done ? "border-btn bg-btn text-on-btn" : "border-line-strong text-transparent")}>
@@ -250,8 +317,16 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
       {it.due && <span className={"flex-none rounded-full px-2.5 py-1 text-tiny font-semibold " + (it.done ? "bg-surface-soft text-ink" : "bg-warn-soft text-warn-text")}>{md(it.due)}</span>}
       {who?.avatar ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={who.avatar} alt="" title={`담당 ${name}`} width={32} height={32} className="size-8 flex-none rounded-full object-cover" />
         : name && <span title={`담당 ${name}`} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span>}
+      {/* 예약 중요 표시 (0038) : 별을 켜면 목록 위로 */}
+      {it.kind === "reservation" && (canEdit || it.important) && (
+        <button type="button" aria-pressed={!!it.important} aria-label={`${it.title} 중요 ${it.important ? "끄기" : "켜기"}`} disabled={!canEdit || busy}
+          onClick={() => run(() => updatePrepItem(view.tripId, it.id, { important: !it.important }))}
+          className={"press flex size-9 flex-none items-center justify-center rounded-full " + (it.important ? "text-point" : "text-ink-sub/60")}>
+          <Icon name="star" size={20} className={it.important ? "fill-current" : ""} />
+        </button>
+      )}
       {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} onEdit={openEdit} />}
-    </li>
+    </div>
   );
 }
 
