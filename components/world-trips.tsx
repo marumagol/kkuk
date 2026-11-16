@@ -20,7 +20,7 @@ import type { MapTrip } from "@/lib/trips";
 
 export type WorldTrip = MapTrip & { row: { title: string; sub: string; meta: string; badge?: string; badgeTone?: "hot" | "near" | "far"; country?: string; icon?: string } };
 
-const W = 400, H = 380;
+const W = 400, H = 320;
 let landCache: Promise<FeatureCollection> | null = null;
 const loadLand = () => (landCache ??= fetch("/geo/land-50m.json").then((r) => r.json()).then((t: Topology) => feature(t, t.objects.land) as unknown as FeatureCollection)
   .catch((e) => { landCache = null; throw e; }));
@@ -89,6 +89,7 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
   const [tabPick, setTab] = useState<"upcoming" | "past" | null>(null);
   const tab = tabPick ?? (upcoming.length || !past.length ? "upcoming" : "past");
   const list = tab === "past" ? past : upcoming;
+  const nextTrip = filter === "all" ? upcoming[0] : undefined;
   const chip = (key: string, label: string) => (
     <button key={key} type="button" onClick={() => { setFilter(key); setPicked(null); }} aria-pressed={filter === key}
       className={"press inline-flex h-10 flex-none items-center rounded-full px-4 text-sub font-semibold " + (filter === key ? "bg-deep text-on-deep" : "bg-surface text-ink")}>
@@ -99,11 +100,12 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
   return (
     <>
       <div className="relative">
-        <div className="flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]" role="group" aria-label="걸러 보기">
+        {/* 칩은 고를 게 2개 이상일 때만 (2026-11-16 마루님, 나라 하나면 전체와 같아서 뺀다) */}
+        {(years.length > 1 || countries.length > 1) && <div className="flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]" role="group" aria-label="걸러 보기">
           {chip("all", `전체 ${trips.length}`)}
           {years.length > 1 && years.map((y) => chip(`y:${y}`, y))}
-          {countries.map((c) => chip(`c:${c}`, countryNameOf(c) ?? c))}
-        </div>
+          {countries.length > 1 && countries.map((c) => chip(`c:${c}`, countryNameOf(c) ?? c))}
+        </div>}
         <div className="relative -mt-2">
           <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full [mask-image:linear-gradient(to_bottom,transparent,black_72px)]" role="img" aria-label={`여행 지도, 핀 ${groups.length}곳`}>
             {land && <path d={path(land) ?? ""} className="fill-land" />}
@@ -147,26 +149,17 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
       </div>
 
       <section className="relative -mt-4 flex flex-col gap-5 rounded-t-[28px] bg-surface px-5 pb-8 pt-6">
-        <dl className="grid grid-cols-3 gap-2 border-b border-line pb-5" aria-label="여행 숫자">
-          {[["여행", shown.length, true], ["도시", cityCount, false], ["나라", countryCount, false]].map(([k, n, hi]) => (
-            <div key={String(k)} className="flex flex-col-reverse">
-              <dt className="text-sub text-ink-sub">{k}</dt>
-              <dd className={"text-[34px] font-extrabold leading-tight tabular-nums " + (hi ? "text-point" : "text-ink")}>{n}</dd>
-            </div>
-          ))}
-        </dl>
-        {stamps && (
-          <div className="border-b border-line pb-5">
-            <Link href="/stamps" className="press flex items-center justify-between gap-2">
-              <h2 className="text-body font-bold text-ink">모은 도장</h2>
-              <span className="flex items-center gap-0.5 text-sub font-semibold text-ink-sub">{stamps.earned.length} / {stamps.total}<Icon name="right" size={16} /></span>
-            </Link>
-            {stamps.earned.length > 0 ? (
-              <Link href="/stamps" aria-label="도장 모두 보기" className="-mx-5 mt-3 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-                {stamps.earned.map((x) => <div key={`${x.country}:${x.name}`} className="flex-none"><Stamp name={x.name} country={x.country} tilt={([...x.name].reduce((a, c) => a + c.charCodeAt(0), 0) % 17) - 8} /></div>)}
-              </Link>
-            ) : <p className="mt-2 text-sub text-ink-sub">여행 중에 그 도시에 있으면 도장이 찍혀요</p>}
-          </div>
+        {/* 다음 여행 카드 (2026-11-16 마루님). 여행 중이면 오늘 일정으로 */}
+        {nextTrip && (
+          <Link href={`/trips/${nextTrip.id}`} className="press flex items-center gap-3 rounded-card bg-deep px-5 py-4 text-on-deep">
+            <span className="min-w-0 flex-1">
+              <span className="block text-tiny font-semibold opacity-80">{nextTrip.status === "ongoing" ? "지금 여행 중이에요" : "다음 여행"}</span>
+              <span className="mt-0.5 block truncate text-title font-extrabold">{nextTrip.title}</span>
+              <span className="mt-1 block text-sub font-semibold opacity-80">{nextTrip.status === "ongoing" ? "오늘 일정 보기" : nextTrip.row.sub}</span>
+            </span>
+            {nextTrip.status !== "ongoing" && nextTrip.row.badge && <span className="flex-none text-[28px] font-extrabold tabular-nums">{nextTrip.row.badge}</span>}
+            <Icon name="right" size={18} className="flex-none opacity-80" />
+          </Link>
         )}
         {/* 목록은 다가오는 여행 / 다녀온 여행 탭으로 나눠 본다 (2026-11-16 마루님). 점 색은 지도 핀 색과 같다 */}
         <div className="flex flex-col gap-3">
@@ -189,6 +182,27 @@ export function WorldTrips({ trips, stamps }: { trips: WorldTrip[]; stamps?: { e
             <p className="rounded-pin bg-bg px-4 py-6 text-center text-sub text-ink-sub">{tab === "past" ? "아직 다녀온 여행이 없어요" : "다가오는 여행이 없어요"}</p>
           )}
         </div>
+        <dl className="grid grid-cols-3 gap-2 border-t border-line pt-5" aria-label="여행 숫자">
+          {[["여행", shown.length], ["도시", cityCount], ["나라", countryCount]].map(([k, n]) => (
+            <div key={String(k)} className="flex flex-col-reverse">
+              <dt className="text-sub text-ink-sub">{k}</dt>
+              <dd className={"text-[34px] font-extrabold leading-tight tabular-nums " + "text-ink"}>{n}</dd>
+            </div>
+          ))}
+        </dl>
+        {stamps && (
+          <div className="border-t border-line pt-5">
+            <Link href="/stamps" className="press flex items-center justify-between gap-2">
+              <h2 className="text-body font-bold text-ink">모은 도장</h2>
+              <span className="flex items-center gap-0.5 text-sub font-semibold text-ink-sub">{stamps.earned.length} / {stamps.total}<Icon name="right" size={16} /></span>
+            </Link>
+            {stamps.earned.length > 0 ? (
+              <Link href="/stamps" aria-label="도장 모두 보기" className="-mx-5 mt-3 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+                {stamps.earned.map((x) => <div key={`${x.country}:${x.name}`} className="flex-none"><Stamp name={x.name} country={x.country} tilt={([...x.name].reduce((a, c) => a + c.charCodeAt(0), 0) % 17) - 8} /></div>)}
+              </Link>
+            ) : <p className="mt-2 text-sub text-ink-sub">여행 중에 그 도시에 있으면 도장이 찍혀요</p>}
+          </div>
+        )}
       </section>
     </>
   );
