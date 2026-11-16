@@ -21,7 +21,7 @@ const CUR_NAME: Record<string, string> = { KRW: "원", JPY: "엔", USD: "달러"
 const QUICK = ["식사", "카페", "교통", "숙소", "쇼핑", "입장료"];
 type Draft = Partial<Expense> & { fromPlace?: boolean };
 
-export function ExpensesPanel({ view }: { view: ExpensesView }) {
+export function ExpensesPanel({ view, budget }: { view: ExpensesView; budget?: React.ReactNode }) {
   const canEdit = view.role !== "viewer";
   const person = (id: string) => view.people.find((p) => p.userId === id);
   const nameOf = (id: string) => (id === view.me ? "나" : person(id)?.name ?? "나간 사람");
@@ -30,7 +30,6 @@ export function ExpensesPanel({ view }: { view: ExpensesView }) {
   const [sheet, setSheet] = useState<Draft | null>(null);
   const [picking, setPicking] = useState(false);
 
-  const spent = view.budget ? view.expenses.filter((e) => e.currency === view.budget!.currency).reduce((n, e) => n + e.amount, 0) : 0;
   const groups = useMemo(() => {
     const m = new Map<string, Expense[]>();
     for (const e of view.expenses) m.set(e.spentOn ?? "", [...(m.get(e.spentOn ?? "") ?? []), e]);
@@ -44,6 +43,7 @@ export function ExpensesPanel({ view }: { view: ExpensesView }) {
 
   return (
     <div className="flex flex-col gap-5 px-5 pb-32 pt-5">
+      {budget}
       {/* 정산 요약 */}
       <section className="flex flex-col gap-3 rounded-deep bg-deep p-5 text-on-deep" aria-labelledby="settle-title">
         <h2 id="settle-title" className="text-sub font-semibold text-on-deep-sub">정산</h2>
@@ -74,11 +74,6 @@ export function ExpensesPanel({ view }: { view: ExpensesView }) {
               </li>
             ))}
           </ul>
-        )}
-        {view.budget && (
-          <p className="border-t border-deep-soft pt-3 text-tiny font-semibold text-on-deep-sub">
-            예산 {formatMoney(view.budget.total, view.budget.currency)} 중 <span className="text-on-deep">{formatMoney(spent, view.budget.currency)}</span> 썼어요
-          </p>
         )}
       </section>
 

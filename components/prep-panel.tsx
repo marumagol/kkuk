@@ -1,5 +1,5 @@
 "use client";
-/* 준비 탭 내용 : 예산 카드, 챙길 것, 예약. 저장은 app/actions.ts (RLS 가 권한 검사) */
+/* 준비 탭 내용 : 챙길 것, 예약 (예산 카드는 2026-11-16 경비 탭으로 옮김, BudgetSection). 저장은 app/actions.ts (RLS 가 권한 검사) */
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Button, Field, Icon } from "@/components/kit";
@@ -21,11 +21,27 @@ export function PrepPanel({ view }: { view: PrepView }) {
 
   return (
     <div className="flex flex-col gap-6 px-5 pt-5">
-      <Budget view={view} canEdit={canEdit} busy={busy} run={run} />
       {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
       <List title="예약" kind="reservation" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 숙소, 렌터카" />
       <List title="챙길 것" kind="item" view={view} canEdit={canEdit} busy={busy} run={run} placeholder="예 : 여권, 충전기" />
       {!canEdit && <p className="text-tiny text-ink-sub">보기만 권한이라 준비 목록을 고칠 수 없어요</p>}
+    </div>
+  );
+}
+
+/* 경비 탭 맨 위 예산 카드 (2026-11-16 마루님 "예산 섹션이 경비로"). actual : 예산 통화로 적은 실제 경비 합 */
+export function BudgetSection({ view, actual }: { view: PrepView; actual: number }) {
+  const [error, setError] = useState("");
+  const [busy, start] = useTransition();
+  const run: RunFn = (fn) => start(async () => {
+    setError("");
+    const r = await safeCall(fn);
+    if (r && "error" in r && r.error) setError(r.error);
+  });
+  return (
+    <div className="flex flex-col gap-2">
+      <Budget view={view} canEdit={view.role !== "viewer"} busy={busy} run={run} actual={actual} />
+      {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
     </div>
   );
 }
@@ -37,7 +53,7 @@ const DEFAULT_ITEMS = ["여권", "충전기", "보조배터리", "상비약", "�
 
 type RunFn = (fn: () => Promise<{ error?: string } | undefined | void>) => void;
 
-function Budget({ view, canEdit, busy, run }: { view: PrepView; canEdit: boolean; busy: boolean; run: RunFn }) {
+function Budget({ view, canEdit, busy, run, actual }: { view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; actual: number }) {
   const cur = view.budget?.currency ?? view.currency;
   const d = decimalsOf(cur);
   const [edit, setEdit] = useState(false);
@@ -97,7 +113,12 @@ function Budget({ view, canEdit, busy, run }: { view: PrepView; canEdit: boolean
       ) : (
         <p className="text-tiny text-on-deep-sub">장소에 예상 비용을 적으면 분류별로 여기에 모여요</p>
       )}
-      <p className="text-tiny text-on-deep-sub">{cur} 로 적은 장소 예상 비용만 더해요{inKrw && view.krw ? `. 원화는 1 ${cur} = ${view.krw < 10 ? view.krw.toFixed(2) : Math.round(view.krw).toLocaleString("ko-KR")}원 기준 참고용이에요` : ""}</p>
+      {/* 실제 쓴 돈 (경비 탭에 적은 것) */}
+      <p className="flex items-center justify-between gap-2 border-t border-deep-soft pt-3 text-sub">
+        <span className="font-semibold text-on-deep-sub">실제로 쓴 돈 (경비)</span>
+        <span className="font-bold tabular-nums">{inKrw && view.krw ? "약 " : ""}{money(actual)}</span>
+      </p>
+      <p className="text-tiny text-on-deep-sub">막대와 분류는 {cur} 로 적은 장소 예상 비용이에요{inKrw && view.krw ? `. 원화는 1 ${cur} = ${view.krw < 10 ? view.krw.toFixed(2) : Math.round(view.krw).toLocaleString("ko-KR")}원 기준 참고용이에요` : ""}</p>
     </section>
   );
 }

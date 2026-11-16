@@ -529,7 +529,7 @@ export async function saveBudget(tripId: string, currency: string, amount: strin
   const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
   const { error } = await c.sb.from("trip_budgets").upsert({ trip_id: tripId, currency, total: Math.round(Number(text) * 10 ** d), updated_by: c.uid }, { onConflict: "trip_id" });
   if (error) return PREP_FAIL;
-  revalidatePath(`/trips/${tripId}/prep`);
+  revalidatePath(`/trips/${tripId}/prep`); revalidatePath(`/trips/${tripId}/expenses`);
 }
 
 /* ───────── 경비 (6단계 3번, migration 0026) : 주인과 편집 가능만 (RLS + 트리거가 함께하는 사람인지 검사) ───────── */
