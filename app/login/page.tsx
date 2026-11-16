@@ -1,4 +1,4 @@
-/* S02 로그인 + S03 코드 입력. 1단계는 이메일 로그인 코드만 (Google 은 나중에, 2026-11-14 마루님 결정) */
+/* S02 로그인 + S03 코드 입력. 구글 로그인 + 이메일 로그인 코드 (구글은 2026-11-16 추가) */
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseEnv } from "@/lib/supabase/env";
@@ -9,8 +9,9 @@ import { LoginForm } from "./login-form";
 
 export const metadata = { title: "로그인" };
 
-export default async function Login({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const next = safeNext((await searchParams).next);
+export default async function Login({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
+  const sp = await searchParams;
+  const next = safeNext(sp.next);
   if (isIn(await getViewer())) redirect(next);
   const configured = !!supabaseEnv();
 
@@ -21,11 +22,11 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           <Logo />
           <Link href={next} className="press inline-flex h-11 items-center px-1 text-sub font-semibold text-ink-sub underline underline-offset-4">둘러보기</Link>
         </div>
-        <h1 className="mt-8 text-title-xl font-extrabold text-ink">이메일로<br />시작해요</h1>
-        <p className="mt-2 text-sub text-ink-sub">메일로 받은 6자리 코드를 넣으면 로그인돼요. 비밀번호는 없어요</p>
+        <h1 className="mt-8 text-title-xl font-extrabold text-ink">KKuK<br />시작해요</h1>
+        <p className="mt-2 text-sub text-ink-sub">구글 계정으로 바로 시작하거나, 메일로 받은 6자리 코드로 로그인해요. 비밀번호는 없어요</p>
 
         <div className="mt-8">
-          <LoginForm next={next} configured={configured} />
+          <LoginForm next={next} configured={configured} googleFailed={sp.error === "google"} />
         </div>
         <p className="mt-4 text-tiny text-ink-sub">
           시작하면 <Link href="/terms" className="font-semibold underline underline-offset-2">이용약관</Link>과{" "}

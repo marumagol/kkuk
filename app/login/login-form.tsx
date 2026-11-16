@@ -2,6 +2,7 @@
 /*
   이메일 → 숫자 코드(Supabase 설정에 따라 6~8자리) → 로그인
   Supabase : signInWithOtp (메일 보내기) → verifyOtp type "email" (확인)
+  구글 : signInWithOAuth → 구글 화면 → /auth/callback 에서 세션으로 바꾼다
   메일 템플릿에 {{ .Token }} 이 있어야 링크 대신 6자리가 간다 (guides/ 안내 참고)
 */
 import { useEffect, useState } from "react";
@@ -18,7 +19,18 @@ function sendError(e: { status?: number; code?: string } | null) {
   return "코드를 보내지 못했어요. 이메일 주소를 확인하고 다시 시도해 주세요";
 }
 
-export function LoginForm({ next, configured }: { next: string; configured: boolean }) {
+function GoogleMark() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+    </svg>
+  );
+}
+
+export function LoginForm({ next, configured, googleFailed }: { next: string; configured: boolean; googleFailed?: boolean }) {
   const router = useRouter();
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
@@ -27,6 +39,17 @@ export function LoginForm({ next, configured }: { next: string; configured: bool
   const [busy, setBusy] = useState(false);
   const [left, setLeft] = useState(0);
   const [notice, setNotice] = useState("");
+  const [gError, setGError] = useState(googleFailed ? "구글 로그인을 마치지 못했어요. 다시 시도하거나 이메일로 로그인해 주세요" : "");
+
+  const google = async () => {
+    const sb = createClient();
+    if (!sb) return;
+    setBusy(true); setGError("");
+    const back = `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    const { error: e } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: back } });
+    // 성공하면 구글 화면으로 넘어가므로 여기는 실패할 때만 온다
+    if (e) { setBusy(false); setGError("구글 로그인을 열지 못했어요. 잠시 뒤에 다시 시도해 주세요"); }
+  };
 
   useEffect(() => {
     if (left <= 0) return;
@@ -69,6 +92,13 @@ export function LoginForm({ next, configured }: { next: string; configured: bool
   if (step === "email") {
     return (
       <form onSubmit={onEmail} noValidate className="flex flex-col gap-4">
+        <Button full type="button" variant="secondary" onClick={google} disabled={!configured || busy}>
+          <GoogleMark />구글로 계속하기
+        </Button>
+        {gError && <p role="alert" className="-mt-2 text-tiny font-semibold text-point-text">{gError}</p>}
+        <div className="flex items-center gap-3 text-tiny text-ink-sub" aria-hidden="true">
+          <span className="h-px flex-1 bg-line" />또는 이메일로<span className="h-px flex-1 bg-line" />
+        </div>
         <Field label="이메일" type="email" name="email" inputMode="email" autoComplete="email" placeholder="name@example.com"
           value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} error={error || undefined} disabled={!configured || busy} />
         <Button full type="submit" disabled={!configured || busy || !email}>{busy ? "보내는 중" : "로그인 코드 받기"}</Button>
