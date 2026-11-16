@@ -3,9 +3,9 @@
   - trip_fx : 여행 × 통화(원화 빼고) 한 줄. 1 통화 = krw_per 원. 없으면 앱이 그날 받아 온 환율을 쓴다
   - 보기 : 함께하는 사람 모두 / 고치기·지우기 : 주인과 편집 가능 (trip_budgets 와 같음)
 */
-create table public.trip_fx (
+create table if not exists public.trip_fx (
   trip_id    uuid not null references public.trips(id) on delete cascade,
-  currency   text not null check (currency ~ '^[A-Z]{3}$' and currency <> 'KRW'),
+  currency   text not null check (char_length(currency) = 3 and currency = upper(currency) and currency != 'KRW'),
   krw_per    numeric(16,6) not null check (krw_per > 0 and krw_per <= 1000000),
   updated_by uuid default auth.uid() references auth.users(id) on delete set null,
   updated_at timestamptz not null default now(),
