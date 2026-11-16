@@ -88,18 +88,25 @@ async function Before({ v, trip, today, missing }: { v: Viewer; trip: Trip; toda
           : <>{trip.cities[0]}까지<br /><span className="text-point-text">{left}일</span> 남았어요</>}
       </h1>
 
-      <Link href={`/trips/${trip.id}`} className="press flex items-center gap-4 rounded-deep bg-deep px-5 py-4 text-on-deep">
-        <span className="flex flex-col items-center">
-          <span className="text-tiny font-semibold text-on-deep-sub">D-DAY</span>
-          <span className="text-[34px] font-extrabold leading-none tracking-tight">{left}</span>
+      {/* 티켓 모양 (여행 탭 다음 여행 카드와 같음) : 왼쪽 정보 | 점선 절취선과 위아래 반원 홈 | 오른쪽 D-day */}
+      <Link href={`/trips/${trip.id}`} className="press relative flex items-stretch rounded-card bg-deep text-on-deep">
+        <span className="min-w-0 flex-1 py-4 pl-5 pr-4">
+          <span className="flex items-center gap-1.5 text-tiny font-semibold text-on-deep-sub"><Icon name="plane" size={14} />다음 여행</span>
+          <span className="mt-1 block truncate text-title font-extrabold">{trip.title}</span>
+          <span className="mt-1 block truncate text-tiny font-semibold text-on-deep-sub">{periodText(trip)}</span>
+          {trip.members.length > 1 && (
+            <span className="mt-2 flex -space-x-1.5">
+              {trip.members.slice(0, 4).map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} src={m.avatar} size={24} ring />)}
+            </span>
+          )}
         </span>
-        <span className="h-10 border-l border-dashed border-on-deep/30" aria-hidden />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-body font-bold">{trip.title}</span>
-          <span className="block text-tiny text-on-deep-sub">{periodText(trip)}</span>
+        <span aria-hidden className="relative w-0 border-l-2 border-dashed border-on-deep-sub/40">
+          <span className="absolute -left-[11px] -top-[10px] size-5 rounded-full bg-bg" />
+          <span className="absolute -bottom-[10px] -left-[11px] size-5 rounded-full bg-bg" />
         </span>
-        <span className="flex -space-x-1.5">
-          {trip.members.slice(0, 3).map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} src={m.avatar} size={28} ring />)}
+        <span className="flex w-[92px] flex-none flex-col items-center justify-center gap-0.5 px-2 py-4 text-center">
+          <span className="text-tiny font-semibold text-on-deep-sub">출발까지</span>
+          <span className="text-[26px] font-extrabold leading-tight tabular-nums">D-{left}</span>
         </span>
       </Link>
 
