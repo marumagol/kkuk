@@ -3,12 +3,15 @@ import Link from "next/link";
 import { Icon } from "@/components/kit";
 import { AppShell } from "@/components/screen";
 import { CHANGELOG, formatAt } from "@/lib/changelog";
+import { MarkUpdatesSeen } from "@/components/update-seen";
+import pkg from "@/package.json";
 
 export const metadata = { title: "업데이트 내역" };
 
 export default function Updates() {
   return (
     <AppShell bottomGap={false}>
+      <MarkUpdatesSeen version={pkg.version} />
       <div className="flex items-center gap-2 px-5 pt-4">
         <Link href="/me" aria-label="설정으로" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink">
           <Icon name="back" size={20} />

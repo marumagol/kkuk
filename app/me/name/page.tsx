@@ -6,7 +6,7 @@ import { AppShell } from "@/components/screen";
 import { getViewer } from "@/lib/viewer";
 import { NameForm } from "@/components/name-form";
 
-export const metadata = { title: "이름 바꾸기" };
+export const metadata = { title: "이름 수정" };
 
 export default async function MyName() {
   const v = await getViewer();
@@ -17,7 +17,7 @@ export default async function MyName() {
         <Link href="/me" aria-label="설정으로" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink">
           <Icon name="back" size={20} />
         </Link>
-        <h1 className="text-title-lg font-extrabold text-ink">이름 바꾸기</h1>
+        <h1 className="text-title-lg font-extrabold text-ink">이름 수정</h1>
       </div>
       <div className="px-5 pt-6"><NameForm next="/me" initial={v.name ?? ""} submitLabel="저장" /></div>
     </AppShell>
