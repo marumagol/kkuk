@@ -25,8 +25,13 @@ type Props = {
   editable: boolean; canAdd: boolean; user: boolean; initialDay: number; jump?: boolean; jumpUndated?: boolean;
 };
 
-/* 공항·항공은 비행기 표시 (번호 대신) */
-const isFlight = (x: Item) => /공항|항공|airport/i.test(x.title) || (x.category === "이동" && (x.detail ?? "").startsWith("비행기"));
+/*
+  비행기 표시 (번호 대신) : 실제 공항, 항공편만 (2026-11-16 마루님 "공항이 이름에 들어간다고 다 비행기는 아님")
+  - 이름이 공항으로 끝나는 곳 (예 : 신치토세 공항, 인천국제공항 제1터미널, Narita Airport, 新千歳空港). "공항 라멘" 같은 곳은 아님
+  - 이동 중 비행기를 고른 항목
+*/
+const AIRPORT = /(공항|airport|空港|機場|机场)(\s*(국제선|국내선|제?\s*\d\s*(여객)?터미널|터미널\s*\d?|T\d|terminal\s*\d?|ターミナル))?$/i;
+const isFlight = (x: Item) => AIRPORT.test(x.title.trim()) || (x.category === "이동" && (x.detail ?? "").startsWith("비행기"));
 const hasPos = (x: Item) => x.lat != null && x.lng != null;
 /* 번호 : 위치가 있는 장소만, 메모와 공항·항공은 빼고 1부터. 지도 핀과 같은 번호 */
 function numbering(items: Item[]) {
