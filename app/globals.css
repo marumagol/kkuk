@@ -6,7 +6,7 @@
   규칙 : 화면에서는 아래 토큰만 쓴다. 색 값을 직접 쓰지 않는다.
 */
 
-/* 글꼴 : 페이퍼로지 (마루님 결정, SIL OFL 1.1). app/layout.tsx 에서 next/font/local 로 불러 --font-paperlogy 로 넘긴다 */
+/* 글꼴 : 페이퍼로지 (마루님 결정, SIL OFL 1.1). app/layout.tsx 에서 next/font/local 로 불러 --font-paperlogy 로 넘긴다 */ 페이퍼로지에 모양이 없는 글자(걁, 캵 등 8,392자)는 글꼴 파일에서 글자 표를 빼서 시스템 한글 글꼴로 보이게 함 (2026-11-16)
 
 :root {
   color-scheme: light;
