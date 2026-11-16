@@ -5,6 +5,8 @@
   - 키가 없으면 검색 기능만 숨기고 직접 입력은 그대로
 */
 
+import { encodeHours } from "@/lib/hours";
+
 const KEY = () => process.env.GOOGLE_MAPS_SERVER_KEY || "";
 export const placesEnabled = () => KEY().length > 0;
 
@@ -50,6 +52,21 @@ export async function details(id: string, session?: string): Promise<PlaceDetail
   const country = j.addressComponents?.find((c) => c.types?.includes("country"))?.shortText ?? null;
   return { id: j.id, name: j.displayName?.text ?? "", address: j.formattedAddress ?? "", lat: j.location.latitude, lng: j.location.longitude, country: country && /^[A-Z]{2}$/.test(country) ? country : null,
     types: [...new Set([j.primaryType, ...(j.types ?? [])].filter((t): t is string => !!t))].slice(0, 12) };
+}
+
+/*
+  영업시간 (2026-11-16 마루님, 영업시간 경고). 장소 저장 때 한 번만 부른다. 하루 상한은 부르는 쪽(savePlace)이 take_api_quota 로 확인
+  - 영업시간 형식은 lib/hours.ts. 구글에 영업시간이 없으면 "-" (다시 묻지 않게), 실패하면 undefined (다음 저장 때 다시)
+*/
+export async function openingHours(id: string): Promise<string | undefined> {
+  if (!placesEnabled() || !/^[A-Za-z0-9_-]{10,255}$/.test(id)) return undefined;
+  const res = await fetch(`https://places.googleapis.com/v1/places/${id}`, {
+    headers: { "X-Goog-Api-Key": KEY(), "X-Goog-FieldMask": "regularOpeningHours" }, cache: "no-store",
+  }).catch((e) => { console.error("[places] hours 연결 실패", String(e).slice(0, 200)); return null; });
+  if (!res?.ok) { if (res) console.error("[places] hours", res.status, (await res.text().catch(() => "")).slice(0, 300)); return undefined; }
+  const j = (await res.json().catch(() => null)) as { regularOpeningHours?: Parameters<typeof encodeHours>[0] } | null;
+  if (!j) return undefined;
+  return encodeHours(j.regularOpeningHours) ?? "-";
 }
 
 /* 이름으로 장소 하나 찾기 (2026-11-15 "위치 찾기") : Text Search 한 번에 좌표까지. 못 찾으면 null */

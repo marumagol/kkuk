@@ -8,7 +8,7 @@ import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
 import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
 import { AVATAR_PATH } from "@/lib/storage";
 import { cleanDetails } from "@/lib/place-fields";
-import { autocomplete, details, searchOne, type Suggestion, type PlaceDetail } from "@/lib/places";
+import { autocomplete, details, searchOne, openingHours, type Suggestion, type PlaceDetail } from "@/lib/places";
 import { MAX_TRIP_DAYS, MAX_CITIES, MAX_TRIP_TITLE, MAX_PLACE_TITLE, MAX_PLACE_ADDRESS, MAX_PLACE_MEMO, MAX_PLACE_PHOTOS } from "@/lib/rules";
 
 /* 로그아웃 → 둘러보기 (홈) */
@@ -176,6 +176,7 @@ export type PlaceInput = {
   reserve?: boolean; // 예약 필요 → 준비 탭 예약 목록에 (0032). 없으면 그대로
   again?: boolean; // 새 장소 저장 뒤 같은 날로 장소 추가 화면을 다시 연다 (이어서 추가, 2026-11-16)
 };
+const HOURS_CATEGORIES = ["food", "sight", "shopping"]; // 영업시간을 볼 분류
 const CATEGORIES = ["transport", "food", "sight", "shopping", "stay", "memo"]; // memo = 일정 사이 메모 (0031)
 const placeCols = (pl: PlaceInput["place"]) => {
   if (pl === undefined) return {};
@@ -233,9 +234,22 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
     ...placeCols(isMemo ? null : input?.place),
   };
 
-  if (placeId) {
-    const { data: prev } = await sb.from("itinerary_items").select("day_index").eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).maybeSingle();
-    if (!prev) return { error: "이 장소를 찾을 수 없어요. 이미 삭제됐을 수 있어요" };
+  // 영업시간 (2026-11-16) : 구글 장소가 새로 이어질 때만 한 번 받는다. 하루 상한(전체, 사람별)을 넘으면 받지 않는다
+  const { data: prev } = placeId
+    ? await sb.from("itinerary_items").select("day_index, google_place_id, details").eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).maybeSingle()
+    : { data: null };
+  if (placeId && !prev) return { error: "이 장소를 찾을 수 없어요. 이미 삭제됐을 수 있어요" };
+  const gpid = isMemo ? null : input?.place === undefined ? (prev?.google_place_id as string | null | undefined) ?? null : ((row as { google_place_id?: string | null }).google_place_id ?? null);
+  const hadHours = (prev?.details as Record<string, string> | null)?._hours;
+  if (gpid && HOURS_CATEGORIES.includes(input.category)) {
+    if (gpid === prev?.google_place_id && hadHours) extra._hours = hadHours;
+    else {
+      const h = (await underPlaceQuota(sb, "hours")) ? await openingHours(gpid) : undefined;
+      if (h) extra._hours = h;
+    }
+  }
+
+  if (placeId && prev) {
     const patch = prev.day_index === day ? row : { ...row, sort_order: await lastOrder() };
     const { data, error } = await sb.from("itinerary_items").update(patch).eq("trip_id", tripId).eq("id", placeId).select("id");
     if (error || !data?.length) return { error: "저장하지 못했어요. 수정할 권한이 없거나 잠시 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요" };
@@ -646,7 +660,7 @@ export async function claimStamp(tripId: string, lat: number, lng: number, accur
 
 /* ───────── 장소 검색 (4단계 2~3) : 로그인한 사람만. 키는 서버에서만 쓴다 ───────── */
 /* 구글 호출 전 하루 상한 검사 (migration 0017). 상한을 넘거나 검사를 못 하면 구글을 부르지 않는다 */
-async function underPlaceQuota(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, kind: "autocomplete" | "details"): Promise<boolean> {
+async function underPlaceQuota(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, kind: "autocomplete" | "details" | "hours"): Promise<boolean> {
   const { data, error } = await sb.rpc("take_place_quota", { p_kind: kind });
   return !error && data === true;
 }

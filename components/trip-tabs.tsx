@@ -59,7 +59,7 @@ export function TripHeader({ trip, meId, user, owner, editable, back = "/trips",
           </span>
           {owner && user ? <Icon name="plus" size={16} className="text-ink-sub" /> : <span className="text-tiny font-bold text-ink-sub">{trip.members.length}</span>}
         </Link>
-        {editable ? <TripMenu tripId={trip.id} book={user && FEATURES.book} />
+        {editable ? <TripMenu tripId={trip.id} book={user && FEATURES.book} owner={owner && user} />
           : user && FEATURES.book && <Link href={`/trips/${trip.id}/book`} aria-label="여행 한 권 (인쇄, PDF)" className={round}><Icon name="book" size={20} /></Link>}
       </div>
       <div className="px-5 pt-4">
