@@ -6,6 +6,7 @@
   - 라이브러리 없이 pointer 이벤트로 만든다
 */
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/kit";
 
 const OUT = 512, MAX_ZOOM = 4;
@@ -62,8 +63,12 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
     const el = stage.current;
     if (!el) return;
     const wheel = (e: WheelEvent) => { e.preventDefault(); setView((v) => clamp({ ...v, zoom: v.zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08) })); };
+    // 아이폰 : 두 손가락 확대가 화면 전체 확대로 넘어가지 않게, 터치 기본 동작을 막는다
+    const stop = (e: Event) => e.preventDefault();
     el.addEventListener("wheel", wheel, { passive: false });
-    return () => el.removeEventListener("wheel", wheel);
+    el.addEventListener("touchmove", stop, { passive: false });
+    el.addEventListener("gesturestart", stop);
+    return () => { el.removeEventListener("wheel", wheel); el.removeEventListener("touchmove", stop); el.removeEventListener("gesturestart", stop); };
   });
 
   const done = async () => {
@@ -81,7 +86,8 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
   };
 
   const s = base * view.zoom;
-  return (
+  // 화면 맨 위(body)에 띄운다 : 부모 카드의 겹침 순서나 변형에 갇혀 안 보이는 일을 막는다
+  return createPortal(
     <div role="dialog" aria-modal="true" aria-label="프로필 사진 자르기" className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-black/85 px-6">
       <p className="text-sub font-semibold text-white/90">끌어서 위치를, 두 손가락으로 크기를 맞춰 주세요</p>
       <div ref={stage} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
@@ -105,6 +111,7 @@ export function AvatarCropper({ file, onCancel, onDone }: { file: File; onCancel
         <Button variant="secondary" onClick={onCancel} disabled={busy} className="flex-1">취소</Button>
         <Button onClick={done} disabled={!nat || busy || failed} className="flex-1">{busy ? "자르는 중" : "완료"}</Button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
