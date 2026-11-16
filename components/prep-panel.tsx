@@ -2,6 +2,7 @@
 /* 준비 탭 내용 : 챙길 것, 예약 (예산 카드는 2026-11-16 경비 탭으로 옮김, BudgetSection). 저장은 app/actions.ts (RLS 가 권한 검사) */
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button, Field, Icon } from "@/components/kit";
 import { addPrepItem, addPrepDefaults, updatePrepItem, saveBudget } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
@@ -201,6 +202,9 @@ function List({ title, kind, view, canEdit, busy, run }: {
 }
 
 function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn }) {
+  const router = useRouter();
+  // 예약은 [수정] 을 누르면 예약 화면(예약번호, 메모, 첨부 파일)으로 (2026-11-16 마루님 "목록에 뿌리지 말고 수정에서")
+  const openEdit = () => (it.kind === "reservation" ? router.push(`/trips/${view.tripId}/bookings/${it.id}`) : setEdit(true));
   const who = view.people.find((p) => p.userId === it.assignee);
   const name = who?.name;
   const [edit, setEdit] = useState(false);
@@ -232,22 +236,21 @@ function Row({ it, view, canEdit, busy, run }: { it: PrepItem; view: PrepView; c
       </button>
       <div className="min-w-0 flex-1">
         {canEdit ? (
-          <button type="button" onClick={() => setEdit(true)} disabled={busy} aria-label={`${it.title} 수정`}
+          <button type="button" onClick={openEdit} disabled={busy} aria-label={`${it.title} 수정`}
             className={"block w-full truncate text-left text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</button>
         ) : <p className={"truncate text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</p>}
         {it.kind === "reservation" ? (
-          /* 예약 지갑 (0034) : 예약번호와 첨부가 보이고, 누르면 예약 화면 */
-          <Link href={`/trips/${view.tripId}/bookings/${it.id}`} className="inline-flex max-w-full items-center gap-1 text-tiny text-ink-sub">
-            {it.code ? <span className="truncate font-semibold text-ink">{it.code}</span> : <span className="underline underline-offset-2">예약번호, 파일 넣기</span>}
-            {(it.files ?? 0) > 0 && <span className="flex-none">· 파일 {it.files}</span>}
-            <Icon name="right" size={12} className="flex-none" />
-          </Link>
+          /* 예약 지갑 (0034) : 적어 둔 것만 작게. 넣기는 [수정] 에서 */
+          (it.code || (it.files ?? 0) > 0) && <span className="flex max-w-full items-center gap-1 text-tiny text-ink-sub">
+            {it.code && <span className="truncate font-semibold text-ink">{it.code}</span>}
+            {(it.files ?? 0) > 0 && <span className="flex-none">{it.code ? ", " : ""}파일 {it.files}개</span>}
+          </span>
         ) : it.itemId && <Link href={`/trips/${view.tripId}/places/${it.itemId}`} className="inline-flex items-center gap-0.5 text-tiny text-ink-sub underline underline-offset-2"><Icon name="pin" size={12} />일정 장소</Link>}
       </div>
       {it.due && <span className={"flex-none rounded-full px-2.5 py-1 text-tiny font-semibold " + (it.done ? "bg-surface-soft text-ink" : "bg-warn-soft text-warn-text")}>{md(it.due)}</span>}
       {who?.avatar ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={who.avatar} alt="" title={`담당 ${name}`} width={32} height={32} className="size-8 flex-none rounded-full object-cover" />
         : name && <span title={`담당 ${name}`} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span>}
-      {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} onEdit={() => setEdit(true)} />}
+      {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} onEdit={openEdit} />}
     </li>
   );
 }
