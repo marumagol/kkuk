@@ -65,6 +65,19 @@ const CUR_NAMES: Record<string, string> = {
   CAD: "캐나다 달러", AUD: "호주 달러", NZD: "뉴질랜드 달러", CHF: "스위스 프랑", CZK: "코루나",
 };
 export const curName = (c: string) => CUR_NAMES[c] ?? c;
+/*
+  통화 고르기 칸에서 고른 뒤 화면이 위로 튀지 않게 (2026-11-17 마루님 제보) : 고르기 전 스크롤 자리(창 + 감싼 스크롤 상자)를 기억했다가
+  다시 그린 뒤 되돌리고, 칸의 초점을 뺀다 (휴대폰이 초점 칸으로 다시 스크롤하는 것 막기)
+*/
+export function keepScroll(el: HTMLElement) {
+  const boxes: { box: HTMLElement; top: number }[] = [];
+  for (let n = el.parentElement; n; n = n.parentElement) if (n.scrollHeight > n.clientHeight + 1) boxes.push({ box: n, top: n.scrollTop });
+  const y = window.scrollY;
+  el.blur();
+  const back = () => { boxes.forEach(({ box, top }) => { box.scrollTop = top; }); if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y); };
+  requestAnimationFrame(() => { back(); requestAnimationFrame(back); });
+  setTimeout(back, 250);
+}
 /* [기타] 에서 고를 수 있는 모든 통화 (이름 순) */
 export const ALL_CURRENCIES = [...new Set([...Object.keys(CUR_NAMES), ...Object.values(CURRENCY)])].sort((a, b) => curName(a).localeCompare(curName(b), "ko"));
 /*

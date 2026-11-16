@@ -13,7 +13,7 @@ import { Avatar } from "@/components/screen";
 import { AlertDialog } from "@/components/gate";
 import { saveExpense, removeExpense } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
-import { decimalsOf, formatMoney, curName, currencyOptions, ALL_CURRENCIES } from "@/lib/countries";
+import { decimalsOf, formatMoney, curName, currencyOptions, ALL_CURRENCIES, keepScroll } from "@/lib/countries";
 import { balances, settle } from "@/lib/settle";
 import { md, weekday, todayKST } from "@/lib/mock";
 import type { Expense, ExpensesView } from "@/lib/trips";
@@ -262,7 +262,7 @@ function ExpenseSheet({ view, draft, onClose }: { view: ExpensesView; draft: Dra
         {(shown.includes(currency) ? shown : [...shown.slice(0, 3), currency]).map((c) => <Pick key={c} on={currency === c} onClick={() => pickCur(c)} disabled={busy}>{curName(c)}</Pick>)}
         <label className="press relative inline-flex h-10 items-center gap-1 rounded-full border border-line-strong bg-surface px-3.5 text-sub font-bold text-ink">
           기타<Icon name="chevron-down" size={14} />
-          <select aria-label="다른 통화 고르기" value="" disabled={busy} onChange={(e) => e.target.value && pickCur(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0">
+          <select aria-label="다른 통화 고르기" value="" disabled={busy} onChange={(e) => { if (!e.target.value) return; keepScroll(e.target); pickCur(e.target.value); }} className="absolute inset-0 cursor-pointer opacity-0">
             <option value="">다른 통화</option>
             {ALL_CURRENCIES.filter((c) => !shown.includes(c)).map((c) => <option key={c} value={c}>{curName(c)} ({c})</option>)}
           </select>

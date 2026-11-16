@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 08:45", version: "0.67.1", items: ["통화를 고른 뒤 화면이 위로 튀던 것을 고쳤어요"] },
   { at: "2026-11-17 08:40", version: "0.67.0", items: [
     "여러 나라를 도는 여행이면 경비와 장소 금액에 여행 나라 통화가 모두 칩으로 나와요 (여행지 통화 → 원 → 달러, 나머지는 [기타])",
     "날짜를 고르면 그날 일정이 있는 도시의 통화가 기본으로 골라져요",
