@@ -5,7 +5,7 @@
   날짜를 바꾸면 그 날 맨 뒤로 간다. 삭제는 확인 창을 거쳐 removed_at
   사진은 최대 5장 (2026-11-14). 고르는 즉시 줄여서 비공개 저장소 place-photos/<여행 id>/ 에 올리고, 저장할 때 위치 목록을 함께 저장
 */
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Button, Field, Icon } from "@/components/kit";
 import { createClient } from "@/lib/supabase/client";
 import { shrinkImage } from "@/lib/image";
@@ -50,6 +50,11 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const [photos, setPhotos] = useState<{ path: string; url: string }[]>(ctx.photos ?? []);
   const [uploading, setUploading] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const dayRow = useRef<HTMLDivElement>(null);
+  useEffect(() => { // 고른 날 칩이 보이게 가로로만 옮긴다 (화면은 그대로)
+    const row = dayRow.current, el = row?.querySelector<HTMLElement>("[aria-pressed=true]");
+    if (row && el) row.scrollLeft = el.offsetLeft - (row.clientWidth - el.offsetWidth) / 2;
+  }, []);
 
   async function addPhotos(files: File[]) {
     setError("");
@@ -155,20 +160,28 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           </div>
         )}
 
-        <div className={"grid gap-3 " + (isMemo ? "grid-cols-1" : "grid-cols-2")}>
-          <label className="flex min-w-0 flex-col gap-2">
-            <span className="text-sub font-bold text-ink-sub">날짜</span>
-            <select value={dayValue} onChange={(e) => setDayValue(e.target.value)} disabled={busy}
-              className="h-14 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/15">
-              {Array.from({ length: ctx.days }, (_, i) => {
-                const d = addDays(ctx.start, i);
-                return <option key={i} value={i}>{i + 1}일차 · {md(d)} ({weekday(d)})</option>;
-              })}
-              <option value="none">날짜 미정</option>
-            </select>
-          </label>
-          {!isMemo && <Field label="시간 (선택)" name="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} />}
-        </div>
+        {/* 날짜 : 여행 기간의 날을 칩으로 골라요 (2026-11-16 마루님). 고른 날이 보이게 가운데로 */}
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-sub font-bold text-ink-sub">날짜</legend>
+          <div ref={dayRow} className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+            {[...Array.from({ length: ctx.days }, (_, i) => String(i)), "none"].map((v) => {
+              const on = dayValue === v;
+              const d = v === "none" ? null : addDays(ctx.start, Number(v));
+              return (
+                <button key={v} type="button" aria-pressed={on} disabled={busy} onClick={() => setDayValue(v)}
+                  className={"press flex h-14 flex-none flex-col items-center justify-center rounded-field px-3.5 " + (on ? "bg-btn text-on-btn" : "bg-surface text-ink")}>
+                  {d ? <>
+                    <span className="text-sub font-bold">{Number(v) + 1}일차</span>
+                    <span className={"text-tiny " + (on ? "opacity-75" : "text-ink-sub")}>{md(d)} ({weekday(d)})</span>
+                  </> : <span className="text-sub font-bold">날짜 미정</span>}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+        {!isMemo && <div className="grid grid-cols-2 gap-3">
+          <Field label="시간 (선택)" name="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} disabled={busy} />
+        </div>}
 
         {!isMemo && <div className="flex items-end gap-2">
           <div className="min-w-0 flex-1">
