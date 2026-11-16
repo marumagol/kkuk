@@ -50,7 +50,7 @@ export function ExpensesPanel({ view }: { view: ExpensesView }) {
         {view.expenses.length === 0 ? (
           <p className="text-body font-semibold">경비를 적으면 누가 누구에게 얼마를 보내면 되는지 알려 줘요</p>
         ) : mine.length === 0 || mine.every((b) => b.net === 0) ? (
-          <p className="text-title font-extrabold">주고받을 돈이 없어요</p>
+          <p className="text-title font-extrabold">{transfers.length ? "내가 주고받을 돈은 없어요" : "주고받을 돈이 없어요"}</p>
         ) : (
           <div className="flex flex-col gap-1">
             {mine.filter((b) => b.net !== 0).map((b) => (
