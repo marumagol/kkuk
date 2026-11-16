@@ -43,9 +43,9 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
     for (const t of shown) for (const c of t.cities) {
       const key = c.country === "ETC" || !c.country ? `ETC:${c.countryName || c.name}` : c.country;
       const at = c.country ? COUNTRY_CENTER[c.country] : undefined;
-      const g = m.get(key) ?? { key, name: countryNameOf(c.country) ?? (c.countryName || c.name), lat: at?.[0] ?? c.lat, lng: at?.[1] ?? c.lng, trips: [], past: false };
+      const g = m.get(key) ?? { key, name: countryNameOf(c.country) ?? (c.countryName || c.name), lat: at?.[0] ?? c.lat, lng: at?.[1] ?? c.lng, trips: [], past: true };
       if (!g.trips.includes(t)) g.trips.push(t);
-      g.past ||= t.status === "past";
+      g.past &&= t.status === "past"; // 다가오는 여행이 하나라도 있으면 주황 핀 (2026-11-16 마루님)
       m.set(key, g);
     }
     return [...m.values()];
