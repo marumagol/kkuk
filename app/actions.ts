@@ -8,7 +8,7 @@ import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
 import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
 import { AVATAR_PATH } from "@/lib/storage";
 import { cleanDetails } from "@/lib/place-fields";
-import { autocomplete, details, searchOne, openingHours, type Suggestion, type PlaceDetail } from "@/lib/places";
+import { autocomplete, details, searchOne, openingHours, placesEnabled, type Suggestion, type PlaceDetail } from "@/lib/places";
 import { MAX_TRIP_DAYS, MAX_CITIES, MAX_TRIP_TITLE, MAX_PLACE_TITLE, MAX_PLACE_ADDRESS, MAX_PLACE_MEMO, MAX_PLACE_PHOTOS } from "@/lib/rules";
 
 /* 로그아웃 → 둘러보기 (홈) */
@@ -217,7 +217,8 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
   const { data: auth } = await sb.auth.getUser();
-  if (!auth.user) redirect(`/login?next=/trips/${tripId}`);
+  // 로그인이 풀려도 로그인 화면으로 보내지 않는다 (적은 내용이 사라져서, 2026-11-16 장소 등록 점검)
+  if (!auth.user) return { error: "로그인이 풀려 저장하지 못했어요. 적은 내용은 그대로 있어요. 새 탭에서 다시 로그인한 뒤 저장을 다시 눌러 주세요" };
 
   // 새로 넣거나 날짜를 바꾸면 그 날 맨 뒤로
   const lastOrder = async () => {
@@ -687,7 +688,7 @@ export async function claimStamp(tripId: string, lat: number, lng: number, accur
 
 /* ───────── 장소 검색 (4단계 2~3) : 로그인한 사람만. 키는 서버에서만 쓴다 ───────── */
 /* 구글 호출 전 하루 상한 검사 (migration 0017). 상한을 넘거나 검사를 못 하면 구글을 부르지 않는다 */
-async function underPlaceQuota(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, kind: "autocomplete" | "details" | "hours"): Promise<boolean> {
+async function underPlaceQuota(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, kind: "autocomplete" | "details" | "hours" | "find"): Promise<boolean> {
   const { data, error } = await sb.rpc("take_place_quota", { p_kind: kind });
   return !error && data === true;
 }
@@ -695,7 +696,7 @@ async function underPlaceQuota(sb: NonNullable<Awaited<ReturnType<typeof createC
   위치 없는 장소의 지도 위치를 이름으로 한 번에 찾기 (2026-11-15, 동선 정리용)
   - 이동(공항 → 역 같은 길), 메모는 빼고, 이름 앞 "점심:" 이나 괄호 안 후보는 떼고 찾는다
   - 첫 결과를 그대로 잇는다. 틀리면 장소 수정에서 [연결 끊기]
-  - 사람당 하루 상세 횟수(take_place_quota details) 안에서만. 다 쓰면 멈추고 남은 수를 알려 준다
+  - 사람당 하루 위치 찾기 횟수(take_place_quota find, 0037) 안에서만. 다 쓰면 멈추고 남은 수를 알려 준다
 */
 export async function fillTripCoords(tripId: string): Promise<{ error?: string; filled?: number; missed?: number; left?: number; limited?: boolean }> {
   if (!isUuid(tripId)) return { error: "요청을 처리하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
@@ -717,7 +718,7 @@ export async function fillTripCoords(tripId: string): Promise<{ error?: string; 
   const clean = (t: string) => t.replace(/^(아침|점심|저녁|간식|야식|브런치|카페)\s*[:：]\s*/, "").replace(/\(.*?\)/g, "").split(/\s+\/\s+|\s+또는\s+/)[0].trim();
   let filled = 0, missed = 0, limited = false;
   for (const r of list) {
-    if (!(await underPlaceQuota(sb, "details"))) { limited = true; break; }
+    if (!(await underPlaceQuota(sb, "find"))) { limited = true; break; } // 0037 : 장소 검색 연결(details)과 따로 센다
     const q = clean(r.title) || r.title;
     const hit = await searchOne(city?.name && !q.includes(city.name) ? `${q} ${city.name}` : q, bias);
     if (!hit) { missed++; continue; }
@@ -741,23 +742,31 @@ export async function setItemTimes(tripId: string, times: { id: string; time: st
   revalidatePath(`/trips/${tripId}`);
 }
 
-export type FindResult = Suggestion[] | { limited: true };
+/*
+  장소 검색 (4단계 2~3). 실패해도 화면이 이유를 알 수 있게 나눠 돌려준다 (2026-11-16 마루님 "아무 반응이 없어")
+  - limited : 오늘 횟수를 다 씀 / failed : 구글이나 서버 문제 / off : 검색 키가 없음
+*/
+export type FindResult = Suggestion[] | { limited: true } | { failed: "off" | "error" | "login" };
 export async function findPlaces(input: string, session: string, kind: "place" | "city", bias?: { lat: number; lng: number } | null): Promise<FindResult> {
   const q = String(input ?? "").trim().slice(0, 80);
   if ([...q].length < 2 || !/^[0-9a-f-]{36}$/i.test(session)) return [];
+  if (!placesEnabled()) return { failed: "off" };
   const sb = await createClient();
   const { data: auth } = sb ? await sb.auth.getUser() : { data: { user: null } };
-  if (!auth.user || !sb) return [];
+  if (!auth.user || !sb) return { failed: "login" };
   if (!(await underPlaceQuota(sb, "autocomplete"))) return { limited: true };
   const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null;
-  return autocomplete(q, session, kind === "city" ? "city" : "place", b);
+  const r = await autocomplete(q, session, kind === "city" ? "city" : "place", b);
+  return r ?? { failed: "error" };
 }
-export async function pickPlace(id: string, session: string): Promise<PlaceDetail | null> {
+export type PickResult = PlaceDetail | { limited: true } | { failed: "off" | "error" | "login" };
+export async function pickPlace(id: string, session: string): Promise<PickResult> {
+  if (!placesEnabled()) return { failed: "off" };
   const sb = await createClient();
   const { data: auth } = sb ? await sb.auth.getUser() : { data: { user: null } };
-  if (!auth.user || !sb) return null;
-  if (!(await underPlaceQuota(sb, "details"))) return null;
-  return details(String(id), /^[0-9a-f-]{36}$/i.test(session) ? session : undefined);
+  if (!auth.user || !sb) return { failed: "login" };
+  if (!(await underPlaceQuota(sb, "details"))) return { limited: true };
+  return (await details(String(id), /^[0-9a-f-]{36}$/i.test(session) ? session : undefined)) ?? { failed: "error" };
 }
 
 /* ───────── 일부 일정만 공유 (4단계 7, migration 0015) ───────── */

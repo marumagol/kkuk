@@ -251,7 +251,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const showUndated = cols[U].length > 0 || sel === U || (editable && !!dragId);
   const cur = useMemo(() => cols[sel] ?? [], [cols, sel]);
   const marks = useMemo(() => numbering(cur), [cur]);
-  const points = useMemo<DayPoint[]>(() => cur.flatMap((x, i) => (marks[i].n && hasPos(x) ? [{ lat: x.lat!, lng: x.lng!, n: marks[i].n, title: x.title }] : [])), [cur, marks]);
+  const points = useMemo<DayPoint[]>(() => cur.flatMap((x, i) => (marks[i].n && hasPos(x) ? [{ lat: x.lat!, lng: x.lng!, n: marks[i].n, title: x.title }, ...(x.arrive ? [{ lat: x.arrive.lat, lng: x.arrive.lng, n: marks[i].n, title: `${x.arrive.name || "도착"} (도착)` }] : [])] : [])), [cur, marks]);
   const onPin = useCallback((n: number) => {
     const i = numbering(colsRef.current[sel] ?? []).findIndex((m) => m.n === n);
     const id = colsRef.current[sel]?.[i]?.id;

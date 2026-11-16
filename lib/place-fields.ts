@@ -22,7 +22,23 @@ const COMMON_MOVE: FieldDef[] = [
 
 /* 이동의 출발/도착 시간은 맞춤 칸 묶음이 아니라 "시간" 자리에 보인다 (2026-11-16 마루님). 출발 시간 = 장소 시간(정렬 기준) */
 export const MOVE_TIME_KEYS = ["depart", "arrive"];
+/*
+  이동의 출발지/도착지는 맞춤 칸 묶음이 아니라 "장소" 카드에서 각각 검색해 고른다 (2026-11-16 마루님 "출발과 도착을 나눠서")
+  고르면 이름(from/to)과 함께 위치(from_pos/to_pos = "위도,경도"), 구글 장소 id(from_id/to_id)를 details 에 남긴다. DB 칸은 늘리지 않음
+  일정의 지도 위치(itinerary_items.lat/lng)는 출발지(없으면 도착지). 지도에는 도착지 점이 하나 더 찍힌다
+*/
+export const MOVE_PLACE_KEYS = ["from", "to"];
+const POS_RE = /^-?\d{1,2}(\.\d{1,7})?,-?\d{1,3}(\.\d{1,7})?$/;
+const PID_RE = /^[A-Za-z0-9_-]{10,255}$/;
+export function parsePos(v?: string | null): { lat: number; lng: number } | null {
+  if (!v || !POS_RE.test(v)) return null;
+  const [lat, lng] = v.split(",").map(Number);
+  return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
+}
+export const posText = (lat: number, lng: number) => `${lat.toFixed(6)},${lng.toFixed(6)}`;
 const MOVE_TIMES: FieldDef[] = [
+  { key: "from", label: "출발지", half: true },
+  { key: "to", label: "도착지", half: true },
   { key: "depart", label: "출발 시간", type: "time", half: true },
   { key: "arrive", label: "도착 시간", type: "time", half: true },
 ];
@@ -83,6 +99,13 @@ export function cleanDetails(category: string, raw: unknown): Details | null {
     if (f.type === "time" && !/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) return null;
     if ([...v].length > (f.max ?? 60)) return null;
     out[f.key] = v;
+  }
+  if (category === "transport") {
+    for (const k of ["from", "to"]) {
+      if (!out[k]) continue; // 이름이 없으면 위치도 버린다
+      const pos = String(src[`${k}_pos`] ?? ""), id = String(src[`${k}_id`] ?? "");
+      if (parsePos(pos)) { out[`${k}_pos`] = pos; if (PID_RE.test(id)) out[`${k}_id`] = id; }
+    }
   }
   return out;
 }

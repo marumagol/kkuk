@@ -22,8 +22,9 @@ export default async function TripMapPage({ params, searchParams }: { params: Pr
   const day = Number.isInteger(asked) && asked >= 1 && asked <= len ? asked : 1;
   const items = trip.days[day - 1]?.items ?? [];
   const points: MapPoint[] = items.flatMap((it) => (it.lat != null && it.lng != null
-    ? [{ lat: it.lat, lng: it.lng, title: it.title, sub: [it.time, it.category].filter(Boolean).join(" · "), href: it.id && viewer.kind === "user" ? `/trips/${trip.id}/places/${it.id}` : undefined }] : []));
-  const noPin = items.length - points.length;
+    ? [{ lat: it.lat, lng: it.lng, title: it.title, sub: [it.time, it.category].filter(Boolean).join(" · "), href: it.id && viewer.kind === "user" ? `/trips/${trip.id}/places/${it.id}` : undefined },
+      ...(it.arrive ? [{ lat: it.arrive.lat, lng: it.arrive.lng, title: `${it.arrive.name || "도착"} (도착)`, sub: [it.detail?.match(/(\d\d:\d\d) 도착/)?.[1], "도착"].filter(Boolean).join(" · "), href: it.id && viewer.kind === "user" ? `/trips/${trip.id}/places/${it.id}` : undefined }] : [])] : []));
+  const noPin = items.filter((it) => it.lat == null || it.lng == null).length;
 
   return (
     <AppShell bottomGap={false}>

@@ -13,8 +13,9 @@ export const placesEnabled = () => KEY().length > 0;
 export type Suggestion = { id: string; main: string; sub: string };
 export type PlaceDetail = { id: string; name: string; address: string; lat: number; lng: number; country: string | null; types?: string[] /* 구글 장소 종류 (분류 자동 고르기, 2026-11-16) */ };
 
-export async function autocomplete(input: string, session: string, kind: "place" | "city", bias?: { lat: number; lng: number } | null): Promise<Suggestion[]> {
-  if (!placesEnabled()) return [];
+/* 구글이 실패하면 null (결과 없음 [] 과 나눠서 화면에 이유를 보여 준다, 2026-11-16) */
+export async function autocomplete(input: string, session: string, kind: "place" | "city", bias?: { lat: number; lng: number } | null): Promise<Suggestion[] | null> {
+  if (!placesEnabled()) return null;
   const body: Record<string, unknown> = { input, sessionToken: session, languageCode: "ko" };
   if (kind === "city") body.includedPrimaryTypes = ["locality", "administrative_area_level_1", "administrative_area_level_2", "colloquial_area", "sublocality_level_1"];
   if (bias) body.locationBias = { circle: { center: { latitude: bias.lat, longitude: bias.lng }, radius: 50000 } };
@@ -24,9 +25,9 @@ export async function autocomplete(input: string, session: string, kind: "place"
   if (!res?.ok) {
     // 원인 확인용 서버 기록 (구글 오류 문구에는 키가 들어 있지 않다)
     if (res) console.error("[places] autocomplete", res.status, (await res.text().catch(() => "")).slice(0, 400));
-    return [];
+    return null;
   }
-  const j = (await res.json()) as { suggestions?: { placePrediction?: { placeId: string; structuredFormat?: { mainText?: { text: string }; secondaryText?: { text: string } }; text?: { text: string } } }[] };
+  const j = (await res.json().catch(() => ({}))) as { suggestions?: { placePrediction?: { placeId: string; structuredFormat?: { mainText?: { text: string }; secondaryText?: { text: string } }; text?: { text: string } } }[] };
   return (j.suggestions ?? []).flatMap((s) => {
     const p = s.placePrediction;
     if (!p?.placeId) return [];

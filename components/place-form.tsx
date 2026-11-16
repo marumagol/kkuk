@@ -18,7 +18,7 @@ import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
 import { PlaceSuggest, type Picked } from "@/components/place-search";
-import { fieldsOf, guessCategory, MODES, MOVE_TIME_KEYS, type Details } from "@/lib/place-fields";
+import { fieldsOf, guessCategory, MODES, MOVE_PLACE_KEYS, MOVE_TIME_KEYS, parsePos, posText, type Details } from "@/lib/place-fields";
 
 const CATS = [
   { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
@@ -53,7 +53,18 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   });
   const [reserve, setReserve] = useState(ctx.reserved);
   const isMove = category === "transport";
-  const fields = fieldsOf(category, extra.mode).filter((f) => !(isMove && MOVE_TIME_KEYS.includes(f.key)));
+  const fields = fieldsOf(category, extra.mode).filter((f) => !(isMove && (MOVE_TIME_KEYS.includes(f.key) || MOVE_PLACE_KEYS.includes(f.key))));
+  // 이동 이름 자동 : 출발지/도착지를 고르면 "인천 → 신치토세". 이름을 직접 바꾸면 더는 바꾸지 않는다
+  const autoTitle = useRef<string | null>(null);
+  const moveTouched = useRef(false); // 이번에 출발지/도착지 위치를 바꿨는지 (저장 때 일정 지도 위치를 맞춘다)
+  const setStop = (k: "from" | "to", v: { name: string; lat?: number; lng?: number; id?: string }) => {
+    moveTouched.current = true;
+    const next = { ...extra, [k]: v.name, [`${k}_pos`]: v.lat != null && v.lng != null ? posText(v.lat, v.lng) : "", [`${k}_id`]: v.id ?? "" };
+    setExtra(next);
+    const auto = [next.from, next.to].filter(Boolean).join(" → ");
+    if (!title.trim() || title === autoTitle.current) { autoTitle.current = auto; setTitle(auto.slice(0, MAX_PLACE_TITLE)); }
+    setError("");
+  };
   // 장소 검색으로 고른 구글 장소. undefined = 건드리지 않음, null = 연결 끊음
   const [linked, setLinked] = useState<{ id: string; lat: number; lng: number } | null | undefined>(undefined);
   const isLinked = linked === undefined ? !!p?.google_place_id : !!linked;
@@ -104,7 +115,14 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     setError("");
     if (!titleLen) return setError(isMemo ? "메모 제목을 적어 주세요" : "장소 이름을 적어 주세요");
     startBusy(async () => {
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo || !timed ? "" : isMove ? extra.depart ?? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: isMove && !timed ? { ...extra, depart: "", arrive: "" } : extra, reserve, again, ...(linked !== undefined ? { place: linked } : {}) }));
+      // 이동은 일정 지도 위치 = 출발지(없으면 도착지)
+      let place = linked;
+      if (isMove) {
+        const f = parsePos(extra.from_pos), t = parsePos(extra.to_pos);
+        const main = f && extra.from_id ? { id: extra.from_id, ...f } : t && extra.to_id ? { id: extra.to_id, ...t } : null;
+        if (main) place = main; else if (moveTouched.current) place = null;
+      }
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title, address, category, time: isMemo || !timed ? "" : isMove ? extra.depart ?? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: isMove && !timed ? { ...extra, depart: "", arrive: "" } : extra, reserve, again, ...(place !== undefined ? { place } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -187,18 +205,23 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
 
         <FormCard title={isMemo ? "메모" : "장소"}>
         <Field label={isMemo ? "메모 제목" : "장소 이름"} name="title" placeholder={isMemo ? "예 : 체크아웃 전에 짐 맡기기" : "예 : 오타루 운하"} value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
-          onChange={(e) => { setTitle(e.target.value); setError(""); }} autoFocus={!p}
+          onChange={(e) => { setTitle(e.target.value); autoTitle.current = null; setError(""); }} autoFocus={!p}
           error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
-        {ctx.searchable && !isLinked && !isMemo && (
+        {ctx.searchable && !isLinked && !isMemo && !isMove && (
           <PlaceSuggest query={title} kind="place" bias={ctx.bias} disabled={busy}
+            onFallback={(s) => { setTitle(s.name.slice(0, MAX_PLACE_TITLE)); if (s.sub && !address.trim()) setAddress(s.sub.slice(0, 200)); }}
             onPick={(d: Picked) => {
               setTitle(d.name.slice(0, MAX_PLACE_TITLE)); if (d.address) setAddress(d.address.slice(0, 200)); setLinked({ id: d.id, lat: d.lat, lng: d.lng });
               // 구글 장소 종류로 분류(와 이동 수단)를 골라 둔다. 직접 고른 분류는 그대로
               const g = catTouched.current ? null : guessCategory(d.types);
-              if (g) { setCategory(g.category); if (g.mode) setExtra((x) => ({ ...x, mode: x.mode || g.mode! })); }
+              if (g) {
+                setCategory(g.category); if (g.mode) setExtra((x) => ({ ...x, mode: x.mode || g.mode! }));
+                // 공항, 역을 고르면 출발지로 넣어 둔다. 이름은 직접 고른 것으로 보고 자동으로 바꾸지 않는다
+                if (g.category === "transport") { autoTitle.current = null; moveTouched.current = true; setExtra((x) => (x.from ? x : { ...x, from: d.name.slice(0, 60), from_pos: posText(d.lat, d.lng), from_id: d.id })); }
+              }
             }} />
         )}
-        {isLinked && !isMemo && (
+        {isLinked && !isMemo && !(isMove && (extra.from_pos || extra.to_pos)) && (
           <div className="-mt-1.5 flex items-center gap-2 text-tiny text-ink-sub">
             <Icon name="map" size={14} />지도에 위치가 연결된 장소예요
             <button type="button" onClick={() => setLinked(null)} disabled={busy} className="press ml-auto h-9 px-2 font-semibold text-ink underline underline-offset-2">연결 끊기</button>
@@ -232,7 +255,17 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             </div>
           </fieldset>
         )}
-          {!isMemo && <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
+        {isMove && (
+          <div className="flex flex-col gap-3">
+            {(["from", "to"] as const).map((k) => (
+              <MoveStop key={k} label={k === "from" ? (extra.mode === "flight" ? "출발 공항" : "출발지") : (extra.mode === "flight" ? "도착 공항" : "도착지")}
+                placeholder={k === "from" ? "예 : 인천국제공항" : "예 : 신치토세 공항"} value={extra[k] ?? ""} linked={!!extra[`${k}_pos`]}
+                searchable={ctx.searchable} bias={ctx.bias} disabled={busy} onChange={(v) => setStop(k, v)} />
+            ))}
+            <p className="text-tiny text-ink-sub">출발지와 도착지를 고르면 이름이 자동으로 채워지고, 지도에 두 곳이 이어져요</p>
+          </div>
+        )}
+          {!isMemo && !isMove && <Field label="주소 (선택)" name="address" placeholder="주소나 위치 설명" value={address} maxLength={200}
             onChange={(e) => setAddress(e.target.value)} disabled={busy} />}
         </FormCard>
 
@@ -324,7 +357,6 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             <p className="text-tiny text-ink-sub">사진은 올릴 때 크기를 줄여요</p>
           </section>}
           </FormCard>
-        {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
 
         {p && (
           /* 삭제는 작은 글자 버튼 (2026-11-16 마루님 "삭제 버튼 너무 커") */
@@ -335,15 +367,46 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
         )}
       </div>
 
-      <div className="sticky bottom-0 mt-6 flex gap-2 bg-bg px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
+      {/* 오류는 저장 버튼 바로 위에 (긴 화면에서도 눈에 띄게, 2026-11-16 장소 등록 점검) */}
+      <div className="sticky bottom-0 mt-6 flex flex-col gap-2 bg-bg px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
+        {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
+        <div className="flex gap-2">
         {!p && !isMemo && (
           <Button variant="secondary" onClick={() => save(true)} disabled={busy || !titleLen || uploading > 0} className="flex-none">이어서 추가</Button>
         )}
         <Button full onClick={() => save()} disabled={busy || !titleLen || uploading > 0}>{busy ? "저장하는 중" : uploading ? "사진 올리는 중" : p ? "저장" : isMemo ? "메모 추가" : "장소 추가"}</Button>
+        </div>
       </div>
 
       {confirm && <AlertDialog title={isMemo ? "메모를 삭제할까요?" : "장소를 삭제할까요?"} desc={`"${p?.title}"이(가) 일정에서 사라져요`} confirmLabel="삭제"
         confirm={remove} onClose={() => setConfirm(false)} />}
     </LeaveGuard>
+  );
+}
+
+/* 이동의 출발지/도착지 칸 : 적으면 장소 검색 후보가 뜨고, 고르면 지도 위치까지 (2026-11-16 마루님) */
+function MoveStop({ label, placeholder, value, linked, searchable, bias, disabled, onChange }: {
+  label: string; placeholder: string; value: string; linked: boolean; searchable: boolean; bias: { lat: number; lng: number } | null; disabled: boolean;
+  onChange: (v: { name: string; lat?: number; lng?: number; id?: string }) => void;
+}) {
+  const [typed, setTyped] = useState(false); // 예전에 적어 둔 이름으로는 화면을 열자마자 찾지 않는다 (검색 횟수 아끼기)
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex min-w-0 flex-col gap-1.5">
+        <span className="text-tiny font-bold text-ink-sub">{label}</span>
+        <input type="text" value={value} placeholder={placeholder} maxLength={60} disabled={disabled} onChange={(e) => { setTyped(true); onChange({ name: e.target.value }); }}
+          className="h-12 min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+      </label>
+      {linked ? (
+        <div className="flex items-center gap-2 text-tiny text-ink-sub">
+          <Icon name="map" size={14} />지도에 위치가 연결됐어요
+          <button type="button" onClick={() => onChange({ name: value })} disabled={disabled} className="press ml-auto h-9 px-2 font-semibold text-ink underline underline-offset-2">연결 끊기</button>
+        </div>
+      ) : searchable && (
+        <PlaceSuggest query={value} kind="place" bias={bias} disabled={disabled || !typed} className=""
+          onFallback={(s) => onChange({ name: s.name.slice(0, 60) })}
+          onPick={(d) => onChange({ name: d.name.slice(0, 60), lat: d.lat, lng: d.lng, id: d.id })} />
+      )}
+    </div>
   );
 }

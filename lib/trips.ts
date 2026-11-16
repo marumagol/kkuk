@@ -12,7 +12,7 @@ import { TRIPS, getTrip, daysBetween, addDays, todayKST, type Trip, type Item } 
 import { currencyOf, formatMoney, iconUrl } from "@/lib/countries";
 import { avatarUrl } from "@/lib/storage";
 import { placesEnabled, details } from "@/lib/places";
-import { detailLine } from "@/lib/place-fields";
+import { detailLine, parsePos } from "@/lib/place-fields";
 import type { Viewer } from "@/lib/viewer";
 
 const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소", memo: "메모" };
@@ -68,6 +68,13 @@ export const loadTrips = cache(async (v: Viewer): Promise<Trip[]> => {
   return trips.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m, avatar: m.userId ? face.get(m.userId) : undefined })), places: count.get(t.id) ?? 0 }));
 });
 
+/* 이동의 도착지 : 출발지도 있을 때만 지도에 점을 하나 더 (출발지가 없으면 도착지가 일정 위치라 겹친다) */
+function arriveOf(it: { category: string; details?: Record<string, string> | null }): { arrive?: { lat: number; lng: number; name: string } } {
+  if (it.category !== "transport" || !it.details?.from_pos) return {};
+  const t = parsePos(it.details.to_pos);
+  return t ? { arrive: { ...t, name: it.details.to ?? "" } } : {};
+}
+
 export type Role = "owner" | "editor" | "viewer";
 export type PlaceRow = {
   id: string; day_index: number | null; sort_order: number; title: string; address: string | null; category: string;
@@ -120,7 +127,7 @@ export const loadTrip = cache(async (v: Viewer, id: string): Promise<TripResult>
   for (const it of (rows ?? []) as PlaceRow[]) {
     const cost = it.estimated_cost != null && it.cost_currency ? `예상 ${formatMoney(it.estimated_cost, it.cost_currency)}` : "";
     const desc = it.category === "memo" ? it.memo ?? "" : [it.address, cost, it.memo?.split("\n")[0]].filter(Boolean).join(" · ");
-    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), addr: it.address || undefined, gpid: it.google_place_id || undefined, ...(it.estimated_cost != null && it.cost_currency ? { cost: it.estimated_cost, cur: it.cost_currency } : {}), hours: it.details?._hours || undefined, ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
+    const item: Item = { id: it.id, title: it.title, category: CATEGORY[it.category] ?? "관광", detail: detailLine(it.category, it.details) || undefined, time: it.start_time?.slice(0, 5), desc: desc || undefined, editedBy: editorOf(it), addr: it.address || undefined, gpid: it.google_place_id || undefined, ...(it.estimated_cost != null && it.cost_currency ? { cost: it.estimated_cost, cur: it.cost_currency } : {}), hours: it.details?._hours || undefined, ...(it.lat != null && it.lng != null ? { lat: it.lat, lng: it.lng } : {}), ...arriveOf(it), photos: (it.photos ?? []).map((x) => ({ path: x, url: photos.get(x) ?? "" })).filter((x) => x.url) };
     if (it.day_index != null && it.day_index < len) trip.days[it.day_index].items.push(item);
     else trip.undated.push(item);
   }
