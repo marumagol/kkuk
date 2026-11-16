@@ -97,7 +97,7 @@ export function BookingForm({ view }: { view: BookingView }) {
         </label>
         <section className="flex flex-col gap-2" aria-label="첨부 파일">
           <div className="flex items-end justify-between">
-            <h2 className="text-sub font-semibold text-ink">항공권, 바우처 (선택)</h2>
+            <h2 className="text-sub font-semibold text-ink">첨부 파일 (선택)</h2>
             <span className="text-tiny text-ink-sub">{files.length}/{MAX_FILES}</span>
           </div>
           <FileList files={files} onRemove={busy ? undefined : (p) => setFiles((x) => x.filter((f) => f.path !== p))} />
