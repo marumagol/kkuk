@@ -87,7 +87,8 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
   const [tabPick, setTab] = useState<"upcoming" | "past" | null>(null);
   const tab = tabPick ?? (upcoming.length || !past.length ? "upcoming" : "past");
   const list = tab === "past" ? past : upcoming;
-  const nextTrip = filter === "all" ? upcoming[0] : undefined;
+  // 다음 여행 카드는 빼고 (2026-11-16 마루님), 지도에서 그 여행의 핀 위에 "다음 여행" 말풍선만
+  const nextId = upcoming.find((t) => t.status !== "ongoing")?.id;
   const chip = (key: string, label: string) => (
     <button key={key} type="button" onClick={() => { setFilter(key); setPicked(null); }} aria-pressed={filter === key}
       className={"press inline-flex h-10 flex-none items-center rounded-full px-4 text-sub font-semibold " + (filter === key ? "bg-deep text-on-deep" : "bg-surface text-ink")}>
@@ -124,6 +125,11 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
                       {g.name}{big && <tspan className="fill-point-text"> {g.trips.length}</tspan>}
                     </text>
                   </g>}
+                  {nextId && g.trips.some((t) => t.id === nextId) && <g transform="translate(0,-34)" aria-hidden="true">
+                    <rect x={-31} y={-22} width={62} height={20} rx={10} className="fill-point" />
+                    <path d="M-4 -2.5h8l-4 4.5z" className="fill-point" />
+                    <text x={0} y={-8} textAnchor="middle" className="fill-white text-[11px] font-extrabold">다음 여행</text>
+                  </g>}
                 </g>
               );
             })}
@@ -147,26 +153,6 @@ export function WorldTrips({ trips }: { trips: WorldTrip[] }) {
       </div>
 
       <section className="relative -mt-4 flex flex-col gap-5 rounded-t-[28px] bg-surface px-5 pb-8 pt-6">
-        {/* 다음 여행 카드 (2026-11-16 마루님). 여행 중이면 오늘 일정으로 */}
-        {nextTrip && (
-          /* 티켓 모양 (2026-11-16 마루님 "티켓 느낌") : 왼쪽 정보 | 점선 절취선과 위아래 반원 홈 | 오른쪽 D-day 스텁 */
-          <Link href={`/trips/${nextTrip.id}`} className="press relative flex items-stretch rounded-card bg-deep text-on-deep">
-            <span className="min-w-0 flex-1 py-4 pl-5 pr-4">
-              <span className="flex items-center gap-1.5 text-tiny font-semibold text-on-deep-sub"><Icon name="plane" size={14} />{nextTrip.status === "ongoing" ? "지금 여행 중" : "다음 여행"}</span>
-              <span className="mt-1 block truncate text-title font-extrabold">{nextTrip.title}</span>
-              <span className="mt-1 block truncate text-tiny font-semibold text-on-deep-sub">{nextTrip.row.sub}</span>
-            </span>
-            <span aria-hidden className="relative w-0 border-l-2 border-dashed border-on-deep-sub/40">
-              <span className="absolute -left-[11px] -top-[10px] size-5 rounded-full bg-surface" />
-              <span className="absolute -bottom-[10px] -left-[11px] size-5 rounded-full bg-surface" />
-            </span>
-            <span className="flex w-[92px] flex-none flex-col items-center justify-center gap-0.5 px-2 py-4 text-center">
-              {nextTrip.status === "ongoing"
-                ? <><span className="text-tiny font-semibold text-on-deep-sub">오늘 일정</span><span className="flex items-center text-body font-extrabold">보기<Icon name="right" size={16} /></span></>
-                : <><span className="text-tiny font-semibold text-on-deep-sub">출발까지</span><span className="text-[26px] font-extrabold leading-tight tabular-nums">{nextTrip.row.badge}</span></>}
-            </span>
-          </Link>
-        )}
         {/* 목록은 다가오는 여행 / 다녀온 여행 탭으로 나눠 본다 (2026-11-16 마루님). 점 색은 지도 핀 색과 같다 */}
         <div className="flex flex-col gap-3">
           <div role="tablist" aria-label="여행 나눠 보기" className="flex gap-1 rounded-btn bg-bg p-1">
