@@ -72,6 +72,22 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const [asking, setAsking] = useState<Item | null>(null); // 지우기 확인
   const [undo, setUndo] = useState<{ c: number; items: Item[] } | null>(null); // 동선 정렬 되돌리기
 
+  /*
+    고친 사람 표시는 한 번만 (2026-11-16 마루님 "새로고침하면 안 뜨게") : 이 기기에서 처음 본 수정만 얼굴을 보이고,
+    보이자마자 기억해 둔다(localStorage, 최근 300개). 지금 화면에서는 그대로 두고 다음에 열 때부터 안 보인다
+  */
+  const [seen, setSeen] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    const KEY = "kkuk-seen-edits";
+    let old: string[] = [];
+    try { old = JSON.parse(localStorage.getItem(KEY) ?? "[]"); if (!Array.isArray(old)) old = []; } catch { old = []; }
+    setSeen((s) => s ?? new Set(old));
+    const now = [...days.flatMap((d) => d.items), ...undated].flatMap((x) => (x.editedKey ? [x.editedKey] : []));
+    if (!now.length) return;
+    try { localStorage.setItem(KEY, JSON.stringify([...new Set([...old, ...now])].slice(-300))); } catch { /* 저장이 막혀도 표시만 계속된다 */ }
+  }, [days, undated]);
+  const showEditor = (it: Item) => !!it.editedKey && !!seen && !seen.has(it.editedKey);
+
   /* 알림 줄은 5초 뒤 사라진다 (되돌리기가 있으면 8초) */
   useEffect(() => {
     if (!msg) return;
@@ -375,7 +391,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                     <div className="flex items-start gap-1">
                       <div className="min-w-0 flex-1">
                         <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
-                          desc={it.desc ?? ""} editedBy={it.editedBy} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === list.length - 1}
+                          desc={it.desc ?? ""} editedBy={showEditor(it) ? it.editedBy : undefined} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === list.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined}
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
                           corner={!editing && it.category !== "메모" && canMap(it) ? (
