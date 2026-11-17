@@ -216,7 +216,7 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
             {/* 이동은 "출발 → 도착" 시간 (2026-11-17 마루님 "이동수단일 때 도착시간도 카드에") */}
             {(time || timeEnd) && <span className="text-sub font-bold text-ink tabular-nums">{time && timeEnd ? <>{time}<span className="mx-1 text-ink-sub">→</span>{timeEnd}</> : time || <>{timeEnd} 도착</>}</span>}
             {category !== "메모" && <CategoryChip category={category} />}
-            {badge && <span className="inline-flex h-6 items-center rounded-full bg-deep px-2 text-[12px] font-bold text-on-deep">{badge}</span>}
+            {badge && <span className="inline-flex h-6 items-center rounded-full border border-accent-text/30 px-2 text-[12px] font-bold text-accent-text" /* 연하게 (2026-11-17 마루님 "너무 진해") */>{badge}</span>}
           </div>
         </div>}
         <div className="flex items-start gap-3">
