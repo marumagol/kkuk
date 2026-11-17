@@ -3,7 +3,7 @@ import { airlineOf } from "@/lib/airlines";
   분류별 맞춤 칸 (2026-11-15 여행 메뉴 개편, migration 0030 itinerary_items.details)
   - 이동 : 수단(비행기/기차/버스/배/자동차/도보)을 고르면 그에 맞는 칸. 비행기는 편명, 출발/도착 공항, 출발/도착 시간 (출발 시간 2026-11-16), 좌석, 예약번호
   - 숙소 : 예약번호, 체크인/체크아웃 시간, 예약한 곳, 연락처
-  - 식사 : 예약번호, 인원, 먹을 메뉴 / 관광 : 예약·입장권 번호, 운영 시간 / 쇼핑 : 살 것
+  - 식사 : 예약번호, 먹을 메뉴 / 관광 : 예약·입장권 번호, 운영 시간 / 쇼핑 : 살 것
   저장할 때는 고른 분류(와 수단)의 칸만 남긴다. 공개 공유 링크에는 나가지 않는다
 */
 export type Details = Record<string, string>;
@@ -75,10 +75,9 @@ export function fieldsOf(category: string, mode?: string): FieldDef[] {
       { key: "checkin", label: "체크인", type: "time", half: true },
       { key: "checkout", label: "체크아웃", type: "time", half: true },
     ];
-    case "food": return [ // 먹을 메뉴 → 예약번호, 인원 (2026-11-16 마루님)
+    case "food": return [ // 먹을 메뉴 → 예약번호. 인원 칸은 뺌 (2026-11-17 마루님 "인원 필드 삭제")
       { key: "menu", label: "먹을 메뉴", placeholder: "예 : 징기스칸, 수프카레", max: 60 },
-      { key: "booking", label: "예약번호", half: true, max: 40 },
-      { key: "people", label: "인원", placeholder: "예 : 2", half: true, max: 10, unit: "명" },
+      { key: "booking", label: "예약번호", max: 40 },
     ];
     case "sight": return [
       { key: "booking", label: "예약/입장권 번호", half: true, max: 40 },
@@ -140,7 +139,7 @@ export function detailLine(category: string, d?: Details | null, skipRoute = fal
     // 몇 박은 뱃지로, 체크아웃 시간은 체크아웃 날 카드에 (2026-11-17 마루님). 몇 박을 안 적은 숙소는 예전처럼 체크아웃도 여기
     parts.push(d.checkin ? `체크인 ${d.checkin}` : "", !parseInt(d.nights ?? "") && d.checkout ? `체크아웃 ${d.checkout}` : "", book);
   } else if (category === "food") {
-    parts.push(book, d.people ?? "", d.menu ?? "");
+    parts.push(book, d.menu ?? "");
   } else if (category === "sight") {
     parts.push(d.hours ?? "", book);
   } else if (category === "shopping") {

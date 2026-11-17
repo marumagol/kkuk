@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 20:25", version: "0.73.10", items: ["식사 장소의 인원 칸을 뺐어요"] },
   { at: "2026-11-17 20:15", version: "0.73.9", items: ["연박 숙소 카드(n박째)도 그날 일정 맨 위에 보여요"] },
   { at: "2026-11-17 20:10", version: "0.73.8", items: ["거리 칩은 다시 거리만 보여요"] },
   { at: "2026-11-17 20:05", version: "0.73.7", items: ["이동 앞뒤 거리에 어디서 어디까지인지 이름이 같이 보여요 (앞은 출발지까지, 뒤는 도착지에서)"] },
