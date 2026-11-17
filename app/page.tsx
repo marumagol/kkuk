@@ -173,7 +173,7 @@ async function During({ v, trip, today }: { v: Viewer; trip: Trip; today: string
         {trip.cities[0]} 여행<br /><span className="text-point-text">{dayNo}일째</span>예요
       </h1>
 
-      {v.kind === "user" && <StampClaim tripId={trip.id} inset={false} />}
+      {v.kind === "user" && <StampClaim tripId={trip.id} city={trip.cities[0]} inset={false} />}
 
       {next && where && (
         <section className="flex items-center gap-3 rounded-deep bg-deep px-5 py-4 text-on-deep" aria-label="다음 장소">

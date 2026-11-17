@@ -82,7 +82,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
       {viewer.kind === "preview" && <MockNote />}
       {viewer.kind === "user" && <TripTabs tripId={trip.id} active="일정" />}
       {viewer.kind === "user" && <LiveRefresh tripId={trip.id} />}
-      {viewer.kind === "user" && ongoing && <StampClaim tripId={trip.id} />}
+      {viewer.kind === "user" && ongoing && <StampClaim tripId={trip.id} city={trip.cities[0]} />}
 
       <DayBoard tripId={trip.id} start={trip.start} days={trip.days.slice(0, len)} undated={trip.undated}
         editable={editable} canAdd={canEdit} user={viewer.kind === "user"} initialDay={sp.day === "all" ? 0 : day}

@@ -8,9 +8,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export const HOLD_MS = 800;
 
-export function HoldButton({ onStart, onComplete, onShort, disabled, label, holdingLabel = "꾹 누르고 있어요", className = "h-14 text-[16px]" }: {
+export function HoldButton({ onStart, onComplete, onShort, disabled, label, holdingLabel = "꾹 누르고 있어요", className = "h-14 text-[16px]", ring }: {
   onStart?: () => boolean; onComplete: () => void; onShort?: () => void; disabled?: boolean;
   label: ReactNode; holdingLabel?: ReactNode; className?: string;
+  /* ring : 원형 도장 버튼 + 둘레 링 게이지 (0.89.0 도장 받기 카드). 숫자는 지름(px) */
+  ring?: number;
 }) {
   const [holding, setHolding] = useState(false);
   const [full, setFull] = useState(false); // 다 찼으면 줄어들지 않고 잠시 그대로
@@ -45,13 +47,37 @@ export function HoldButton({ onStart, onComplete, onShort, disabled, label, hold
     onComplete();
   };
 
+  const handlers = {
+    onPointerDown: down, onPointerUp: up, onPointerLeave: up, onPointerCancel: up,
+    onClick: key, onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  };
+  const on = holding || full;
+  const dur = full ? "0ms" : `${holding ? HOLD_MS : 250}ms`;
+
+  if (ring) {
+    const R = ring / 2 - 4, C = 2 * Math.PI * R;
+    return (
+      <button type="button" disabled={disabled} {...handlers}
+        className={"group relative flex-none select-none rounded-full [-webkit-touch-callout:none] [touch-action:manipulation] disabled:opacity-60 " + className}
+        style={{ width: ring, height: ring }}>
+        <svg aria-hidden width={ring} height={ring} className="absolute inset-0 -rotate-90">
+          <circle cx={ring / 2} cy={ring / 2} r={R} fill="none" stroke="var(--color-line)" strokeWidth={3} />
+          <circle cx={ring / 2} cy={ring / 2} r={R} fill="none" stroke="var(--color-point, #FF5A36)" strokeWidth={4} strokeLinecap="round"
+            strokeDasharray={C} strokeDashoffset={on ? 0 : C}
+            style={{ transition: `stroke-dashoffset ${dur} ${holding ? "linear" : "ease-out"}` }} />
+        </svg>
+        <span className={"absolute inset-[12px] flex flex-col items-center justify-center rounded-full border-2 border-dashed transition-colors duration-300 " + (on ? "border-point bg-point-soft text-point-text " : "border-line-strong bg-surface-soft text-ink-sub ") + (holding ? "hold-tense" : "")}>
+          {holding ? holdingLabel : label}
+        </span>
+      </button>
+    );
+  }
+
   return (
-    <button type="button" disabled={disabled}
-      onPointerDown={down} onPointerUp={up} onPointerLeave={up} onPointerCancel={up}
-      onClick={key} onContextMenu={(e) => e.preventDefault()}
+    <button type="button" disabled={disabled} {...handlers}
       className={"relative select-none overflow-hidden rounded-btn bg-btn font-bold text-on-btn transition-transform duration-100 [-webkit-touch-callout:none] [touch-action:manipulation] disabled:bg-surface-soft disabled:text-ink-sub " + (holding ? "hold-tense " : "") + className}>
       <span aria-hidden className="absolute inset-y-0 left-0 bg-point"
-        style={{ width: holding || full ? "100%" : "0%", transition: full ? "none" : `width ${holding ? HOLD_MS : 200}ms ${holding ? "linear" : "ease-out"}` }} />
+        style={{ width: on ? "100%" : "0%", transition: `width ${dur} ${holding ? "linear" : "ease-out"}` }} />
       <span className="relative">{holding ? holdingLabel : label}</span>
     </button>
   );

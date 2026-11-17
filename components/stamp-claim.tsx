@@ -11,7 +11,7 @@ import { safeCall } from "@/lib/safe-call";
 
 type State = { kind: "idle" } | { kind: "denied" } | { kind: "error"; text: string } | { kind: "done"; r: Extract<ClaimResult, { ok: true }> };
 
-export function StampClaim({ tripId, inset = true }: { tripId: string; inset?: boolean }) {
+export function StampClaim({ tripId, city, inset = true }: { tripId: string; city?: string; inset?: boolean }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [locating, setLocating] = useState(false);
   const [pending, start] = useTransition();
@@ -65,7 +65,7 @@ export function StampClaim({ tripId, inset = true }: { tripId: string; inset?: b
     : hint ? "조금 더 꾹 눌러 주세요. 게이지가 다 차면 도장이 찍혀요" : null;
 
   return (
-    <section className={(inset ? "mx-5 mt-4 " : "") + "flex flex-col gap-3 rounded-card bg-surface px-4 py-4"} aria-label="도장 받기">
+    <section className={(inset ? "mx-5 mt-4 " : "") + "flex flex-col gap-3 rounded-card bg-surface px-5 pb-5 pt-5"} aria-label="도장 받기">
       {reveal && (
         <StampReveal city={state.kind === "done" ? state.r.city : null} country={state.kind === "done" ? state.r.country : null}
           title={state.kind === "done" && state.r.status === "already" ? "이미 받은 도장" : "도장 꾹!"} sub={msg ?? ""} onClose={() => setReveal(false)} />
@@ -77,14 +77,23 @@ export function StampClaim({ tripId, inset = true }: { tripId: string; inset?: b
           </div>
         </div>
       )}
-      <div className="flex items-center gap-3">
-        <span className="flex size-10 flex-none items-center justify-center rounded-full bg-point-soft text-point-text"><Icon name="stamp" size={20} /></span>
-        <p className="min-w-0 flex-1 text-sub text-ink">{msg ?? "지금 여행 도시에 있다면 도장을 받을 수 있어요"}</p>
-      </div>
       {state.kind !== "done" && (
-        <HoldButton onStart={locate} onComplete={finish} onShort={() => setHint(true)} disabled={busy}
-          label={state.kind === "idle" ? "꾹 눌러 도장 받기" : "다시 꾹 눌러 받기"} />
+        <>
+          {/* 0.89.0 : 막대 버튼 대신 빈 도장 자체를 꾹 누른다. 둘레 링이 차오르면 찍힌다 */}
+          <div className="text-center">
+            <p className="text-tiny font-bold tracking-wide text-point-text">도장 받기</p>
+            <p className="mt-1 text-title font-extrabold text-ink">{city ? `${city} 도장이 기다리고 있어요` : "여행 도장이 기다리고 있어요"}</p>
+          </div>
+          <div className="flex justify-center py-1">
+            <HoldButton ring={132} onStart={locate} onComplete={finish} onShort={() => setHint(true)} disabled={busy}
+              holdingLabel={<span className="text-[26px] font-extrabold">꾹</span>}
+              label={<><Icon name="stamp" size={30} /><span className="mt-1 text-tiny font-bold">꾹 누르기</span></>} />
+          </div>
+        </>
       )}
+      <p role="status" className={"text-center text-sub " + (msg && state.kind !== "done" ? "text-ink" : "text-ink-sub")}>
+        {msg ?? "여행 도시에 도착했다면 도장을 꾹 눌러 주세요"}
+      </p>
     </section>
   );
 }
