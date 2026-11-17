@@ -451,8 +451,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               {g.c === U ? "날짜 미정" : <>{g.c + 1}일차 <span className="text-sub font-semibold text-ink-sub">{md(dayDate!)} ({weekday(dayDate!)})</span></>}
             </h3>
           )}
-          {/* 앞날 체크인한 숙소 (2026-11-17 마루님 "동일한 카드로, 체크인 체크아웃만 뱃지로") : 나가는 날은 맨 위, 묵는 밤은 맨 아래. 번호, 순서, 거리에는 안 들어감 */}
-          {g.c !== U && staysOn(g.c).filter((x) => x.out).map((x) => stayCard(x, g.c))}
+          {/* 앞날 체크인한 숙소 (2026-11-17 마루님 "동일한 카드로, 체크인 체크아웃만 뱃지로") : 나가는 날, 묵는 밤 모두 맨 위 (2026-11-17 마루님 "연박 카드도 맨 위"). 번호, 순서, 거리에는 안 들어감 */}
+          {g.c !== U && staysOn(g.c).map((x) => stayCard(x, g.c))}
           {list.length ? (
             <ol className="flex flex-col" aria-label={g.c === U ? "날짜 미정 장소" : `${g.c + 1}일차 장소`}>
               {list.map((it, i) => {
@@ -509,7 +509,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               <span className="text-sub text-ink-sub">{g.c === U ? "날짜를 못 정한 장소가 없어요" : "아직 장소가 없어요"}</span>
             </div>
           )}
-          {g.c !== U && staysOn(g.c).filter((x) => !x.out).map((x) => stayCard(x, g.c))}
           </section>
             );
           })}

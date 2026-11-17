@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 20:15", version: "0.73.9", items: ["연박 숙소 카드(n박째)도 그날 일정 맨 위에 보여요"] },
   { at: "2026-11-17 20:10", version: "0.73.8", items: ["거리 칩은 다시 거리만 보여요"] },
   { at: "2026-11-17 20:05", version: "0.73.7", items: ["이동 앞뒤 거리에 어디서 어디까지인지 이름이 같이 보여요 (앞은 출발지까지, 뒤는 도착지에서)"] },
   { at: "2026-11-17 20:00", version: "0.73.6", items: ["이동에 도착지가 없으면 화살표 없이 출발지만 보여요"] },
