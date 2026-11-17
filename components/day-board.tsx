@@ -313,6 +313,13 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const staysOn = (c: number) => cols.slice(0, c).flatMap((list, d) => list.filter((it) => it.category === "숙소" && it.nights && c - d <= it.nights)
     .map((it) => ({ it, n: c - d + 1, out: c - d === it.nights })));
 
+  const stayCard = (x: { it: Item; n: number; out: boolean }, c: number) => (
+    <div key={`${x.it.id}-${c}`} className={x.out ? "" : "mt-0"}>
+      <PinCard index={0} time={x.out ? x.it.checkout ?? "" : ""} category={x.it.category} title={x.it.title} badge={x.out ? "체크아웃" : `${x.n}박째`}
+        photo={x.it.photos?.find((p) => !p.path.endsWith(".pdf"))?.url} href={editable && x.it.id && !editing ? `/trips/${tripId}/places/${x.it.id}` : undefined} last />
+    </div>
+  );
+
   /* 장소 사이 거리 : 앞쪽에서 가장 가까운 위치 있는 장소와 (위치 없는 곳, 메모는 건너뜀) */
   const gapBefore = (list: Item[], i: number) => {
     const x = list[i];
@@ -426,14 +433,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               {g.c === U ? "날짜 미정" : <>{g.c + 1}일차 <span className="text-sub font-semibold text-ink-sub">{md(dayDate!)} ({weekday(dayDate!)})</span></>}
             </h3>
           )}
-          {/* 앞날 체크인한 숙소 : 묵는 밤은 "○박째", 나가는 날은 "체크아웃" (2026-11-17 마루님 "등록하면 일정에 모두 기록") */}
-          {g.c !== U && staysOn(g.c).map((x) => (
-            <Link key={`${x.it.id}-${g.c}`} href={editable && x.it.id ? `/trips/${tripId}/places/${x.it.id}` : `/trips/${tripId}`} onClick={(e) => { if (!editable) e.preventDefault(); }}
-              className="press mb-3 ml-10 flex min-h-11 items-center gap-2 rounded-pin border border-dashed border-line-strong px-3.5 py-2 text-tiny text-ink-sub">
-              <Icon name="moon" size={15} className="flex-none text-ink" />
-              <span className="min-w-0 flex-1 truncate"><b className="font-bold text-ink">{x.it.title}</b> {x.out ? `체크아웃${x.it.checkout ? ` ${x.it.checkout}` : ""}` : `${x.n}박째`}</span>
-            </Link>
-          ))}
+          {/* 앞날 체크인한 숙소 (2026-11-17 마루님 "동일한 카드로, 체크인 체크아웃만 뱃지로") : 나가는 날은 맨 위, 묵는 밤은 맨 아래. 번호, 순서, 거리에는 안 들어감 */}
+          {g.c !== U && staysOn(g.c).filter((x) => x.out).map((x) => stayCard(x, g.c))}
           {list.length ? (
             <ol className="flex flex-col" aria-label={g.c === U ? "날짜 미정 장소" : `${g.c + 1}일차 장소`}>
               {list.map((it, i) => {
@@ -455,7 +456,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                         </button>
                       )}
                       <div className={"min-w-0 flex-1 " + (editing && it.id ? "cursor-pointer select-none" : "")} onClick={editing && editable && it.id ? () => togglePick(it.id!) : undefined}>
-                        <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} timeEnd={it.timeEnd} category={it.category} title={it.title} detail={it.detail}
+                        <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} timeEnd={it.timeEnd} badge={it.category === "숙소" && it.nights ? `체크인 · ${it.nights}박` : undefined} category={it.category} title={it.title} detail={it.detail}
                           desc={it.desc ?? ""} editedBy={showEditor(it) ? it.editedBy : undefined} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === list.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined}
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
@@ -490,6 +491,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               <span className="text-sub text-ink-sub">{g.c === U ? "날짜를 못 정한 장소가 없어요" : "아직 장소가 없어요"}</span>
             </div>
           )}
+          {g.c !== U && staysOn(g.c).filter((x) => !x.out).map((x) => stayCard(x, g.c))}
           </section>
             );
           })}
