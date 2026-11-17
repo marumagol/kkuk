@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 20:10", version: "0.73.8", items: ["거리 칩은 다시 거리만 보여요"] },
   { at: "2026-11-17 20:05", version: "0.73.7", items: ["이동 앞뒤 거리에 어디서 어디까지인지 이름이 같이 보여요 (앞은 출발지까지, 뒤는 도착지에서)"] },
   { at: "2026-11-17 20:00", version: "0.73.6", items: ["이동에 도착지가 없으면 화살표 없이 출발지만 보여요"] },
   { at: "2026-11-17 19:55", version: "0.73.5", items: ["장소를 보고 뒤로 돌아오면 보던 날짜 그대로 보여요", "이동 수단이 도보나 자동차면 예약과 비용 칸을 숨겨요"] },
