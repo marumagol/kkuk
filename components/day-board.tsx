@@ -484,6 +484,12 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           {/* 검색, 편집을 점 세 개 하나로 (2026-11-17 마루님). 메뉴 모양은 홈 프로필 메뉴와 같게 */}
           {editing ? (
             <button type="button" onClick={endEdit} className="press flex h-10 flex-none items-center rounded-full px-3 text-sub font-bold text-point-text">완료</button>
+          ) : sel === ALL || !editable ? (
+            /* 전체(또는 고칠 수 없을 때)는 편집이 없으니 점 세 개 대신 검색 버튼만 (2026-11-18 마루님) */
+            <button type="button" onClick={() => { setFinding(true); if (scrollY > sheetTop()) scrollTo({ top: sheetTop() }); }} aria-label="일정 검색"
+              className="press flex size-10 flex-none items-center justify-center rounded-full border border-line-strong bg-surface text-ink">
+              <Icon name="search" size={18} />
+            </button>
           ) : (
             <div ref={moreRef} className="relative flex-none">
               <button type="button" onClick={() => setMore((v) => !v)} aria-label="일정 메뉴" aria-haspopup="menu" aria-expanded={more}
@@ -496,12 +502,10 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                     className="press flex h-9 w-full items-center gap-2 rounded-[10px] px-2.5 pr-4 text-left text-sub font-medium text-ink">
                     <Icon name="search" size={16} className="text-ink-sub" />검색
                   </button>
-                  {editable && (
-                    <button role="menuitem" type="button" disabled={sel === ALL} onClick={() => { setMore(false); setEditing(true); setPicked([]); }}
-                      className="press flex h-9 w-full items-center gap-2 rounded-[10px] px-2.5 pr-4 text-left text-sub font-medium text-ink disabled:opacity-40">
-                      <Icon name="pencil" size={16} className="text-ink-sub" />편집{sel === ALL && <span className="text-tiny text-ink-sub">날짜를 고르면</span>}
-                    </button>
-                  )}
+                  <button role="menuitem" type="button" onClick={() => { setMore(false); setEditing(true); setPicked([]); }}
+                    className="press flex h-9 w-full items-center gap-2 rounded-[10px] px-2.5 pr-4 text-left text-sub font-medium text-ink">
+                    <Icon name="pencil" size={16} className="text-ink-sub" />편집
+                  </button>
                 </div>
               )}
             </div>
