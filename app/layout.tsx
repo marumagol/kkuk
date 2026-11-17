@@ -33,6 +33,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1, // 손가락으로 확대·축소 막기 (2026-11-17 마루님)
+  userScalable: false,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F5F3EE" },
     { media: "(prefers-color-scheme: dark)", color: "#17181C" },

@@ -185,8 +185,9 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, mark, time, timeEnd, badge, category, title, desc, detail, editedBy, editedFace, editedAgo, last, href, photo, photoCount, warn, corner, onPhoto }: {
+export function PinCard({ index, mark, time, timeEnd, badge, category, title, desc, detail, editedBy, editedFace, editedAgo, last, href, photo, photoCount, warn, corner, onPhoto, onOpen }: {
   index: number; mark?: "dot" | "plane" | "train" | "bus" | "ship" | "car" | "foot"; /* 이동 수단 아이콘(비행기는 공항 이름 포함, 2026-11-17 모든 수단) / 점(메모) : 번호 대신 */ time?: string; timeEnd?: string /* 이동의 도착 시간 */; badge?: string /* 숙소 체크인, n박째, 체크아웃 */; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; editedFace?: string; editedAgo?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
+  onOpen?: () => void /* 링크 대신 누르면 할 일 (메모 미리보기, 2026-11-17) */;
   onPhoto?: () => void /* 사진을 누르면 크게 보기 (2026-11-17 마루님 "리스트에서도") */; warn?: string /* 영업시간 경고 */; corner?: ReactNode /* 오른쪽 위 작은 버튼 (길찾기). 링크 밖에 겹쳐 두어 따로 눌린다 (2026-11-16 마루님 "카드가 길어지지 않게") */;
 }) {
   /* 누가 고쳤는지 (2026-11-16 마루님 "더 간략하게") : 카드 오른쪽 아래 작은 얼굴만. 머리 줄 오른쪽(길찾기 왼쪽). 누르면 "○○님 · 2시간 전 수정" (다른 사람이 24시간 안에 고친 것만) */
@@ -200,7 +201,9 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
     </details>
   ) : null;
   const Box = ({ children }: { children: ReactNode }) => {
-    const inner = href ? <Link href={href} className="press block rounded-pin px-4 py-3.5">{children}</Link> : <div className="px-4 py-3.5">{children}</div>;
+    const inner = onOpen ? <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onOpen(); } }}
+      className="press block w-full cursor-pointer rounded-pin px-4 py-3.5 text-left">{children}</div> /* 안에 링크가 있을 수 있어 button 대신 div */
+      : href ? <Link href={href} className="press block rounded-pin px-4 py-3.5">{children}</Link> : <div className="px-4 py-3.5">{children}</div>;
     return <article className="relative mb-3 min-w-0 flex-1 rounded-pin bg-surface">{inner}{corner && <div className="absolute right-2.5 top-2.5">{corner}</div>}{editor}</article>;
   };
   const head = !!(time || timeEnd || badge) || category !== "메모";
@@ -229,7 +232,7 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
             {(category !== "메모" || !desc || !desc.startsWith(title)) && <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>}
             {detail && <p className={category === "숙소" ? "mt-0.5 line-clamp-1 text-tiny text-ink-sub" /* 체크인, 체크아웃 시간은 금액, 메모 줄과 같은 모양 (2026-11-17 마루님) */ : "mt-1 line-clamp-2 text-tiny font-semibold text-ink"}>{detail}</p>}
             {warn && <p className="mt-1 flex items-center gap-1 text-tiny font-bold text-point-text"><Icon name="alert" size={14} />{warn}</p>}
-            {desc && <p className={category === "메모" ? "mt-1.5 line-clamp-4 whitespace-pre-line text-body text-ink" : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}><Linkify text={desc} /></p>}
+            {desc && <p className={category === "메모" ? "mt-1 line-clamp-2 whitespace-pre-line text-sub text-ink" /* 리스트에서는 작게, 두 줄까지 (2026-11-17 마루님). 상세는 그대로 */ : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}><Linkify text={desc} /></p>}
           </div>
           {photo && (
             <span className={"relative mt-1.5 flex-none " + (onPhoto ? "cursor-zoom-in" : "")} {...(onPhoto ? { role: "button", tabIndex: 0, "aria-label": "사진 크게 보기",
