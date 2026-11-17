@@ -342,8 +342,16 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const gapBefore = (list: Item[], i: number) => {
     const x = list[i];
     if (!hasPos(x) || x.category === "메모") return null;
-    // 앞이 이동(도착지 있음)이면 도착지에서 잰다 (2026-11-17 마루님 "도착지 기준이 맞다")
-    for (let j = i - 1; j >= 0; j--) { const p = list[j]; if (p.category !== "메모" && hasPos(p)) return distText(km(p.arrive ? { ...p, lat: p.arrive.lat, lng: p.arrive.lng } : p, x)); }
+    // 이동 앞은 출발지까지, 이동 뒤는 도착지에서 (도착지가 없으면 출발지). 이동이 끼면 어디서 어디까지인지 이름도 (2026-11-17 마루님)
+    for (let j = i - 1; j >= 0; j--) {
+      const p = list[j];
+      if (p.category === "메모" || !hasPos(p)) continue;
+      const d = distText(km(p.arrive ? { ...p, lat: p.arrive.lat, lng: p.arrive.lng } : p, x));
+      const move = (y: Item) => y.category === "이동";
+      if (!move(p) && !move(x)) return d;
+      const a = p.arrive?.name || (move(p) ? p.posName : p.title) || "", b = (move(x) ? x.posName : x.title) || "";
+      return a && b ? `${a} → ${b} ${d}` : d;
+    }
     return null;
   };
 
@@ -461,7 +469,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                   <li key={it.id ?? `${g.c}-${i}`} ref={(el) => { if (el && it.id) rows.current.set(it.id, el); }}
                     className={"flex flex-col transition-transform " + (dragId === it.id ? "relative z-10 scale-[1.02] opacity-90 drop-shadow-lg" : "")}>
                     {gap && !dragId && (
-                      <span className={"-mt-2 mb-1 w-fit rounded-full border border-line bg-bg px-2 py-0.5 text-tiny font-bold leading-4 text-ink-sub " + (editing && editable && it.id ? "ml-9" : "-ml-1") /* 편집 중에는 왼쪽 동그라미만큼 카드와 같이 밀림 (2026-11-17 마루님) */}>{gap}</span>
+                      <span className={"-mt-2 mb-1 w-fit max-w-[calc(100%-2.5rem)] truncate rounded-full border border-line bg-bg px-2 py-0.5 text-tiny font-bold leading-4 text-ink-sub " + (editing && editable && it.id ? "ml-9" : "-ml-1") /* 편집 중에는 왼쪽 동그라미만큼 카드와 같이 밀림 (2026-11-17 마루님) */}>{gap}</span>
                     )}
                     <div className="flex items-center gap-1">
                       {/* 편집 : 왼쪽 동그라미로 고르기 (카드를 눌러도 골라짐) */}

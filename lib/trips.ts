@@ -75,10 +75,13 @@ function agoText(at: string): string {
 }
 
 /* 이동의 도착지 : 출발지도 있을 때만 지도에 점을 하나 더 (출발지가 없으면 도착지가 일정 위치라 겹친다) */
-function arriveOf(it: { category: string; details?: Record<string, string> | null }): { arrive?: { lat: number; lng: number; name: string } } {
-  if (it.category !== "transport" || !it.details?.from_pos) return {};
+function arriveOf(it: { category: string; details?: Record<string, string> | null }): { arrive?: { lat: number; lng: number; name: string }; posName?: string } {
+  if (it.category !== "transport") return {};
+  // 이동 카드의 위치 이름 : 출발지가 있으면 출발지, 없으면 도착지 (거리 줄에 "호텔 → 인천공항" 처럼 쓴다, 2026-11-17)
+  const posName = (it.details?.from_pos ? it.details.from : it.details?.to) || undefined;
+  if (!it.details?.from_pos) return { posName };
   const t = parsePos(it.details.to_pos);
-  return t ? { arrive: { ...t, name: it.details.to ?? "" } } : {};
+  return t ? { posName, arrive: { ...t, name: it.details.to ?? "" } } : { posName };
 }
 
 export type Role = "owner" | "editor" | "viewer";
