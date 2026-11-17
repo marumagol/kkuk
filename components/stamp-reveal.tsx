@@ -4,10 +4,12 @@
   배경 흐림 → 도장이 위에서 쿵 찍힘(스프링) → 충격파 링 + 잉크 조각이 퍼짐 + 화면 살짝 흔들림 → 빛이 한 번 훑고 → 글자가 올라옴
   누르거나 확인을 누르면 닫힌다. 동작 줄이기 설정이면 흔들림과 조각 없이 나타나기만 한다
 */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/kit";
 import { stampColor } from "@/lib/stamp-art";
+
+const CHARGE_MS = 600;
 
 const BITS = Array.from({ length: 14 }, (_, i) => {
   const a = (i / 14) * Math.PI * 2 + (i % 2 ? 0.2 : -0.1);
@@ -16,7 +18,11 @@ const BITS = Array.from({ length: 14 }, (_, i) => {
 });
 
 /* city 가 아직 없으면(서버 답을 기다리는 동안) 빛만 모이고, 오면 바로 찍힌다. 글자로 기다리라고 하지 않는다 */
-export function StampReveal({ city, country, title, sub, onClose }: { city?: string | null; country?: string | null; title: string; sub: string; onClose: () => void }) {
+export function StampReveal({ city: cityIn, country, title, sub, onClose }: { city?: string | null; country?: string | null; title: string; sub: string; onClose: () => void }) {
+  /* 0.88.0 : 답이 바로 와도 0.6초는 긴장 고조 연출을 보여 준 뒤 찍는다 */
+  const [ready, setReady] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setReady(true), CHARGE_MS); return () => clearTimeout(t); }, []);
+  const city = ready ? cityIn : null;
   const color = stampColor(country);
   const close = useRef(onClose);
   useEffect(() => { close.current = onClose; });

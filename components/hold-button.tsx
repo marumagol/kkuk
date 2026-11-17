@@ -15,15 +15,20 @@ export function HoldButton({ onStart, onComplete, onShort, disabled, label, hold
   const [holding, setHolding] = useState(false);
   const [full, setFull] = useState(false); // 다 찼으면 줄어들지 않고 잠시 그대로
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  const ticker = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopTick = () => { if (ticker.current) clearTimeout(ticker.current); ticker.current = null; };
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); if (ticker.current) clearTimeout(ticker.current); }, []);
 
   const down = (e: React.PointerEvent) => {
     if (disabled || (e.pointerType === "mouse" && e.button !== 0)) return;
     if (onStart && !onStart()) return;
     setHolding(true);
-    navigator.vibrate?.(10);
+    /* 누르는 동안 : 점점 빨라지는 약한 진동 (0.88.0) */
+    let gap = 220;
+    const tick = () => { navigator.vibrate?.(6); gap = Math.max(70, gap * 0.75); ticker.current = setTimeout(tick, gap); };
+    tick();
     timer.current = setTimeout(() => {
-      timer.current = null; setFull(true); setHolding(false);
+      timer.current = null; stopTick(); setFull(true); setHolding(false);
       navigator.vibrate?.(60); // 다 찬 순간 딱
       onComplete();
       setTimeout(() => setFull(false), 1500);
@@ -31,7 +36,7 @@ export function HoldButton({ onStart, onComplete, onShort, disabled, label, hold
   };
   const up = () => {
     if (!timer.current) return;
-    clearTimeout(timer.current); timer.current = null;
+    clearTimeout(timer.current); timer.current = null; stopTick();
     setHolding(false); onShort?.();
   };
   const key = (e: React.MouseEvent) => {
@@ -44,7 +49,7 @@ export function HoldButton({ onStart, onComplete, onShort, disabled, label, hold
     <button type="button" disabled={disabled}
       onPointerDown={down} onPointerUp={up} onPointerLeave={up} onPointerCancel={up}
       onClick={key} onContextMenu={(e) => e.preventDefault()}
-      className={"relative select-none overflow-hidden rounded-btn bg-btn font-bold text-on-btn transition-transform duration-100 [-webkit-touch-callout:none] [touch-action:manipulation] disabled:bg-surface-soft disabled:text-ink-sub " + (holding ? "scale-[0.97] " : "") + className}>
+      className={"relative select-none overflow-hidden rounded-btn bg-btn font-bold text-on-btn transition-transform duration-100 [-webkit-touch-callout:none] [touch-action:manipulation] disabled:bg-surface-soft disabled:text-ink-sub " + (holding ? "hold-tense " : "") + className}>
       <span aria-hidden className="absolute inset-y-0 left-0 bg-point"
         style={{ width: holding || full ? "100%" : "0%", transition: full ? "none" : `width ${holding ? HOLD_MS : 200}ms ${holding ? "linear" : "ease-out"}` }} />
       <span className="relative">{holding ? holdingLabel : label}</span>
