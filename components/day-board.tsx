@@ -82,6 +82,18 @@ const stayMoves = (list: Item[]) => list.flatMap((v, i) => {
   return (v.stayAt?.[v.virt.key] ?? "") === after ? [] : [{ v, after }];
 });
 
+/*
+  일정 검색 (2026-11-17 마루님 "원하는 항목을 빨리 찾게") : 여행 전체(모든 일차 + 날짜 미정)에서
+  장소 이름, 메모, 분류, 주소, 맞춤 칸 한 줄(편명, 예약번호, 메뉴 등), 이동 출발지와 도착지를 찾는다. 띄어쓰기와 대소문자는 무시
+*/
+const norm = (t: string) => t.toLowerCase().replace(/\s+/g, "");
+function findIn(x: Item, q: string): string | null {
+  const fields = [x.title, x.category, x.desc, x.detail, x.addr, x.posName, x.arrive?.name];
+  const hit = fields.find((f) => f && norm(f).includes(q));
+  if (hit === undefined) return null;
+  return hit === x.title || hit === x.category ? (x.detail || x.addr || "") : hit;
+}
+
 export function DayBoard({ tripId, start, days, undated, editable, canAdd, user, initialDay, jumpUndated }: Props) {
   const len = days.length;
   const U = len; // 날짜 미정 칸 번호
@@ -90,6 +102,9 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const [dragId, setDragId] = useState<string | null>(null);
   const [sel, setSel] = useState(jumpUndated && undated.length ? U : initialDay === 0 && days.length > 1 ? ALL : Math.min(Math.max(initialDay, 1), len) - 1); // ALL = 전체 (2026-11-16 마루님)
   const [editing, setEditing] = useState(false);
+  const [finding, setFinding] = useState(false); // 검색 창
+  const [q, setQ] = useState("");
+  const [jump, setJump] = useState<string | null>(null); // 검색 결과를 누르면 그 카드로
   const swipe = useRef<{ x: number; y: number } | null>(null); // 일정 좌우로 밀어 날짜 넘기기 (2026-11-16 마루님)
   const [overCol, setOverCol] = useState<number | null>(null); // 끄는 중 날짜 칩 위
   const [msg, setMsg] = useState("");
@@ -371,6 +386,23 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     scrollTo({ top: Math.max(el.getBoundingClientRect().top + scrollY - (nav.current?.offsetHeight ?? 0) - tabsH() - 24, sheetTop()), behavior: "smooth" });
     el.animate?.([{ transform: "scale(1.02)" }, { transform: "scale(1)" }], { duration: 400 });
   }, [sel]);
+  /* 검색 결과로 고른 카드까지 내려가 살짝 흔들어 보인다 */
+  useEffect(() => {
+    if (!jump) return;
+    const t = setTimeout(() => {
+      const el = rows.current.get(jump);
+      setJump(null);
+      if (!el) return;
+      scrollTo({ top: Math.max(el.getBoundingClientRect().top + scrollY - (nav.current?.offsetHeight ?? 0) - tabsH() - 24, 0), behavior: "smooth" });
+      el.animate?.([{ transform: "scale(1.03)" }, { transform: "scale(1)" }], { duration: 500 });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [jump, sel]); // eslint-disable-line react-hooks/exhaustive-deps
+  const results = useMemo(() => {
+    const k = norm(q);
+    if (!k) return [];
+    return cols.map((list, c) => ({ c, hits: list.flatMap((x) => { if (x.virt || !x.id) return []; const m = findIn(x, k); return m === null ? [] : [{ x, m }]; }) })).filter((g) => g.hits.length);
+  }, [q, cols]);
 
   /* 장소 사이 거리 : 앞쪽에서 가장 가까운 위치 있는 장소와 (위치 없는 곳, 메모는 건너뜀) */
   const gapBefore = (list: Item[], i: number) => {
@@ -422,6 +454,12 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
             {days.map((_, c) => chip(c, `${c + 1}일차`))}
             {showUndated && chip(U, `미정 ${cols[U].length}`)}
           </div>
+          {!editing && (
+            <button type="button" onClick={() => setFinding(true)} aria-label="일정 검색"
+              className="press flex size-10 flex-none items-center justify-center rounded-full border border-line-strong bg-surface text-ink">
+              <Icon name="search" size={18} strokeWidth={2} />
+            </button>
+          )}
           {editable && sel !== ALL && (
             /* 아이콘만 (2026-11-17 마루님). 글자는 화면 읽기용 이름으로. 점 6개(옮기기 손잡이와 같아 보임) 대신 연필 (2026-11-17) */
             editing ? (
@@ -434,6 +472,48 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
             )
           )}
         </nav>
+        {finding && (
+          <div role="dialog" aria-modal="true" aria-label="일정 검색" className="fixed inset-0 z-50 flex flex-col bg-bg">
+            <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 border-b border-line px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]">
+              <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full bg-surface px-4">
+                <Icon name="search" size={18} className="flex-none text-ink-sub" />
+                <input autoFocus type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Escape" && setFinding(false)}
+                  placeholder="장소, 메모, 주소, 편명 찾기" aria-label="일정에서 찾기" className="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-sub" />
+                {q && <button type="button" onClick={() => setQ("")} aria-label="지우기" className="press -mr-1 flex size-7 flex-none items-center justify-center rounded-full bg-surface-soft text-ink-sub"><Icon name="x" size={14} /></button>}
+              </label>
+              <button type="button" onClick={() => setFinding(false)} className="press h-11 flex-none px-2 text-sub font-semibold text-ink-sub">닫기</button>
+            </div>
+            <div className="mx-auto w-full max-w-[560px] flex-1 overflow-y-auto px-4 pb-10 pt-3">
+              {!q.trim() ? (
+                <p className="px-1 py-6 text-center text-sub text-ink-sub">여행 전체 일정에서 장소 이름, 메모, 주소,<br />편명, 예약번호, 메뉴로 찾아요</p>
+              ) : results.length === 0 ? (
+                <p className="px-1 py-6 text-center text-sub text-ink-sub">&ldquo;{q.trim()}&rdquo;이(가) 들어간 일정이 없어요</p>
+              ) : results.map((g) => (
+                <section key={g.c} className="mb-4" aria-label={g.c === U ? "날짜 미정" : `${g.c + 1}일차`}>
+                  <h3 className="px-1 pb-1.5 text-tiny font-bold text-ink-sub">{g.c === U ? "날짜 미정" : `${g.c + 1}일차 · ${md(addDays(start, g.c))} (${weekday(addDays(start, g.c))})`}</h3>
+                  <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface">
+                    {g.hits.map(({ x, m }) => (
+                      <li key={x.id}>
+                        <button type="button" onClick={() => { setFinding(false); pickDay(g.c); setJump(x.id!); }}
+                          className="press flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left">
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-1.5">
+                              {x.time && <span className="flex-none text-tiny font-bold tabular-nums text-ink">{x.time}</span>}
+                              <span className="flex-none text-tiny font-semibold text-ink-sub">{x.category}</span>
+                            </span>
+                            <span className="block truncate text-body font-bold text-ink">{x.category === "메모" ? (x.desc || x.title) : x.title}</span>
+                            {m && x.category !== "메모" && <span className="block truncate text-tiny text-ink-sub">{m}</span>}
+                          </span>
+                          <Icon name="right" size={16} className="flex-none text-ink-sub" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          </div>
+        )}
         {dragId && <p className="px-5 pb-1 text-tiny font-semibold text-point-text">다른 날로 옮기려면 위 날짜에 놓아 주세요</p>}
 
         <div className="flex items-end justify-between gap-2 px-5 pb-3 pt-1">
