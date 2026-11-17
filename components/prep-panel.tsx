@@ -7,7 +7,9 @@ import { SwipeRow } from "@/components/swipe-row";
 import { Toast } from "@/components/toast";
 import { useRouter } from "next/navigation";
 import { Button, Field, Icon } from "@/components/kit";
-import { addPrepItem, addPrepDefaults, updatePrepItem, reorderPrep } from "@/app/actions";
+import { addPrepItem, addPrepDefaults, updatePrepItem, reorderPrep, removePrepItems } from "@/app/actions";
+import { SelectToggle, PickBox, BulkBar } from "@/components/bulk-select";
+import { AlertDialog } from "@/components/gate";
 import { safeCall } from "@/lib/safe-call";
 import { md } from "@/lib/mock";
 import type { PrepView, PrepItem } from "@/lib/trips";
@@ -123,21 +125,40 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
   const [text, setText] = useState("");
   const [due, setDue] = useState("");
   const done = items.filter((x) => x.done).length;
+  /* 일괄 선택 삭제 (2026-11-17 마루님) */
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [ask, setAsk] = useState(false);
+  const stopSelect = () => { setSelecting(false); setPicked([]); };
+  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const removePicked = () => { setAsk(false); const ids = picked; run(async () => { const r = await removePrepItems(view.tripId, ids); if (!r?.error) stopSelect(); return r; }); };
   const add = () => run(async () => { const r = await addPrepItem(view.tripId, kind, text, kind === "reservation" ? due || null : null); if (!r?.error) { setText(""); setDue(""); } return r; });
   return (
     <section className="flex flex-col gap-2" aria-label={title}>
       <div className="flex items-end justify-between">
         <h2 className="text-title font-bold text-ink">{title}</h2>
-        {items.length > 0 && (items.length - done > 0
+        <span className="flex items-center gap-2">
+        {items.length > 0 && !selecting && (items.length - done > 0
           ? <span className="text-sub font-bold text-point-text">{items.length - done}개 남음</span>
           : <span className="text-sub text-ink-sub">모두 끝냈어요</span>)}
+        {canEdit && items.length > 0 && <SelectToggle on={selecting} onClick={() => (selecting ? stopSelect() : setSelecting(true))} />}
+        </span>
       </div>
       {/* 목록과 추가 줄을 한 카드에 (2026-11-16 마루님 "하나의 섹션으로 보여야") */}
       {(items.length > 0 || canEdit) && (
         <div className="overflow-hidden rounded-card bg-surface">
           {items.length > 0 && (
             <ul className="divide-y divide-line">
-              {items.map((it) => (
+              {selecting ? items.map((it) => (
+                <li key={it.id}>
+                  <button type="button" role="checkbox" aria-checked={picked.includes(it.id)} onClick={() => toggle(it.id)}
+                    className="press flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left">
+                    <PickBox checked={picked.includes(it.id)} />
+                    <span className={"min-w-0 flex-1 truncate text-body " + (it.done ? "text-ink-sub line-through" : "font-semibold text-ink")}>{it.title}</span>
+                    {it.due && <span className="flex-none text-tiny text-ink-sub">{md(it.due)}</span>}
+                  </button>
+                </li>
+              )) : items.map((it) => (
                 <li key={it.id} ref={(el) => { if (el) rowEls.current.set(it.id, el); else rowEls.current.delete(it.id); }}
                   className={dragId === it.id ? "relative z-10 scale-[1.02] bg-surface shadow-float" : ""}>
                   <SwipeRow rounded="" bg="bg-surface" disabled={!canEdit || busy || !!dragId}
@@ -149,6 +170,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
               ))}
             </ul>
           )}
+          {selecting && <BulkBar count={picked.length} total={items.length} busy={busy} onAll={() => setPicked(picked.length === items.length ? [] : items.map((x) => x.id))} onDelete={() => setAsk(true)} />}
           {canEdit && kind === "item" && items.length === 0 && (
             <button type="button" disabled={busy} onClick={() => run(() => addPrepDefaults(view.tripId, DEFAULT_ITEMS))}
               className="press flex min-h-14 w-full items-center gap-3 border-b border-line px-4 py-2 text-left">
@@ -156,7 +178,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
               <span className="min-w-0 flex-1"><span className="block text-sub font-bold text-ink">자주 챙기는 것 한 번에 넣기</span><span className="block truncate text-tiny text-ink-sub">{DEFAULT_ITEMS.join(", ")}</span></span>
             </button>
           )}
-          {canEdit && (
+          {canEdit && !selecting && (
             <div className={items.length ? "border-t border-line" : ""}>
               <div className="flex min-h-14 items-center gap-3 px-4 py-2">
                 <span aria-hidden className="flex size-7 flex-none items-center justify-center rounded-full border-2 border-dashed border-line-strong text-ink-sub"><Icon name="plus" size={14} /></span>
@@ -179,6 +201,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
         </div>
       )}
       {!items.length && !canEdit && <p className="rounded-pin bg-surface px-4 py-4 text-sub text-ink-sub">아직 없어요</p>}
+      {ask && <AlertDialog title={`${picked.length}개를 삭제할까요?`} desc={`고른 ${title} 항목이 목록에서 사라져요`} confirmLabel="삭제" confirm={removePicked} onClose={() => setAsk(false)} />}
     </section>
   );
 }

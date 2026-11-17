@@ -545,6 +545,14 @@ export async function updatePrepItem(tripId: string, id: string, patch: { done?:
   if (error || !data?.length) return PREP_FAIL;
   revalidatePath(`/trips/${tripId}/prep`);
 }
+/* 준비 목록 여러 개 한꺼번에 삭제 (2026-11-17 마루님 "일괄 선택해서 삭제") */
+export async function removePrepItems(tripId: string, ids: string[]): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !Array.isArray(ids) || !ids.length || ids.length > 200 || !ids.every(isUuid)) return PREP_FAIL;
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const { data, error } = await c.sb.from("checklist_items").update({ removed_at: new Date().toISOString() }).eq("trip_id", tripId).in("id", ids).is("removed_at", null).select("id");
+  if (error || !data?.length) return PREP_FAIL;
+  revalidatePath(`/trips/${tripId}/prep`);
+}
 /* 준비 목록 순서 바꾸기 (2026-11-16 마루님 "길게 눌러 위치 이동") : 받은 순서대로 sort_order 를 다시 매긴다 */
 export async function reorderPrep(tripId: string, ids: string[]): Promise<CreateTripResult> {
   if (!isUuid(tripId) || !Array.isArray(ids) || !ids.length || ids.length > 200 || !ids.every(isUuid)) return PREP_FAIL;
@@ -642,6 +650,15 @@ export async function removeExpense(tripId: string, id: string): Promise<CreateT
   const { data, error } = await c.sb.from("trip_expenses").update({ removed_at: new Date().toISOString() }).eq("trip_id", tripId).eq("id", id).select("id");
   if (error || !data?.length) return PREP_FAIL;
   revalidatePath(`/trips/${tripId}/expenses`); revalidatePath("/"); // 홈 남은 정산도
+}
+
+/* 경비 여러 개 한꺼번에 삭제 (2026-11-17 마루님) */
+export async function removeExpenses(tripId: string, ids: string[]): Promise<CreateTripResult> {
+  if (!isUuid(tripId) || !Array.isArray(ids) || !ids.length || ids.length > 500 || !ids.every(isUuid)) return PREP_FAIL;
+  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
+  const { data, error } = await c.sb.from("trip_expenses").update({ removed_at: new Date().toISOString() }).eq("trip_id", tripId).in("id", ids).is("removed_at", null).select("id");
+  if (error || !data?.length) return PREP_FAIL;
+  revalidatePath(`/trips/${tripId}/expenses`); revalidatePath("/");
 }
 
 /* ───────── 위치 도장 받기 (3단계 2) : 위치 확인은 DB 함수 claim_stamp 가 한다 ───────── */

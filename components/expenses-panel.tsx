@@ -12,12 +12,13 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button, Icon } from "@/components/kit";
 import { Avatar } from "@/components/screen";
 import { AlertDialog } from "@/components/gate";
-import { saveExpense, removeExpense } from "@/app/actions";
+import { saveExpense, removeExpense, removeExpenses } from "@/app/actions";
+import { SelectToggle, PickBox, BulkBar } from "@/components/bulk-select";
 import { safeCall } from "@/lib/safe-call";
 import { decimalsOf, formatMoney, curName, currencyOptions, ALL_CURRENCIES, keepScroll } from "@/lib/countries";
 import { balances, settle, toKrw, isMixed } from "@/lib/settle";
 import { BudgetCard } from "@/components/budget-card";
-import { RateDialog } from "@/components/rate-dialog";
+import { RateDialog, RatesDialog } from "@/components/rate-dialog";
 import { md, weekday, todayKST } from "@/lib/mock";
 import type { Expense, ExpensesView } from "@/lib/trips";
 
@@ -43,6 +44,9 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
   // 환율을 몰라 원화로 못 바꾼 통화 : 정산이 통화별로 갈라지니 [환율 정하기] 로 바로 넣게
   const noRate = mixed && !byCur ? [...new Set(base.filter((e) => e.currency !== "KRW").map((e) => e.currency))] : [];
   const [rateCur, setRateCur] = useState<string | null>(null);
+  // 정산 [환율 수정] : 쓴 외화와 여행에 저장된 환율 전부 (2026-11-17 마루님)
+  const rateCurs = useMemo(() => [...new Set([...view.expenses.map((e) => e.currency), ...Object.keys(view.rates)])].filter((c) => c !== "KRW").sort(), [view.expenses, view.rates]);
+  const [ratesOpen, setRatesOpen] = useState(false);
   const mine = all.filter((b) => b.userId === view.me && (b.paid || b.share));
   const [why, setWhy] = useState(false);
   // 맞비기기 전 서로 줄 돈 (2026-11-17 마루님 "일반 유저가 헷갈리지 않게") : 경비마다 나눌 몫을 낸 사람에게 갚는 돈으로 모은다
@@ -72,6 +76,15 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
   };
 
   const people = view.expenses.length;
+  /* 경비 일괄 선택 삭제 (2026-11-17 마루님) */
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [askDel, setAskDel] = useState(false);
+  const [delErr, setDelErr] = useState("");
+  const [deleting, startDel] = useTransition();
+  const stopSelect = () => { setSelecting(false); setPicked([]); setDelErr(""); };
+  const togglePick = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const removePicked = () => { setAskDel(false); const ids = picked; startDel(async () => { const r = await safeCall(() => removeExpenses(view.tripId, ids)); if (r?.error) setDelErr(r.error); else stopSelect(); }); };
   return (
     <div className="flex flex-col gap-4 px-5 pb-32 pt-5">
       {/*
@@ -82,7 +95,8 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
 
       {/* 정산 : 함께하는 사람이 2명 이상일 때만 */}
       {active.length > 1 && (
-        <Section title="정산" desc="누가 누구에게 얼마를 보내면 되는지 계산해요">
+        <Section title="정산" desc="누가 누구에게 얼마를 보내면 되는지 계산해요"
+          action={rateCurs.length > 0 ? <button type="button" onClick={() => setRatesOpen(true)} className="press inline-flex h-8 flex-none items-center rounded-full bg-surface-soft px-3 text-tiny font-semibold text-ink">환율 수정</button> : undefined}>
           {mixed && (
             <div role="radiogroup" aria-label="정산 방식" className="flex gap-1 rounded-btn bg-surface-soft p-1">
               {[{ v: false, t: "원화로 한 번에" }, { v: true, t: "통화별로" }].map((o) => (
@@ -172,10 +186,18 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
 
       {/* 경비 : 추가 버튼, 날짜별 목록을 카드 하나에 */}
       <Section title="경비" desc={people ? `${people}건 적었어요` : "실제로 낸 돈을 적어요"}
-        action={canEdit && view.importable.length > 0 ? (
-          <button type="button" onClick={() => setPicking(true)} className="press inline-flex h-8 items-center rounded-full bg-surface-soft px-3 text-tiny font-semibold text-ink">장소에서 가져오기</button>
+        action={canEdit && (view.importable.length > 0 || people > 0) ? (
+          <span className="flex flex-none items-center gap-1.5">
+            {view.importable.length > 0 && !selecting && <button type="button" onClick={() => setPicking(true)} className="press inline-flex h-8 items-center rounded-full bg-surface-soft px-3 text-tiny font-semibold text-ink">장소에서 가져오기</button>}
+            {people > 0 && <SelectToggle on={selecting} onClick={() => (selecting ? stopSelect() : setSelecting(true))} />}
+          </span>
         ) : undefined}>
-        {canEdit ? (
+        {selecting ? (
+          <div className="-mx-5 -mt-1">
+            <BulkBar count={picked.length} total={people} busy={deleting} onAll={() => setPicked(picked.length === people ? [] : view.expenses.map((e) => e.id))} onDelete={() => setAskDel(true)} />
+            {delErr && <p role="alert" className="px-5 text-sub font-semibold text-point-text">{delErr}</p>}
+          </div>
+        ) : canEdit ? (
           <Button type="button" size="lg" full onClick={() => setSheet({})}><Icon name="plus" size={18} />경비 추가</Button>
         ) : <p className="text-tiny text-ink-sub">보기만 권한이라 경비를 적을 수 없어요</p>}
         {groups.length === 0 ? (
@@ -191,8 +213,9 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
                 const share = e.splitWith.includes(view.me) ? balances([e]).find((b) => b.userId === view.me)?.share : undefined;
                 return (
                   <li key={e.id}>
-                    <button type="button" disabled={!canEdit} onClick={() => setSheet(e)}
+                    <button type="button" disabled={!canEdit} onClick={() => (selecting ? togglePick(e.id) : setSheet(e))} {...(selecting ? { role: "checkbox", "aria-checked": picked.includes(e.id) } : {})}
                       className="press -mx-2 flex min-h-14 w-[calc(100%+16px)] items-center gap-3 rounded-field px-2 py-2 text-left disabled:cursor-default">
+                      {selecting && <PickBox checked={picked.includes(e.id)} />}
                       <Face id={e.paidBy} view={view} size={34} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-body font-bold text-ink">{e.title}</span>
@@ -233,6 +256,8 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
           </ul>
         </Modal>
       )}
+      {ratesOpen && <RatesDialog tripId={view.tripId} curs={rateCurs} rates={view.rates} canEdit={canEdit} onClose={() => setRatesOpen(false)} />}
+      {askDel && <AlertDialog title={`경비 ${picked.length}건을 삭제할까요?`} desc="고른 경비가 목록과 정산에서 빠져요" confirmLabel="삭제" confirm={removePicked} onClose={() => setAskDel(false)} />}
       {sheet && <ExpenseSheet view={view} draft={sheet} onClose={() => setSheet(null)} />}
     </div>
   );
