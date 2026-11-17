@@ -116,6 +116,26 @@ export function cleanDetails(category: string, raw: unknown): Details | null {
   return out;
 }
 
+/*
+  미리보기 창에 보일 맞춤 칸 전체 (2026-11-17 마루님 "일정 카드도 모달로 미리보기"). 목록 한 줄에서 줄인 것을 칸 이름과 함께 모두.
+  출발/도착 시간은 창 위 시간 줄에 있으니 뺀다. 예약번호, 편명 같은 번호는 복사 버튼
+*/
+export type DetailRow = { label: string; value: string; copy?: boolean };
+export function detailRows(category: string, d?: Details | null): DetailRow[] {
+  if (!d) return [];
+  const mode = category === "transport" ? d.mode : undefined;
+  const rows: DetailRow[] = [];
+  const m = MODES.find((x) => x.code === mode);
+  if (m) rows.push({ label: "수단", value: m.label });
+  for (const f of fieldsOf(category, mode)) {
+    if (MOVE_TIME_KEYS.includes(f.key)) continue;
+    const v = d[f.key]?.trim();
+    if (!v) continue;
+    rows.push({ label: f.label, value: f.unit ? `${v}${f.unit}` : v, copy: f.key === "booking" || f.key === "code" || f.key === "phone" });
+  }
+  return rows;
+}
+
 /* 일정 카드에 보이는 한 줄. 예 : "비행기 KE765 · 인천 → 신치토세 · 아고다 예약" */
 /*
   이동의 보이는 이름 (2026-11-16 마루님 "인천공항이랑 신치토세가 안 나와") : 출발지와 도착지가 있으면 "출발 → 도착".

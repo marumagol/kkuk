@@ -10,7 +10,7 @@
 */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Icon, PinCard } from "@/components/kit";
+import { Icon, PinCard, CategoryChip } from "@/components/kit";
 import { GateButton, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
 import { Toast, TOAST_MS } from "@/components/toast";
@@ -109,7 +109,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const [jump, setJump] = useState<string | null>(null); // 검색 결과를 누르면 그 카드로
   const closeFind = () => { setFinding(false); setQ(""); };
   const [viewing, setViewing] = useState<{ files: ViewFile[]; start: number } | null>(null); // 카드 사진 크게 보기
-  const [memo, setMemo] = useState<Item | null>(null); // 메모 미리보기 창 (2026-11-17 마루님)
+  const [memo, setMemo] = useState<{ it: Item; warn?: string } | null>(null); // 카드 미리보기 창 (메모 → 모든 카드, 2026-11-17 마루님)
   const [more, setMore] = useState(false); // 점 세 개 메뉴 (검색, 편집)
   const moreRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -617,7 +617,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                         <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} timeEnd={it.timeEnd} badge={it.virt ? (it.virt.out ? "체크아웃" : `${it.virt.n}박째`) : it.category === "숙소" && it.nights ? `체크인 · ${it.nights}박` : undefined} category={it.category} title={it.title} detail={it.detail}
                           desc={it.desc ?? ""} editedBy={showEditor(it) ? it.editedBy : undefined} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} onPhoto={it.photos?.length && !editing ? () => setViewing({ files: it.photos!.map((x) => ({ url: x.url, pdf: isPdf(x.path) })), start: Math.max(0, it.photos!.findIndex((x) => !isPdf(x.path))) }) : undefined} photoCount={it.photos?.length} last={i === list.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.virt?.id ?? it.id}` : undefined}
-                          onOpen={!editing && it.category === "메모" ? () => setMemo(it) : undefined}
+                          onOpen={!editing ? () => setMemo({ it, warn: dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined }) : undefined}
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
                           corner={!editing && it.category !== "메모" && canMap(it) ? (
                             <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer" aria-label={`${it.title} 길찾기 (구글 지도)`}
@@ -659,8 +659,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
       {msg ? <Toast action={undo ? "되돌리기" : undefined} onAction={() => { if (busy.current || !undo) return; const u = undo; void applyDay(u.c, u.items, "원래 순서로 돌렸어요", null); }}>{msg}</Toast>
         : <span role="status" aria-live="polite" className="sr-only" />}
 
-      {memo && <MemoPreview memo={memo} editHref={editable && memo.id ? `/trips/${tripId}/places/${memo.id}` : undefined} onClose={() => setMemo(null)}
-        onPhoto={(i) => setViewing({ files: memo.photos!.map((x) => ({ url: x.url, pdf: isPdf(x.path) })), start: i })} />}
+      {memo && <ItemPreview it={memo.it} warn={memo.warn} editHref={editable && memo.it.id ? `/trips/${tripId}/places/${memo.it.virt?.id ?? memo.it.id}` : undefined} onClose={() => setMemo(null)}
+        onPhoto={(i) => setViewing({ files: memo.it.photos!.map((x) => ({ url: x.url, pdf: isPdf(x.path) })), start: i })} />}
 
       {askDel && <AlertDialog title={`${picked.length}개를 삭제할까요?`} desc="고른 장소와 메모가 일정에서 사라져요. 예약 목록에 넣었다면 거기서도 빠져요"
         confirmLabel="삭제" confirm={() => { setAskDel(false); void removeMany(); }} onClose={() => setAskDel(false)} />}
@@ -805,30 +805,66 @@ function AddFab({ user, base, pick }: { user: boolean; base: string; pick?: { da
 }
 
 /*
-  메모 미리보기 창 (2026-11-17 마루님 "메모를 누르면 모달로 미리보기, 거기서 수정 화면으로")
-  - 리스트는 두 줄까지라 여기서 글 전체와 사진을 본다. [수정] 은 고칠 수 있는 사람에게만
+  카드 미리보기 창 (2026-11-17 마루님 "메모를 누르면 모달로 미리보기" → "일정 카드도 메모처럼")
+  - 목록 카드에서 줄인 정보 전체 : 시간, 맞춤 칸(예약번호, 편명 등), 주소, 예상 경비, 메모, 첨부
+  - 바로 쓰는 버튼 : 번호 복사, 첨부 크게 보기, 길찾기. 맨 아래 [수정] 은 고칠 수 있는 사람에게만 (지금 수정 화면으로)
+  - 적어 둔 게 거의 없는 카드(이동 등)도 비어 보이지 않게 안내 한 줄
 */
-function MemoPreview({ memo, editHref, onClose, onPhoto }: { memo: Item; editHref?: string; onClose: () => void; onPhoto: (i: number) => void }) {
+function ItemPreview({ it, warn, editHref, onClose, onPhoto }: { it: Item; warn?: string; editHref?: string; onClose: () => void; onPhoto: (i: number) => void }) {
+  const [copied, setCopied] = useState("");
   useEffect(() => {
     const back = document.activeElement as HTMLElement | null;
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", esc);
     return () => { window.removeEventListener("keydown", esc); back?.focus?.(); };
   }, [onClose]);
-  const text = memo.desc || memo.title;
+  const isMemo = it.category === "메모";
+  const text = isMemo ? it.desc || it.title : it.desc;
+  const rows = [
+    ...(it.rows ?? []),
+    ...(it.addr && !isMemo ? [{ label: "주소", value: it.addr, copy: true }] : []),
+    ...(it.cost != null && it.cur ? [{ label: "예상 경비", value: formatMoney(it.cost, it.cur) }] : []),
+  ];
+  const copy = async (v: string) => {
+    try { await navigator.clipboard.writeText(v); setCopied(v); setTimeout(() => setCopied((c) => (c === v ? "" : c)), 1500); } catch { /* 복사를 못 하는 브라우저 */ }
+  };
+  const when = it.time && it.timeEnd ? `${it.time} → ${it.timeEnd}` : it.time || (it.timeEnd ? `${it.timeEnd} 도착` : "");
+  const badge = it.virt ? (it.virt.out ? "체크아웃" : `${it.virt.n}박째`) : it.category === "숙소" && it.nights ? `체크인 · ${it.nights}박` : "";
+  const empty = !rows.length && !text && !it.photos?.length && !warn;
+  const map = !isMemo && canMap(it);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-scrim sm:items-center sm:px-8" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label="메모" onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[80dvh] w-full max-w-[560px] flex-col rounded-t-[28px] bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 shadow-float sm:max-w-[420px] sm:rounded-card">
+      <div role="dialog" aria-modal="true" aria-label={isMemo ? "메모" : it.title} onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[85dvh] w-full max-w-[560px] flex-col rounded-t-[28px] bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 shadow-float sm:max-w-[420px] sm:rounded-card">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sub font-bold text-ink-sub">메모{memo.time ? ` · ${memo.time}` : ""}</span>
-          <button type="button" onClick={onClose} aria-label="닫기" autoFocus className="press -mr-2 flex size-10 items-center justify-center rounded-full text-ink-sub"><Icon name="x" size={20} /></button>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            {isMemo ? <span className="text-sub font-bold text-ink-sub">메모</span> : <CategoryChip category={it.category} />}
+            {when && <span className="text-sub text-ink-sub tabular-nums">{when}</span>}
+            {badge && <span className="inline-flex h-6 items-center rounded-full border border-accent-text/30 px-2 text-[12px] font-bold text-accent-text">{badge}</span>}
+          </div>
+          <button type="button" onClick={onClose} aria-label="닫기" autoFocus className="press -mr-2 flex size-10 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="x" size={20} /></button>
         </div>
         <div className="mt-2 min-h-0 overflow-y-auto">
-          <p className="whitespace-pre-line break-words text-body text-ink"><Linkify text={text} /></p>
-          {!!memo.photos?.length && (
+          {!isMemo && <h2 className="text-title font-extrabold leading-snug text-ink">{it.title}</h2>}
+          {warn && <p className="mt-2 flex items-center gap-1 text-sub text-point-text"><Icon name="alert" size={15} />{warn}</p>}
+          {!!rows.length && (
+            <dl className="mt-4 flex flex-col divide-y divide-line rounded-field bg-bg px-4">
+              {rows.map((r) => (
+                <div key={r.label} className="flex min-h-12 items-center gap-3 py-2.5">
+                  <dt className="w-[4.5rem] flex-none text-tiny text-ink-sub">{r.label}</dt>
+                  <dd className="min-w-0 flex-1 break-words text-sub text-ink">{r.value}</dd>
+                  {r.copy && (
+                    <button type="button" onClick={() => void copy(r.value)} aria-label={`${r.label} 복사`}
+                      className="press flex-none rounded-full bg-surface px-2.5 py-1 text-tiny font-bold text-ink">{copied === r.value ? "복사됨" : "복사"}</button>
+                  )}
+                </div>
+              ))}
+            </dl>
+          )}
+          {text && <p className={"whitespace-pre-line break-words text-body text-ink " + (isMemo ? "" : "mt-4")}><Linkify text={text} /></p>}
+          {!!it.photos?.length && (
             <div className="mt-4 flex flex-wrap gap-2">
-              {memo.photos.map((x, i) => (
+              {it.photos.map((x, i) => (
                 <button key={x.path} type="button" onClick={() => onPhoto(i)} aria-label={`첨부 ${i + 1} 크게 보기`} className="press size-20 overflow-hidden rounded-field bg-surface-soft">
                   {isPdf(x.path) ? <span className="flex size-full items-center justify-center text-tiny font-bold text-ink-sub">PDF</span>
                     /* eslint-disable-next-line @next/next/no-img-element */
@@ -837,11 +873,26 @@ function MemoPreview({ memo, editHref, onClose, onPhoto }: { memo: Item; editHre
               ))}
             </div>
           )}
+          {empty && !isMemo && (
+            <p className="mt-4 rounded-field bg-bg px-4 py-4 text-sub text-ink-sub">
+              {editHref ? "아직 적어 둔 정보가 없어요. 수정에서 예약번호, 메모, 사진을 넣을 수 있어요" : "아직 적어 둔 정보가 없어요"}
+            </p>
+          )}
         </div>
-        {editHref && (
-          <Link href={editHref} className="press mt-5 flex h-12 flex-none items-center justify-center gap-1.5 rounded-btn bg-btn text-body font-bold text-on-btn">
-            <Icon name="pencil" size={18} />수정
-          </Link>
+        {(map || editHref) && (
+          <div className="mt-5 flex flex-none gap-2">
+            {map && (
+              <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer"
+                className="press flex h-12 flex-1 items-center justify-center gap-1.5 rounded-btn border border-line-strong bg-surface text-body font-bold text-ink">
+                <Icon name="pin" size={18} className="text-point" />길찾기
+              </a>
+            )}
+            {editHref && (
+              <Link href={editHref} className="press flex h-12 flex-1 items-center justify-center gap-1.5 rounded-btn bg-btn text-body font-bold text-on-btn">
+                <Icon name="pencil" size={18} />수정
+              </Link>
+            )}
+          </div>
         )}
       </div>
     </div>
