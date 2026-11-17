@@ -819,7 +819,7 @@ function ItemPreview({ it, warn, editHref, onClose, onPhoto }: { it: Item; warn?
     return () => { window.removeEventListener("keydown", esc); back?.focus?.(); };
   }, [onClose]);
   const isMemo = it.category === "메모";
-  const text = isMemo ? it.desc || it.title : it.desc;
+  const text = isMemo ? it.desc || it.title : it.note; // 장소 메모는 목록에 첫 줄만 들어 있어 전체를 따로 (2026-11-18 마루님 "두 줄이면 안 나와")
   const rows = [
     ...(it.rows ?? []),
     ...(it.addr && !isMemo ? [{ label: "주소", value: it.addr, copy: true }] : []),
