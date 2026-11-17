@@ -3,6 +3,7 @@ import Link from "next/link";
 import { EmptyState, Icon } from "@/components/kit";
 import { AppShell, MockNote } from "@/components/screen";
 import { ReadAll } from "@/components/read-all";
+import { ClearRead } from "@/components/clear-read";
 import { getViewer } from "@/lib/viewer";
 import { loadNotices, type Notice } from "@/lib/trips";
 
@@ -39,9 +40,10 @@ export default async function Notifications() {
   const unread = list.some((n) => !n.read);
   return (
     <AppShell bottomGap={false}>
-      <div className="flex items-center gap-2 px-5 pt-4">
+      <div className="relative flex items-center gap-2 px-5 pt-4">
         <Link href="/" aria-label="홈으로" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink"><Icon name="back" size={20} /></Link>
         <h1 className="min-w-0 flex-1 truncate text-title font-extrabold text-ink">알림</h1>
+        {viewer.kind === "user" && list.length > 0 && <ClearRead />}
       </div>
       {viewer.kind === "preview" && <MockNote />}
       {viewer.kind === "user" && unread && <ReadAll />}

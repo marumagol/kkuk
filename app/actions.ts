@@ -802,6 +802,14 @@ export async function revokeDayShare(tripId: string, token: string): Promise<{ e
   return {};
 }
 
+/* 읽은 알림 모두 삭제 (2026-11-17 마루님, 0044) */
+export async function deleteReadNotices(): Promise<CreateTripResult> {
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { error } = await sb.rpc("delete_read_notifications");
+  if (error) return { error: error.code === "PGRST202" || error.message?.includes("delete_read_notifications") ? "삭제 준비가 아직 안 됐어요. 잠시 뒤 다시 시도해 주세요" : "알림을 지우지 못했어요. 잠시 뒤 다시 시도해 주세요" };
+  revalidatePath("/notifications"); revalidatePath("/");
+}
 /* 알림 모두 읽음 (4단계 8) : 알림 화면을 열면 부른다 */
 export async function readAllNotices(): Promise<void> {
   const sb = await createClient();

@@ -29,7 +29,7 @@ function Header({ loggedIn, initial, avatar, unread = 0, name, email }: { logged
       <Link href="/" aria-label="홈" className="flex h-11 items-center"><Logo /></Link>
       {loggedIn ? (
         <div className="flex items-center gap-1">
-          <Link href="/notifications" aria-label={unread ? `알림, 안 읽은 알림 ${unread}개` : "알림"} className="press relative flex size-11 items-center justify-center text-ink">
+          <Link href="/notifications" aria-label={unread ? `알림, 안 읽은 알림 ${unread}개` : "알림"} className="press relative flex size-11 items-center justify-center rounded-full text-ink transition-colors hover:bg-surface hover:text-point-text" /* 마우스를 올리면 살짝 켜진 느낌 (2026-11-17 마루님) */>
             <Icon name="bell" size={22} />
             {unread > 0 && <span aria-hidden className="absolute right-2 top-2 size-2.5 rounded-full bg-point ring-2 ring-bg" />}
           </Link>

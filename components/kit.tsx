@@ -435,7 +435,7 @@ export function TabBar({ active: asked = "홈" }: { active?: "홈" | "여행" | 
   // 도장은 따로 탭 (2026-11-16 마루님 "도장을 새로운 탭 메뉴로")
   const tabs: { name: "홈" | "여행" | "도장" | "설정"; icon: IconName; href: string }[] = [
     { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" },
-    { name: "도장", icon: "stamp", href: "/stamps" }, { name: "설정", icon: "gear", href: "/me" },
+    { name: "도장", icon: "stamp", href: "/stamps" }, // 설정은 홈 프로필 메뉴로 (2026-11-17 마루님)
   ];
   const item = (t: (typeof tabs)[number]) => (
     <Link key={t.name} href={t.href} aria-label={t.name} aria-current={active === t.name ? "page" : undefined}
