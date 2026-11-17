@@ -24,22 +24,22 @@ export function ProfileMenu({ children, face, name, email }: { children: React.R
         className="press flex size-11 items-center justify-center rounded-full">{children}</button>
       {open && (
         /* 맨 위 내 얼굴, 이름, 이메일. 선 아래 설정, 로그아웃 (2026-11-17 마루님 참고 화면) */
-        <div role="menu" className="absolute right-0 top-full z-40 mt-1.5 w-[min(300px,calc(100vw-40px))] rounded-[24px] bg-surface p-2 shadow-float">
-          <div className="flex items-center gap-3.5 px-3 pb-4 pt-3">
+        <div role="menu" className="absolute right-0 top-full z-40 mt-1.5 w-60 rounded-[18px] bg-surface p-1.5 shadow-float">
+          <div className="flex items-center gap-2.5 px-2.5 pb-2.5 pt-2">
             {face}
             <div className="min-w-0">
-              <p className="truncate text-body font-extrabold text-ink">{name}</p>
-              {email && <p className="truncate text-sub text-ink-sub">{email}</p>}
+              <p className="truncate text-sub font-extrabold text-ink">{name}</p>
+              {email && <p className="truncate text-tiny text-ink-sub">{email}</p>}
             </div>
           </div>
-          <div className="mx-2 border-t border-line" />
-          <div className="flex flex-col py-1.5">
-            <Link role="menuitem" href="/me" onClick={() => setOpen(false)} className="press flex h-14 items-center gap-4 rounded-field px-3 text-body font-medium text-ink">
-              <Icon name="gear" size={22} className="text-ink-sub" />설정
+          <div className="mx-1.5 border-t border-line" />
+          <div className="flex flex-col pt-1">
+            <Link role="menuitem" href="/me" onClick={() => setOpen(false)} className="press flex h-10 items-center gap-2.5 rounded-field px-2.5 text-sub font-medium text-ink">
+              <Icon name="gear" size={18} className="text-ink-sub" />설정
             </Link>
             <button role="menuitem" type="button" onClick={() => { setOpen(false); setAsk(true); }}
-              className="press flex h-14 w-full items-center gap-4 rounded-field px-3 text-left text-body font-medium text-ink">
-              <Icon name="logout" size={22} className="text-ink-sub" />로그아웃
+              className="press flex h-10 w-full items-center gap-2.5 rounded-field px-2.5 text-left text-sub font-medium text-ink">
+              <Icon name="logout" size={18} className="text-ink-sub" />로그아웃
             </button>
           </div>
         </div>

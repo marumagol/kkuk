@@ -33,7 +33,7 @@ function Header({ loggedIn, initial, avatar, unread = 0, name, email }: { logged
             <Icon name="bell" size={22} />
             {unread > 0 && <span aria-hidden className="absolute right-2 top-2 size-2.5 rounded-full bg-point ring-2 ring-bg" />}
           </Link>
-          <ProfileMenu name={name ?? "나"} email={email ?? ""} face={<Avatar initial={initial} src={avatar} size={52} />}><Avatar initial={initial} src={avatar} /></ProfileMenu>
+          <ProfileMenu name={name ?? "나"} email={email ?? ""} face={<Avatar initial={initial} src={avatar} size={36} />}><Avatar initial={initial} src={avatar} /></ProfileMenu>
         </div>
       ) : (
         <Link href="/login" className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-sub font-bold text-ink">로그인</Link>
