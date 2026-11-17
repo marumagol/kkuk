@@ -242,6 +242,8 @@ export async function savePlace(tripId: string, placeId: string | null, input: P
   if (placeId && !prev) return { error: "이 장소를 찾을 수 없어요. 이미 삭제됐을 수 있어요" };
   const gpid = isMemo ? null : input?.place === undefined ? (prev?.google_place_id as string | null | undefined) ?? null : ((row as { google_place_id?: string | null }).google_place_id ?? null);
   const hadHours = (prev?.details as Record<string, string> | null)?._hours;
+  const hadAt = (prev?.details as Record<string, string> | null)?._at; // 연박 카드 자리는 장소를 고쳐도 남긴다
+  if (hadAt && input.category === "stay") extra._at = hadAt;
   if (gpid && HOURS_CATEGORIES.includes(input.category)) {
     if (gpid === prev?.google_place_id && hadHours) extra._hours = hadHours;
     else {
@@ -323,6 +325,23 @@ export async function reorderPlaces(tripId: string, ids: string[]): Promise<Crea
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
   const { error } = await sb.rpc("reorder_items", { p_trip: tripId, p_ids: ids });
   if (error) return { error: error.message?.includes("forbidden") ? "이 여행을 수정할 권한이 없어요" : "순서를 저장하지 못했어요. 원래 자리로 돌려놨어요" };
+  revalidatePath(`/trips/${tripId}`);
+}
+
+/* 연박, 체크아웃 날 숙소 카드 자리 (2026-11-17 마루님 "기본은 맨 위, 위치 조정 가능") : 몇 박째(key) 날의 바로 앞 장소 id ("" = 맨 위) */
+export async function setStayAt(tripId: string, stayId: string, key: string, after: string): Promise<CreateTripResult> {
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (!uuid.test(tripId) || !uuid.test(stayId) || !/^\d{1,2}$/.test(key) || (after !== "" && !uuid.test(after))) return { error: "자리를 저장하지 못했어요. 새로고침한 뒤 다시 시도해 주세요" };
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 저장할 수 없어요" };
+  const { data: it } = await sb.from("itinerary_items").select("details").eq("trip_id", tripId).eq("id", stayId).is("removed_at", null).maybeSingle();
+  if (!it) return { error: "이 숙소를 찾을 수 없어요. 이미 삭제됐을 수 있어요" };
+  const d = (it.details ?? {}) as Record<string, string>;
+  let at: Record<string, string> = {};
+  try { const o = JSON.parse(d._at ?? "{}"); if (o && typeof o === "object") at = o; } catch { at = {}; }
+  if (after) at[key] = after; else delete at[key];
+  const { data, error } = await sb.from("itinerary_items").update({ details: { ...d, _at: JSON.stringify(at) } }).eq("trip_id", tripId).eq("id", stayId).select("id");
+  if (error || !data?.length) return { error: "자리를 저장하지 못했어요. 수정할 권한이 없거나 잠시 문제가 생겼어요" };
   revalidatePath(`/trips/${tripId}`);
 }
 

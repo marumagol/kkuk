@@ -15,7 +15,7 @@ import { GateButton, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
 import { Toast, TOAST_MS } from "@/components/toast";
 import { DayMap, type DayPoint } from "@/components/day-map";
-import { reorderPlaces, moveItem, deletePlace, setItemTimes } from "@/app/actions";
+import { reorderPlaces, moveItem, deletePlace, setItemTimes, setStayAt } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { safeCall } from "@/lib/safe-call";
 import { addDays, md, weekday, type Item } from "@/lib/mock";
@@ -42,7 +42,7 @@ const modeMark = (x: Item) => (isFlight(x) ? "plane" : x.category === "이동" ?
 const ALL = -1; // 날짜 칩 [전체]
 function numbering(items: Item[], from = 0) {
   let n = from;
-  return items.map((x) => { const m = modeMark(x); return x.category === "메모" ? { mark: "dot" as const, n: 0 } : m ? { mark: m, n: 0 } : hasPos(x) ? { n: ++n } : { n: 0 }; });
+  return items.map((x) => { if (x.virt) return { n: 0 }; const m = modeMark(x); return x.category === "메모" ? { mark: "dot" as const, n: 0 } : m ? { mark: m, n: 0 } : hasPos(x) ? { n: ++n } : { n: 0 }; });
 }
 function km(a: Item, b: Item) {
   const R = 6371, r = Math.PI / 180;
@@ -52,10 +52,40 @@ function km(a: Item, b: Item) {
 }
 const distText = (d: number) => (d < 1 ? `${Math.max(10, Math.round(d * 100) * 10)}m` : d < 100 ? `${d.toFixed(1)}km` : `${Math.round(d)}km`);
 
+/*
+  연박, 체크아웃 날 숙소 카드 (2026-11-17 마루님 "기본은 맨 위, 위치 조정 가능, 거리 계산에도 들어가게") :
+  앞날 체크인한 숙소를 그날 목록에 화면용 카드로 끼운다. 자리는 숙소 details._at 의 "몇 박째 → 바로 앞 장소 id". 없으면 맨 위 (체크아웃 먼저)
+*/
+const real = (l: Item[]) => l.filter((x) => !x.virt);
+function withStays(cols: Item[][], U: number): Item[][] {
+  return cols.map((list, c) => {
+    if (c === U) return list;
+    const vs = cols.slice(0, c).flatMap((l, d) => l.filter((it) => it.category === "숙소" && it.nights && it.id && c - d <= it.nights).map((it): Item => {
+      const out = c - d === it.nights;
+      return { ...it, id: `stay:${it.id}:${c}`, time: undefined, timeEnd: undefined, editedKey: undefined, nights: undefined, desc: undefined, cost: undefined, cur: undefined, detail: out && it.checkout ? `체크아웃 ${it.checkout}` : undefined, virt: { id: it.id!, n: c - d + 1, out, key: String(c - d) } };
+    })).sort((a, b) => Number(b.virt!.out) - Number(a.virt!.out));
+    const rows = [...list], top: Item[] = [];
+    for (const v of vs) {
+      const after = v.stayAt?.[v.virt!.key];
+      let at = after ? rows.findIndex((x) => x.id === after) : -1;
+      if (at < 0) { top.push(v); continue; }
+      while (rows[at + 1]?.virt) at++;
+      rows.splice(at + 1, 0, v);
+    }
+    return [...top, ...rows];
+  });
+}
+/* 목록에서 연박 카드 자리가 저장된 것과 다르면 바꿀 것 */
+const stayMoves = (list: Item[]) => list.flatMap((v, i) => {
+  if (!v.virt) return [];
+  const after = real(list.slice(0, i)).pop()?.id ?? "";
+  return (v.stayAt?.[v.virt.key] ?? "") === after ? [] : [{ v, after }];
+});
+
 export function DayBoard({ tripId, start, days, undated, editable, canAdd, user, initialDay, jumpUndated }: Props) {
   const len = days.length;
   const U = len; // 날짜 미정 칸 번호
-  const fromProps = useCallback(() => [...days.map((d) => d.items), undated], [days, undated]);
+  const fromProps = useCallback(() => withStays([...days.map((d) => d.items), undated], len), [days, undated, len]);
   const [cols, setCols] = useState<Item[][]>(fromProps);
   const [dragId, setDragId] = useState<string | null>(null);
   const [sel, setSel] = useState(jumpUndated && undated.length ? U : initialDay === 0 && days.length > 1 ? ALL : Math.min(Math.max(initialDay, 1), len) - 1); // ALL = 전체 (2026-11-16 마루님)
@@ -114,11 +144,21 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     const next = prev.map((x, i) => (i === c ? items : x));
     setCols(next); colsRef.current = next; setMsg(""); setUndo(null); busy.current = true;
     const was = new Map(prev[c].map((x) => [x.id, x.time ?? null]));
-    const times = items.filter((x) => (x.time ?? null) !== was.get(x.id)).map((x) => ({ id: x.id!, time: x.time ?? null }));
+    const times = real(items).filter((x) => (x.time ?? null) !== was.get(x.id)).map((x) => ({ id: x.id!, time: x.time ?? null }));
     const t = times.length ? await safeCall(() => setItemTimes(tripId, times)) : undefined;
-    const r = t?.error ? t : await safeCall(() => reorderPlaces(tripId, items.map((x) => x.id!)));
+    const ids = real(items).map((x) => x.id!);
+    const r = t?.error ? t : (await saveStays(items)) ?? (ids.length ? await safeCall(() => reorderPlaces(tripId, ids)) : undefined);
     busy.current = false;
     if (r?.error) { setCols(prev); setMsg(r.error); } else { setMsg(ok); setUndo(keepUndo); }
+  };
+  /* 연박 카드 자리 저장. 실패하면 그 결과를 돌려준다 */
+  const saveStays = async (list: Item[]) => {
+    for (const { v, after } of stayMoves(list)) {
+      const r = await safeCall(() => setStayAt(tripId, v.virt!.id, v.virt!.key, after));
+      if (r?.error) return r;
+      v.stayAt = { ...v.stayAt, [v.virt!.key]: after };
+    }
+    return undefined;
   };
   const router = useRouter();
   const sortRoute = (c: number) => {
@@ -156,7 +196,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     setCols(next); colsRef.current = next; setMsg(""); setUndo(null); busy.current = true;
     let err = "";
     for (let k = 0; k < moved.length; k++) {
-      const ids = [...base, ...moved.slice(0, k + 1)].map((x) => x.id!);
+      const ids = real([...base, ...moved.slice(0, k + 1)]).map((x) => x.id!);
       const r = await safeCall(() => moveItem(tripId, moved[k].id!, target === U ? null : target, ids));
       if (r?.error) { err = r.error; break; }
     }
@@ -211,12 +251,15 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     const now = colsRef.current;
     const a = where(prev, id); const b = where(now, id);
     if (!a || !b) return;
-    const ids = now[b.c].map((x) => x.id!);
-    if (a.c === b.c && ids.join() === prev[a.c].map((x) => x.id).join()) return;
+    if (now[b.c][b.i].virt && a.c !== b.c) { setCols(prev); colsRef.current = prev; setMsg("연박 숙소 카드는 그날 안에서만 옮길 수 있어요"); return; }
+    const ids = real(now[b.c]).map((x) => x.id!);
+    const same = a.c === b.c && ids.join() === real(prev[a.c]).map((x) => x.id).join();
+    const stays = [...stayMoves(now[b.c]), ...(a.c !== b.c ? stayMoves(now[a.c]) : [])];
+    if (same && !stays.length) return;
     setMsg(""); busy.current = true;
-    const r = a.c === b.c
+    const r = (await saveStays(now[b.c])) ?? (a.c !== b.c ? await saveStays(now[a.c]) : undefined) ?? (same ? undefined : a.c === b.c
       ? await safeCall(() => reorderPlaces(tripId, ids))
-      : await safeCall(() => moveItem(tripId, id, b.c === U ? null : b.c, ids));
+      : await safeCall(() => moveItem(tripId, id, b.c === U ? null : b.c, ids)));
     busy.current = false;
     if (r?.error) { setCols(prev); setMsg(r.error); }
     else setMsg(a.c === b.c ? "순서를 바꿨어요" : `${b.c === U ? "날짜 미정" : `${b.c + 1}일차`}로 옮겼어요`);
@@ -242,6 +285,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     const at = where(list, id);
     if (!at || at.c === target) return false;
     const me = list[at.c][at.i];
+    if (me.virt) return false; // 연박 카드는 다른 날로 못 옮긴다
     const next = list.map((c, i) => (i === at.c ? c.filter((x) => x.id !== id) : i === target ? [...c, me] : c));
     setCols(next); colsRef.current = next;
     return true;
@@ -300,6 +344,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     const [me] = next[at.c].splice(at.i, 1);
     if (up && at.i > 0) next[at.c].splice(at.i - 1, 0, me);
     else if (!up && at.i < list[at.c].length - 1) next[at.c].splice(at.i + 1, 0, me);
+    else if (me.virt) return; // 연박 카드는 그날 안에서만
     else if (up && at.c > 0) next[at.c - 1].push(me);
     else if (!up && at.c < U) next[at.c + 1].unshift(me);
     else return;
@@ -326,17 +371,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     scrollTo({ top: Math.max(el.getBoundingClientRect().top + scrollY - (nav.current?.offsetHeight ?? 0) - tabsH() - 24, sheetTop()), behavior: "smooth" });
     el.animate?.([{ transform: "scale(1.02)" }, { transform: "scale(1)" }], { duration: 400 });
   }, [sel]);
-
-  /* c 일차에 걸친 숙소 (앞날 체크인 + 몇 박). 체크인 날은 원래 카드가 있으니 뺀다 */
-  const staysOn = (c: number) => cols.slice(0, c).flatMap((list, d) => list.filter((it) => it.category === "숙소" && it.nights && c - d <= it.nights)
-    .map((it) => ({ it, n: c - d + 1, out: c - d === it.nights })));
-
-  const stayCard = (x: { it: Item; n: number; out: boolean }, c: number) => (
-    <div key={`${x.it.id}-${c}`} className={x.out ? "" : "mt-0"}>
-      <PinCard index={0} time="" category={x.it.category} title={x.it.title} detail={x.out && x.it.checkout ? `체크아웃 ${x.it.checkout}` : undefined} badge={x.out ? "체크아웃" : `${x.n}박째`}
-        photo={x.it.photos?.find((p) => !p.path.endsWith(".pdf"))?.url} href={editable && x.it.id && !editing ? `/trips/${tripId}/places/${x.it.id}` : undefined} last />
-    </div>
-  );
 
   /* 장소 사이 거리 : 앞쪽에서 가장 가까운 위치 있는 장소와 (위치 없는 곳, 메모는 건너뜀) */
   const gapBefore = (list: Item[], i: number) => {
@@ -451,8 +485,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               {g.c === U ? "날짜 미정" : <>{g.c + 1}일차 <span className="text-sub font-semibold text-ink-sub">{md(dayDate!)} ({weekday(dayDate!)})</span></>}
             </h3>
           )}
-          {/* 앞날 체크인한 숙소 (2026-11-17 마루님 "동일한 카드로, 체크인 체크아웃만 뱃지로") : 나가는 날, 묵는 밤 모두 맨 위 (2026-11-17 마루님 "연박 카드도 맨 위"). 번호, 순서, 거리에는 안 들어감 */}
-          {g.c !== U && staysOn(g.c).map((x) => stayCard(x, g.c))}
           {list.length ? (
             <ol className="flex flex-col" aria-label={g.c === U ? "날짜 미정 장소" : `${g.c + 1}일차 장소`}>
               {list.map((it, i) => {
@@ -465,7 +497,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                     )}
                     <div className="flex items-center gap-1">
                       {/* 편집 : 왼쪽 동그라미로 고르기 (카드를 눌러도 골라짐) */}
-                      {editing && editable && it.id && (
+                      {editing && editable && it.virt && <span aria-hidden className="-ml-2 size-11 flex-none" />}
+                      {editing && editable && it.id && !it.virt && (
                         <button type="button" role="checkbox" aria-checked={picked.includes(it.id)} aria-label={`${it.title} 고르기`} disabled={!!dragId}
                           onClick={() => togglePick(it.id!)} className="press -ml-2 flex size-11 flex-none items-center justify-center">
                           <span className={"flex size-6 items-center justify-center rounded-full border-2 transition-colors " + (picked.includes(it.id) ? "border-point bg-point text-white" : "border-line-strong bg-surface")}>
@@ -473,10 +506,10 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                           </span>
                         </button>
                       )}
-                      <div className={"min-w-0 flex-1 " + (editing && it.id ? "cursor-pointer select-none" : "")} onClick={editing && editable && it.id ? () => togglePick(it.id!) : undefined}>
-                        <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} timeEnd={it.timeEnd} badge={it.category === "숙소" && it.nights ? `체크인 · ${it.nights}박` : undefined} category={it.category} title={it.title} detail={it.detail}
+                      <div className={"min-w-0 flex-1 " + (editing && it.id && !it.virt ? "cursor-pointer select-none" : "")} onClick={editing && editable && it.id && !it.virt ? () => togglePick(it.id!) : undefined}>
+                        <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} timeEnd={it.timeEnd} badge={it.virt ? (it.virt.out ? "체크아웃" : `${it.virt.n}박째`) : it.category === "숙소" && it.nights ? `체크인 · ${it.nights}박` : undefined} category={it.category} title={it.title} detail={it.detail}
                           desc={it.desc ?? ""} editedBy={showEditor(it) ? it.editedBy : undefined} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === list.length - 1}
-                          href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined}
+                          href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.virt?.id ?? it.id}` : undefined}
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
                           corner={!editing && it.category !== "메모" && canMap(it) ? (
                             <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer" aria-label={`${it.title} 길찾기 (구글 지도)`}
