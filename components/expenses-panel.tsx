@@ -17,6 +17,7 @@ import { safeCall } from "@/lib/safe-call";
 import { decimalsOf, formatMoney, curName, currencyOptions, ALL_CURRENCIES, keepScroll } from "@/lib/countries";
 import { balances, settle, toKrw, isMixed } from "@/lib/settle";
 import { BudgetCard } from "@/components/budget-card";
+import { RateDialog } from "@/components/rate-dialog";
 import { md, weekday, todayKST } from "@/lib/mock";
 import type { Expense, ExpensesView } from "@/lib/trips";
 
@@ -32,6 +33,9 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
   const base = useMemo(() => (mixed ? toKrw(view.expenses, view.rates, decimalsOf) : view.expenses), [mixed, view.expenses, view.rates]);
   const transfers = useMemo(() => settle(base), [base]);
   const all = useMemo(() => balances(base), [base]);
+  // 환율을 몰라 원화로 못 바꾼 통화 : 정산이 통화별로 갈라지니 [환율 정하기] 로 바로 넣게
+  const noRate = mixed ? [...new Set(base.filter((e) => e.currency !== "KRW").map((e) => e.currency))] : [];
+  const [rateCur, setRateCur] = useState<string | null>(null);
   const mine = all.filter((b) => b.userId === view.me && (b.paid || b.share));
   const [why, setWhy] = useState(false); // 계산 근거 (2026-11-17 마루님 "정산에 데이터가 제대로 들어가는지") : 사람마다 낸 돈, 나눌 몫
   const active = view.people.filter((p) => p.active);
@@ -91,6 +95,12 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
                   ))}
                 </ul>
               )}
+              {noRate.map((c) => (
+                <div key={c} role="alert" className="flex items-center justify-between gap-2 rounded-field bg-surface-soft px-3 py-2">
+                  <p className="min-w-0 flex-1 text-tiny font-semibold text-point-text">{curName(c)} 환율을 받아 오지 못해 따로 계산했어요</p>
+                  <button type="button" onClick={() => setRateCur(c)} className="press inline-flex h-8 flex-none items-center rounded-full bg-btn px-3 text-tiny font-bold text-on-btn">환율 정하기</button>
+                </div>
+              ))}
               <button type="button" onClick={() => setWhy((v) => !v)} aria-expanded={why}
                 className="press -mb-1 inline-flex h-8 w-fit items-center gap-1 text-tiny font-semibold text-ink-sub">
                 계산 근거 {why ? "접기" : "보기"}<Icon name="chevron-down" size={14} className={why ? "rotate-180" : ""} />
@@ -156,6 +166,8 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
           </div>
         ))}
       </Section>
+
+      {rateCur && <RateDialog tripId={view.tripId} cur={rateCur} current={null} auto={null} custom={false} canEdit={canEdit} onClose={() => setRateCur(null)} />}
 
       {picking && (
         <Modal title="장소에서 가져오기" onClose={() => setPicking(false)}>

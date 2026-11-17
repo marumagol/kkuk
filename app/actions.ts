@@ -615,14 +615,14 @@ export async function saveExpense(tripId: string, id: string | null, input: Expe
   if (error?.message?.includes("not_member")) return { error: "함께하는 사람만 고를 수 있어요" };
   if (error?.code === "23505") return { error: "이 장소는 이미 경비로 가져왔어요" };
   if (error) return PREP_FAIL;
-  revalidatePath(`/trips/${tripId}/expenses`);
+  revalidatePath(`/trips/${tripId}/expenses`); revalidatePath("/"); // 홈 남은 정산도
 }
 export async function removeExpense(tripId: string, id: string): Promise<CreateTripResult> {
   if (!isUuid(tripId) || !isUuid(id)) return PREP_FAIL;
   const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
   const { data, error } = await c.sb.from("trip_expenses").update({ removed_at: new Date().toISOString() }).eq("trip_id", tripId).eq("id", id).select("id");
   if (error || !data?.length) return PREP_FAIL;
-  revalidatePath(`/trips/${tripId}/expenses`);
+  revalidatePath(`/trips/${tripId}/expenses`); revalidatePath("/"); // 홈 남은 정산도
 }
 
 /* ───────── 위치 도장 받기 (3단계 2) : 위치 확인은 DB 함수 claim_stamp 가 한다 ───────── */
