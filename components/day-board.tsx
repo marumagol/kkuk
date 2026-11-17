@@ -315,7 +315,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
   const stayCard = (x: { it: Item; n: number; out: boolean }, c: number) => (
     <div key={`${x.it.id}-${c}`} className={x.out ? "" : "mt-0"}>
-      <PinCard index={0} time={x.out ? x.it.checkout ?? "" : ""} category={x.it.category} title={x.it.title} badge={x.out ? "체크아웃" : `${x.n}박째`}
+      <PinCard index={0} time="" category={x.it.category} title={x.it.title} badge={x.out ? "체크아웃" : `${x.n}박째`}
         photo={x.it.photos?.find((p) => !p.path.endsWith(".pdf"))?.url} href={editable && x.it.id && !editing ? `/trips/${tripId}/places/${x.it.id}` : undefined} last />
     </div>
   );
