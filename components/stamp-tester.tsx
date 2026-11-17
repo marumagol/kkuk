@@ -8,6 +8,7 @@ import { StampFace } from "@/components/kit";
 import { testStamp, clearTestStamps, type ClaimResult } from "@/app/actions";
 import { POPULAR_CITIES, countryNameOf } from "@/lib/countries";
 import { safeCall } from "@/lib/safe-call";
+import { HoldButton } from "@/components/hold-button";
 
 const OPTIONS = Object.entries(POPULAR_CITIES).flatMap(([code, list]) => list.map((name) => ({ code: code.slice(0, 2), name, key: `${code.slice(0, 2)}:${name}`, group: countryNameOf(code) ?? code })));
 
@@ -24,7 +25,7 @@ export function StampTester() {
     if (!("ok" in r) || !r.ok) { setRes(null); setMsg(r.error); return; }
     setRes(r);
     setMsg(r.status === "already" ? `${r.city} 도장은 이미 있어요` : `${r.city} 테스트 도장을 받았어요${r.visits > 1 ? ` (${r.visits}번째)` : ""}`);
-    if ("vibrate" in navigator) navigator.vibrate?.(40);
+    if ("vibrate" in navigator) navigator.vibrate?.([30, 40, 80]);
   });
   const clear = () => start(async () => {
     const r = await safeCall(() => clearTestStamps());
@@ -36,7 +37,7 @@ export function StampTester() {
     <section aria-label="도장 테스트" className="flex flex-col gap-3 rounded-card border-2 border-dashed border-point/50 bg-surface px-4 py-4">
       <div>
         <h2 className="text-body font-bold text-ink">도장 테스트 <span className="ml-1 rounded-full bg-point-soft px-2 py-0.5 text-[11px] font-bold text-point-text">내 계정만</span></h2>
-        <p className="mt-0.5 text-tiny text-ink-sub">위치 확인 없이 도시를 골라 받아 봐요. 나만 받고, 아래 버튼으로 테스트로 받은 것만 지워요</p>
+        <p className="mt-0.5 text-tiny text-ink-sub">위치 확인 없이 도시를 골라 실제처럼 꾹 눌러 받아 봐요. 나만 받고, 아래 버튼으로 테스트로 받은 것만 지워요</p>
       </div>
       {res && (
         <div className="flex justify-center py-1">
@@ -55,8 +56,8 @@ export function StampTester() {
       <div className="flex gap-2">
         <button type="button" onClick={clear} disabled={pending}
           className="press h-12 flex-1 rounded-btn border border-line-strong bg-surface text-sub font-bold text-ink disabled:opacity-50">테스트 도장 지우기</button>
-        <button type="button" onClick={take} disabled={pending}
-          className="press h-12 flex-1 rounded-btn bg-btn text-sub font-bold text-on-btn disabled:opacity-50">{pending ? "처리 중" : "도장 받아 보기"}</button>
+        <HoldButton onComplete={take} onShort={() => setMsg("조금 더 꾹 눌러 주세요. 게이지가 다 차면 도장이 찍혀요")} disabled={pending}
+          className="h-12 flex-1 text-sub" label={pending ? "처리 중" : "꾹 눌러 받아 보기"} />
       </div>
     </section>
   );
