@@ -3,7 +3,7 @@
   여행 탭 (2026-11-17 마루님 "여행 탭 개선" 시안 반영, 피그마 핀모리 v2 > 여행 탭 개선 (11.17))
   - 발자취 지도 : 다녀온 나라는 주황으로 칠하고, 다녀온 도시는 점과 이름, 다가오는 여행은 핀과 "D-41 삿포로" 이름표
   - 지도 위 : 다녀온 나라, 도시 수와 총 박 수 요약, 연도 칩. 지도는 보이는 곳이 다 들어오게 저절로 맞춘다
-  - 아래 시트 : 다가오는 여행은 할 일 허브 카드(준비율, 챙길 것, 남은 예약, 날짜 미정 장소, [일정][준비][비용], 다음에 할 일),
+  - 아래 시트 : 다가오는 여행은 할 일 허브 카드(준비율, 챙길 것, 남은 예약, 날짜 미정 장소, 칸을 누르면 준비/일정으로),
     다녀온 여행은 해마다 묶어 박 수와 장소 수
   - 나라 모양은 Natural Earth 50m (public/geo/countries-50m.json, world-atlas). 구글 지도 키 없이 그린다
 */
@@ -22,7 +22,7 @@ import type { MapTrip, TripHub } from "@/lib/trips";
 
 export type WorldTrip = MapTrip & { title: string; sub: string; nights: number; places: number; country?: string; icon?: string; dday?: { label: string; tone: "hot" | "near" | "far" } };
 
-const W = 400, H = 400;
+const W = 400, H = 300; // 지도 높이 줄여 아래 목록이 더 올라오게 (2026-11-17 마루님)
 let geoCache: Promise<FeatureCollection> | null = null;
 const loadGeo = () => (geoCache ??= fetch("/geo/countries-50m.json").then((r) => r.json()).then((t: Topology) => feature(t, t.objects.countries) as unknown as FeatureCollection)
   .catch((e) => { geoCache = null; throw e; }));
@@ -62,12 +62,12 @@ export function WorldTrips({ trips, hubs }: { trips: WorldTrip[]; hubs: Record<s
   const projection = useMemo(() => {
     const pts = [...dots, ...pins].map((g) => [g.lng, g.lat] as [number, number]);
     const p = geoMercator();
-    if (!pts.length) return p.fitExtent([[10, 120], [W - 10, H - 30]], { type: "MultiPoint", coordinates: [[-170, -50], [170, 72]] });
+    if (!pts.length) return p.fitExtent([[10, 100], [W - 10, H - 25]], { type: "MultiPoint", coordinates: [[-170, -50], [170, 72]] });
     const lats = pts.map((x) => x[1]), lngs = pts.map((x) => x[0]);
     const cy = (Math.min(...lats) + Math.max(...lats)) / 2, cx = (Math.min(...lngs) + Math.max(...lngs)) / 2;
     const half = Math.max(7, (Math.max(...lats) - Math.min(...lats)) / 2, (Math.max(...lngs) - Math.min(...lngs)) / 2.6);
     const box: [number, number][] = [[cx - half * 1.2, Math.max(-80, cy - half)], [cx + half * 1.2, Math.min(80, cy + half)]];
-    return p.fitExtent([[44, 150], [W - 60, H - 50]], { type: "MultiPoint", coordinates: [...pts, ...box] });
+    return p.fitExtent([[44, 118], [W - 60, H - 40]], { type: "MultiPoint", coordinates: [...pts, ...box] });
   }, [dots, pins]);
   const path = useMemo(() => geoPath(projection), [projection]);
 
@@ -170,7 +170,7 @@ export function WorldTrips({ trips, hubs }: { trips: WorldTrip[]; hubs: Record<s
         </div>
         <div role="tabpanel" className="flex flex-col gap-3">
           {tab === "upcoming" ? (
-            upcoming.length ? upcoming.map((t, i) => <Hub key={t.id} t={t} hub={hubs[t.id]} showNext={i === 0} />)
+            upcoming.length ? upcoming.map((t) => <Hub key={t.id} t={t} hub={hubs[t.id]} />)
               : <p className="rounded-pin bg-bg px-4 py-6 text-center text-sub text-ink-sub">다가오는 여행이 없어요</p>
           ) : past.length ? (
             [...new Set(past.map((t) => t.start.slice(0, 4)))].map((y) => (
@@ -211,17 +211,13 @@ function PastRow({ t }: { t: WorldTrip }) {
 }
 
 /* 다가오는 여행 : 할 일 허브 카드 */
-function Hub({ t, hub, showNext }: { t: WorldTrip; hub?: TripHub; showNext: boolean }) {
+function Hub({ t, hub }: { t: WorldTrip; hub?: TripHub }) {
   const tone = t.dday?.tone === "hot" ? "bg-[#C23A18] text-white" : "bg-point-soft text-point-text";
-  const stat = (icon: "check" | "book" | "pin", label: string, value: string, warn?: boolean) => (
-    <div className="flex flex-col gap-1 rounded-field bg-surface px-2.5 py-2.5">
+  /* 칸을 누르면 바로 그 화면으로 : 챙길 것, 예약 남음 → 준비 / 날짜 미정 → 일정 (2026-11-17 마루님) */
+  const stat = (href: string, icon: "check" | "book" | "pin", label: string, value: string, warn?: boolean) => (
+    <Link href={href} className="press flex flex-col gap-1 rounded-field bg-surface px-2.5 py-2.5">
       <span className="flex items-center gap-1 text-[11px] font-semibold text-ink-sub"><Icon name={icon} size={13} />{label}</span>
       <b className={"text-body font-extrabold tabular-nums " + (warn ? "text-point-text" : "text-ink")}>{value}</b>
-    </div>
-  );
-  const link = (href: string, icon: "list" | "check" | "won", label: string, dark?: boolean) => (
-    <Link href={href} className={"press flex h-11 items-center justify-center gap-1.5 rounded-field text-sub font-bold " + (dark ? "bg-deep text-on-deep" : "border border-line-strong bg-surface text-ink")}>
-      <Icon name={icon} size={17} />{label}
     </Link>
   );
   return (
@@ -246,24 +242,12 @@ function Hub({ t, hub, showNext }: { t: WorldTrip; hub?: TripHub; showNext: bool
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {stat("check", "챙길 것", hub.items.total ? `${hub.items.done}/${hub.items.total}` : "없음")}
-            {stat("book", "예약 남음", `${hub.resLeft}건`, hub.resLeft > 0)}
-            {stat("pin", "날짜 미정", `${hub.undated}곳`)}
+            {stat(`/trips/${t.id}/prep`, "check", "챙길 것", hub.items.total ? `${hub.items.done}/${hub.items.total}` : "없음")}
+            {stat(`/trips/${t.id}/prep`, "book", "예약 남음", `${hub.resLeft}건`, hub.resLeft > 0)}
+            {stat(`/trips/${t.id}`, "pin", "날짜 미정", `${hub.undated}곳`)}
           </div>
         </>}
-        <div className="grid grid-cols-3 gap-2">
-          {link(`/trips/${t.id}`, "list", "일정", true)}
-          {link(`/trips/${t.id}/prep`, "check", "준비")}
-          {link(`/trips/${t.id}/expenses`, "won", "비용")}
-        </div>
       </div>
-      {showNext && hub?.next && (
-        <Link href={`/trips/${t.id}/prep`} className="press -mt-1 flex items-center gap-2 px-1 py-1.5">
-          <span className="flex-none text-tiny font-semibold text-ink-sub">다음에 할 일</span>
-          <span className="min-w-0 flex-1 truncate text-sub font-semibold text-ink">{hub.next.title}{hub.next.due ? ` (${md(hub.next.due)}까지)` : ""}</span>
-          <Icon name="right" size={16} className="flex-none text-ink-sub" />
-        </Link>
-      )}
     </>
   );
 }
