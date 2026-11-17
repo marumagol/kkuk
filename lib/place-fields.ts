@@ -69,7 +69,9 @@ export function fieldsOf(category: string, mode?: string): FieldDef[] {
     case "stay": return [ // 예약한 곳, 연락처를 예약번호 위로 (2026-11-16 마루님)
       { key: "site", label: "예약한 곳", placeholder: "예 : 아고다", half: true, max: 30 },
       { key: "phone", label: "연락처", placeholder: "예 : +81 11-000-0000", half: true, max: 30 },
-      { key: "booking", label: "예약번호", placeholder: "예 : 1234567890", max: 40 },
+      { key: "booking", label: "예약번호", placeholder: "예 : 1234567890", half: true, max: 40 },
+      // 몇 박 (2026-11-17 마루님 "언제부터 언제까지 자는지") : 고른 날짜가 체크인 날. 그 뒤 날짜 일정에도 숙소가 보인다
+      { key: "nights", label: "숙박", placeholder: "예 : 2", half: true, max: 6, unit: "박" },
       { key: "checkin", label: "체크인", type: "time", half: true },
       { key: "checkout", label: "체크아웃", type: "time", half: true },
     ];
@@ -135,7 +137,7 @@ export function detailLine(category: string, d?: Details | null, skipRoute = fal
     // 수단 이름은 카드에 쓰지 않는다. 일정 왼쪽 수단 아이콘으로 보인다 (2026-11-17 마루님)
     parts.push(d.code ? (d.mode === "flight" && airlineOf(d.code) ? `${airlineOf(d.code)} ${d.code}` : d.code) : "", route, /* 출발, 도착 시간은 카드 위 시간 줄에 "출발 → 도착" 으로 보인다 (2026-11-17) */ d.seat ? `좌석 ${d.seat}` : "", book);
   } else if (category === "stay") {
-    parts.push(d.checkin ? `체크인 ${d.checkin}` : "", d.checkout ? `체크아웃 ${d.checkout}` : "", book);
+    parts.push(d.nights ?? "", d.checkin ? `체크인 ${d.checkin}` : "", d.checkout ? `체크아웃 ${d.checkout}` : "", book);
   } else if (category === "food") {
     parts.push(book, d.people ?? "", d.menu ?? "");
   } else if (category === "sight") {
