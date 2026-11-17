@@ -1,6 +1,6 @@
 {
   "name": "kkuk",
-  "version": "0.86.1",
+  "version": "0.87.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
