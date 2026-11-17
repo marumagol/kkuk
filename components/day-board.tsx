@@ -167,8 +167,26 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   // 저장 뒤나 다른 사람이 고쳐서 새 목록이 오면 맞춘다 (끄는 중, 저장 중에는 그대로)
   useEffect(() => { if (!dragId && !busy.current) setCols(fromProps()); }, [fromProps]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /*
+    뒤로 왔을 때 보던 날 그대로 (2026-11-17 마루님 "3일차에서 장소 상세 갔다 뒤로가면 1일차") :
+    앱이 기억해 둔 예전 화면(초기값 1일차)이 다시 그려져도, 주소(?day=)나 이 탭에서 마지막으로 본 날로 맞춘다
+  */
+  const dayKey = `kkuk:day:${tripId}`;
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    const q = new URLSearchParams(location.search);
+    let v: string | null = q.get("undated") ? "u" : q.get("day");
+    if (!v) { try { v = sessionStorage.getItem(dayKey); } catch { v = null; } }
+    const c = v === "u" ? (undated.length ? U : null) : v === "all" ? (len > 1 ? ALL : null) : v && /^\d+$/.test(v) ? Math.min(Math.max(Number(v), 1), len) - 1 : null;
+    if (c != null && c !== sel) setSel(c);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* 고른 날 : 칩을 가운데로, 주소에 남기기 */
   useEffect(() => {
+    try { sessionStorage.setItem(dayKey, sel === U ? "u" : sel === ALL ? "all" : String(sel + 1)); } catch { /* 기억 못 해도 주소에 남는다 */ }
     nav.current?.querySelector<HTMLElement>(`[data-col="${sel}"]`)?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
     history.replaceState(history.state, "", `/trips/${tripId}?${sel === U ? "undated=1" : sel === ALL ? "day=all" : `day=${sel + 1}`}`);
   }, [sel, tripId, U]);
