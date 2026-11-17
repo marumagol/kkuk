@@ -31,7 +31,9 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
   // 통화가 섞이면 환율로 원화 하나로 바꿔서 정산 (모두 같은 여행 환율을 쓰니 사람마다 금액이 같다)
   const base = useMemo(() => (mixed ? toKrw(view.expenses, view.rates, decimalsOf) : view.expenses), [mixed, view.expenses, view.rates]);
   const transfers = useMemo(() => settle(base), [base]);
-  const mine = useMemo(() => balances(base).filter((b) => b.userId === view.me && (b.paid || b.share)), [base, view.me]);
+  const all = useMemo(() => balances(base), [base]);
+  const mine = all.filter((b) => b.userId === view.me && (b.paid || b.share));
+  const [why, setWhy] = useState(false); // 계산 근거 (2026-11-17 마루님 "정산에 데이터가 제대로 들어가는지") : 사람마다 낸 돈, 나눌 몫
   const active = view.people.filter((p) => p.active);
   const [sheet, setSheet] = useState<Draft | null>(openAdd && view.role !== "viewer" ? {} : null); // 홈 [+ 경비] 로 오면 바로 입력 창
   const [picking, setPicking] = useState(false);
@@ -88,6 +90,25 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
                     </li>
                   ))}
                 </ul>
+              )}
+              <button type="button" onClick={() => setWhy((v) => !v)} aria-expanded={why}
+                className="press -mb-1 inline-flex h-8 w-fit items-center gap-1 text-tiny font-semibold text-ink-sub">
+                계산 근거 {why ? "접기" : "보기"}<Icon name="chevron-down" size={14} className={why ? "rotate-180" : ""} />
+              </button>
+              {why && (
+                <table className="w-full text-tiny tabular-nums">
+                  <thead><tr className="text-ink-sub"><th className="py-1 text-left font-semibold">사람</th><th className="py-1 text-right font-semibold">낸 돈</th><th className="py-1 text-right font-semibold">나눌 몫</th><th className="py-1 text-right font-semibold">차이</th></tr></thead>
+                  <tbody className="divide-y divide-line">
+                    {all.filter((b) => b.paid || b.share).sort((a, b) => a.currency.localeCompare(b.currency) || b.net - a.net).map((b) => (
+                      <tr key={b.currency + b.userId} className="text-ink">
+                        <td className="py-1.5 font-semibold">{nameOf(b.userId)}</td>
+                        <td className="py-1.5 text-right">{formatMoney(b.paid, b.currency)}</td>
+                        <td className="py-1.5 text-right">{formatMoney(b.share, b.currency)}</td>
+                        <td className={"py-1.5 text-right font-bold " + (b.net < 0 ? "text-point-text" : "")}>{b.net > 0 ? "+" : b.net < 0 ? "-" : ""}{formatMoney(Math.abs(b.net), b.currency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
               <p className="text-tiny text-ink-sub">{mixed ? "여러 통화는 예산 카드의 환율 기준으로 원화로 바꿔 계산했어요. " : ""}나누어떨어지지 않는 나머지는 낸 사람이 떠안아요</p>
             </>
