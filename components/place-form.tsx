@@ -15,6 +15,7 @@ import { savePlace, removePlace } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 import { decimalsOf, currencyOptions } from "@/lib/countries";
 import { CurrencySelect } from "@/components/currency-select";
+import { airlineOf } from "@/lib/airlines";
 import { MAX_PLACE_MEMO, MAX_PLACE_TITLE, MAX_PLACE_PHOTOS } from "@/lib/rules";
 import { addDays, md, weekday } from "@/lib/mock";
 import type { PlaceContext } from "@/lib/trips";
@@ -304,6 +305,8 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                         onChange={(e) => { const v = e.target.value; setExtra((x) => ({ ...x, [f.key]: v })); setError(""); }}
                         className="block h-14 w-full min-w-0 rounded-field border border-line-strong bg-surface px-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
                     )}
+                    {/* 편명 → 항공사 이름 (2026-11-17, lib/airlines.ts) */}
+                    {f.key === "code" && extra.mode === "flight" && airlineOf(extra.code) && <span className="text-tiny font-semibold text-ink-sub">{airlineOf(extra.code)}</span>}
                   </label>
                 ))}
               </div>}
