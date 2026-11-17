@@ -335,3 +335,6 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 */
 html { scrollbar-gutter: stable; }
 html, body { overflow-x: clip; }
+
+/* 입력창 안내 글자는 연하게 (2026-11-17 마루님 "플레이스홀더가 너무 진해 입력 글자와 구분이 어려워") : 앱 전체 공통 */
+input::placeholder, textarea::placeholder { opacity: 0.55; }
