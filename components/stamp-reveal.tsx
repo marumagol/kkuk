@@ -20,6 +20,14 @@ export function StampReveal({ city, country, title, sub, onClose }: { city?: str
   const color = stampColor(country);
   const close = useRef(onClose);
   useEffect(() => { close.current = onClose; });
+  /* 기다리는 동안 : 심장 박동처럼 점점 빨라지는 약한 진동 */
+  useEffect(() => {
+    if (city) return;
+    let gap = 420, t: ReturnType<typeof setTimeout>;
+    const beat = () => { navigator.vibrate?.(8); gap = Math.max(160, gap * 0.85); t = setTimeout(beat, gap); };
+    t = setTimeout(beat, 200);
+    return () => clearTimeout(t);
+  }, [city]);
   useEffect(() => {
     if (!city) return;
     const t = setTimeout(() => navigator.vibrate?.([0, 30, 40, 90]), 380); // 찍히는 순간에 맞춘 진동
@@ -32,7 +40,13 @@ export function StampReveal({ city, country, title, sub, onClose }: { city?: str
     <div role="dialog" aria-modal="true" aria-label={city ? `${city} 도장` : "도장"} onClick={city ? onClose : undefined}
       className="sr-backdrop fixed inset-0 z-50 flex flex-col items-center justify-center px-6">
       <div className="sr-shake relative flex size-[260px] items-center justify-center" style={{ ["--sr-color" as string]: color }}>
-        {!city ? <span aria-hidden className="sr-charge absolute size-[200px] rounded-full" /> : <>
+        {!city ? <>
+          {/* 긴장 고조 : 빛이 모이고, 점선 링이 점점 빨리 돌고, 빈 도장이 떨리며 내려올 준비를 한다 */}
+          <span aria-hidden className="sr-charge absolute size-[220px] rounded-full" />
+          <span aria-hidden className="sr-orbit absolute size-[236px] rounded-full" />
+          <span aria-hidden className="sr-orbit sr-orbit-2 absolute size-[200px] rounded-full" />
+          <span aria-hidden className="sr-blank relative flex size-[180px] items-center justify-center rounded-full text-[40px] font-extrabold text-white/90">꾹</span>
+        </> : <>
         <span aria-hidden className="sr-glow absolute inset-0 rounded-full" />
         <span aria-hidden className="sr-ring absolute size-[180px] rounded-full" />
         <span aria-hidden className="sr-ring sr-ring-2 absolute size-[180px] rounded-full" />
