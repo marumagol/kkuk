@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 22:40", version: "0.80.0", items: ["첨부한 사진과 PDF를 누르면 앱 안에서 크게 미리 볼 수 있어요 (장소, 메모, 예약)"] },
   { at: "2026-11-17 22:25", version: "0.79.3", items: ["숙소 카드의 체크인, 체크아웃 시간을 금액, 메모 줄과 같은 모양으로 맞췄어요"] },
   { at: "2026-11-17 22:15", version: "0.79.2", items: ["프로필 메뉴와 일정 점 세 개 메뉴를 작게 줄였어요"] },
   { at: "2026-11-17 22:10", version: "0.79.1", items: ["일정의 검색, 편집 버튼을 점 세 개 메뉴 하나로 합쳤어요"] },

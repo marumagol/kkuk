@@ -1,4 +1,5 @@
 "use client";
+import { FileViewer } from "@/components/file-viewer";
 /*
   메모 쓰기 / 고치기 (2026-11-16 마루님 "메모는 제목 내용 구분 없이 내용이랑 사진만")
   - 화면 전체가 글 칸. 위 오른쪽 [완료] 로 저장, 사진은 최대 5장 (장소 사진과 같은 저장소)
@@ -21,6 +22,7 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
   const start = !p ? "" : p.memo?.startsWith(p.title) ? p.memo : [p.title, p.memo].filter(Boolean).join("\n");
   const [text, setText] = useState(start ?? "");
   const [photos, setPhotos] = useState<{ path: string; url: string }[]>(ctx.photos ?? []);
+  const [viewAt, setViewAt] = useState<number | null>(null); // 사진 크게 보기
   const [uploading, setUploading] = useState(0);
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState(false);
@@ -95,7 +97,9 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
           {photos.map((ph, i) => (
             <span key={ph.path} className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ph.url} alt={`사진 ${i + 1}`} width={88} height={88} className="size-22 rounded-field object-cover" />
+              <button type="button" onClick={() => setViewAt(i)} aria-label={`사진 ${i + 1} 크게 보기`} className="block">
+                <img src={ph.url} alt={`사진 ${i + 1}`} width={88} height={88} className="size-22 rounded-field object-cover" />
+              </button>
               <button type="button" aria-label={`사진 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== ph))}
                 className="press absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-btn text-on-btn">
                 <Icon name="x" size={14} />
@@ -111,6 +115,7 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
               <Icon name="plus" size={26} />
             </button>
           )}
+          {viewAt != null && <FileViewer files={photos.map((x) => ({ url: x.url, pdf: false }))} start={viewAt} onClose={() => setViewAt(null)} />}
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
             onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ""; void addPhotos(fs); }} />
         </div>

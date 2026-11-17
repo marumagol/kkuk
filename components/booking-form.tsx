@@ -1,4 +1,5 @@
 "use client";
+import { FileViewer } from "@/components/file-viewer";
 /*
   예약 지갑 (0034, 2026-11-16 마루님) : 예약 이름, 날짜, 예약번호(복사), 메모, 첨부 파일
   - 파일은 고르는 즉시 비공개 저장소 trip-files/<여행 id>/ 에 올리고, [저장] 할 때 목록을 함께 저장. 그림은 줄여서, PDF 는 그대로 (10MB 까지)
@@ -132,20 +133,24 @@ function CodeRow({ code, copied, onCopy }: { code: string; copied: boolean; onCo
 }
 
 function FileList({ files, onRemove }: { files: BookingView["files"]; onRemove?: (path: string) => void }) {
+  const [view, setView] = useState<number | null>(null);
   if (!files.length) return null;
   return (
+    <>
+    {view != null && <FileViewer files={files.map((x) => ({ url: x.url, pdf: !!x.pdf }))} start={view} onClose={() => setView(null)} />}
     <ul className="grid grid-cols-3 gap-2">
       {files.map((f, i) => (
         <li key={f.path} className="relative aspect-square overflow-hidden rounded-field bg-surface ring-1 ring-line">
-          <a href={f.url} target="_blank" rel="noopener noreferrer" aria-label={`첨부 ${i + 1} 열기`} className="flex size-full items-center justify-center">
+          <button type="button" onClick={() => setView(i)} aria-label={`첨부 ${i + 1} 크게 보기`} className="flex size-full items-center justify-center">
             {f.pdf ? <span className="flex flex-col items-center gap-1 text-tiny font-bold text-ink-sub"><Icon name="book" size={22} />PDF</span>
               // eslint-disable-next-line @next/next/no-img-element
               : <img src={f.url} alt="" className="size-full object-cover" />}
-          </a>
+          </button>
           {onRemove && <button type="button" aria-label={`첨부 ${i + 1} 빼기`} onClick={() => onRemove(f.path)}
             className="press absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-black/60 text-white"><Icon name="x" size={14} /></button>}
         </li>
       ))}
     </ul>
+    </>
   );
 }

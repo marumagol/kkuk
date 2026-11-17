@@ -1,4 +1,5 @@
 "use client";
+import { FileViewer, isPdf } from "@/components/file-viewer";
 /*
   S08 장소 추가 / 장소 수정
   이름을 치면 장소 검색 후보가 뜬다 (4단계, 구글). 골라도 되고 직접 입력해도 된다. 이름만 꼭 넣고 나머지는 선택
@@ -80,6 +81,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   const [busy, startBusy] = useTransition();
   const catTouched = useRef(!!p); // 분류를 직접 골랐으면 검색해도 바꾸지 않는다
   const [photos, setPhotos] = useState<{ path: string; url: string }[]>(ctx.photos ?? []);
+  const [viewAt, setViewAt] = useState<number | null>(null); // 첨부 크게 보기 (2026-11-17)
   const [uploading, setUploading] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -351,10 +353,11 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
               <ul className="grid grid-cols-3 gap-2">
                 {photos.map((ph, i) => (
                   <li key={ph.path} className="relative aspect-square overflow-hidden rounded-field bg-surface ring-1 ring-line">
-                    {ph.path.endsWith(".pdf")
-                      ? <a href={ph.url} target="_blank" rel="noopener noreferrer" className="flex size-full flex-col items-center justify-center gap-1 text-tiny font-bold text-ink-sub"><Icon name="book" size={22} />PDF</a>
-                      // eslint-disable-next-line @next/next/no-img-element
-                      : <img src={ph.url} alt={`첨부 ${i + 1}`} className="size-full object-cover" />}
+                    <button type="button" onClick={() => setViewAt(i)} aria-label={`첨부 ${i + 1} 크게 보기`} className="flex size-full flex-col items-center justify-center gap-1 text-tiny font-bold text-ink-sub">
+                      {isPdf(ph.path) ? <><Icon name="book" size={22} />PDF</>
+                        // eslint-disable-next-line @next/next/no-img-element
+                        : <img src={ph.url} alt={`첨부 ${i + 1}`} className="size-full object-cover" />}
+                    </button>
                     <button type="button" aria-label={`첨부 ${i + 1} 빼기`} disabled={busy} onClick={() => dropPhoto(ph.path)}
                       className="press absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-black/60 text-white"><Icon name="x" size={14} /></button>
                   </li>
@@ -367,6 +370,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
                 <Icon name="plus" size={16} />{uploading ? "올리는 중" : "사진이나 PDF 넣기"}
               </button>
             )}
+            {viewAt != null && <FileViewer files={photos.map((x) => ({ url: x.url, pdf: isPdf(x.path) }))} start={viewAt} onClose={() => setViewAt(null)} />}
             <input ref={fileRef} type="file" accept="image/*,application/pdf" multiple className="hidden"
               onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ""; void addPhotos(fs); }} />
             <p className="text-tiny text-ink-sub">사진은 올릴 때 크기를 줄여요</p>
