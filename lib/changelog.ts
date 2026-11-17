@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 21:55", version: "0.77.2", items: ["일정 검색이 새 화면 대신 날짜 줄 자리에서 바로 열리고, 결과도 그 아래에 보여요"] },
   { at: "2026-11-17 21:50", version: "0.77.1", items: ["입력창 안내 글자를 연하게 해서 입력한 글자와 구분돼요"] },
   { at: "2026-11-17 21:45", version: "0.77.0", items: ["일정에 검색이 생겼어요. 날짜 줄 오른쪽 돋보기로 여행 전체에서 찾아요"] },
   { at: "2026-11-17 21:30", version: "0.76.2", items: ["예약, 체크리스트 [편집] 에서 오른쪽 손잡이를 끌어 순서를 바꿀 수 있어요"] },

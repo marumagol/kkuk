@@ -105,6 +105,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const [finding, setFinding] = useState(false); // 검색 창
   const [q, setQ] = useState("");
   const [jump, setJump] = useState<string | null>(null); // 검색 결과를 누르면 그 카드로
+  const closeFind = () => { setFinding(false); setQ(""); };
   const swipe = useRef<{ x: number; y: number } | null>(null); // 일정 좌우로 밀어 날짜 넘기기 (2026-11-16 마루님)
   const [overCol, setOverCol] = useState<number | null>(null); // 끄는 중 날짜 칩 위
   const [msg, setMsg] = useState("");
@@ -449,13 +450,25 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         </button>
         <nav ref={nav} aria-label="날짜" className="sticky top-[var(--tabs-h,0px)] z-20 flex items-center gap-1 rounded-t-[28px] bg-bg py-3 pl-1 pr-3">
           {/* 칩 줄 양 끝은 바탕으로 부드럽게 사라지게 (2026-11-16 마루님 "칼같이 잘린다"). 여백을 안쪽에 두어 처음과 끝 칩은 흐려지지 않는다 */}
+          {finding ? (
+            /* 검색 (2026-11-17 마루님 "다른 페이지 말고 지금 화면에서") : 날짜 칩 자리에 검색창, 결과는 아래 일정 자리에 */
+            <div className="flex min-w-0 flex-1 items-center gap-1 pl-4">
+              <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-line-strong bg-surface px-3.5">
+                <Icon name="search" size={17} className="flex-none text-ink-sub" />
+                <input autoFocus type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Escape" && closeFind()}
+                  placeholder="장소, 메모, 주소, 편명 찾기" aria-label="일정에서 찾기" className="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-sub" />
+                {q && <button type="button" onClick={() => setQ("")} aria-label="지우기" className="press -mr-1 flex size-7 flex-none items-center justify-center rounded-full bg-surface-soft text-ink-sub"><Icon name="x" size={14} /></button>}
+              </label>
+              <button type="button" onClick={closeFind} className="press h-10 flex-none px-2 text-sub font-semibold text-ink-sub">닫기</button>
+            </div>
+          ) : <>
           <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-28px),transparent)]">
             {len > 1 && chip(ALL, "전체")}
             {days.map((_, c) => chip(c, `${c + 1}일차`))}
             {showUndated && chip(U, `미정 ${cols[U].length}`)}
           </div>
           {!editing && (
-            <button type="button" onClick={() => setFinding(true)} aria-label="일정 검색"
+            <button type="button" onClick={() => { setFinding(true); if (scrollY > sheetTop()) scrollTo({ top: sheetTop() }); }} aria-label="일정 검색"
               className="press flex size-10 flex-none items-center justify-center rounded-full border border-line-strong bg-surface text-ink">
               <Icon name="search" size={18} strokeWidth={2} />
             </button>
@@ -471,19 +484,11 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
               </button>
             )
           )}
+          </>}
         </nav>
         {finding && (
-          <div role="dialog" aria-modal="true" aria-label="일정 검색" className="fixed inset-0 z-50 flex flex-col bg-bg">
-            <div className="mx-auto flex w-full max-w-[560px] items-center gap-2 border-b border-line px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]">
-              <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full bg-surface px-4">
-                <Icon name="search" size={18} className="flex-none text-ink-sub" />
-                <input autoFocus type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Escape" && setFinding(false)}
-                  placeholder="장소, 메모, 주소, 편명 찾기" aria-label="일정에서 찾기" className="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-sub" />
-                {q && <button type="button" onClick={() => setQ("")} aria-label="지우기" className="press -mr-1 flex size-7 flex-none items-center justify-center rounded-full bg-surface-soft text-ink-sub"><Icon name="x" size={14} /></button>}
-              </label>
-              <button type="button" onClick={() => setFinding(false)} className="press h-11 flex-none px-2 text-sub font-semibold text-ink-sub">닫기</button>
-            </div>
-            <div className="mx-auto w-full max-w-[560px] flex-1 overflow-y-auto px-4 pb-10 pt-3">
+          <div role="region" aria-label="일정 검색 결과" className="min-h-[40dvh]">
+            <div className="px-5 pb-10 pt-1">
               {!q.trim() ? (
                 <p className="px-1 py-6 text-center text-sub text-ink-sub">여행 전체 일정에서 장소 이름, 메모, 주소,<br />편명, 예약번호, 메뉴로 찾아요</p>
               ) : results.length === 0 ? (
@@ -494,7 +499,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                   <ul className="divide-y divide-line overflow-hidden rounded-card bg-surface">
                     {g.hits.map(({ x, m }) => (
                       <li key={x.id}>
-                        <button type="button" onClick={() => { setFinding(false); pickDay(g.c); setJump(x.id!); }}
+                        <button type="button" onClick={() => { closeFind(); pickDay(g.c); setJump(x.id!); }}
                           className="press flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left">
                           <span className="min-w-0 flex-1">
                             <span className="flex items-center gap-1.5">
@@ -516,7 +521,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
         )}
         {dragId && <p className="px-5 pb-1 text-tiny font-semibold text-point-text">다른 날로 옮기려면 위 날짜에 놓아 주세요</p>}
 
-        <div className="flex items-end justify-between gap-2 px-5 pb-3 pt-1">
+        <div className={"flex items-end justify-between gap-2 px-5 pb-3 pt-1 " + (finding ? "hidden" : "")}>
           <h2 className="min-w-0 truncate text-title font-extrabold text-ink">
             {sel === ALL ? <>전체 일정 <span className="font-semibold text-ink-sub">{len}일</span></> : sel === U ? "날짜 미정" : <>{sel + 1}일차 <span className="font-semibold text-ink-sub">{md(d!)} ({weekday(d!)})</span></>}
             {sel !== U && sel !== ALL && days[sel]?.title && <span className="block truncate text-sub font-semibold text-ink-sub">{days[sel].title}</span>}
@@ -538,7 +543,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           </div>
         </div>
 
-        <div className="px-5"
+        <div className={"px-5 " + (finding ? "hidden" : "")}
           onTouchStart={(e) => {
             const t = e.touches[0];
             swipe.current = e.touches.length === 1 && !(e.target as Element).closest("input, textarea, select, [data-grip]") ? { x: t.clientX, y: t.clientY } : null;
