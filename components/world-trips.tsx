@@ -254,7 +254,12 @@ function Hub({ t, hub }: { t: WorldTrip; hub?: TripHub }) {
 function PinLabel({ dd, name }: { dd: string; name: string }) {
   const t = useRef<SVGTextElement>(null);
   const [w, setW] = useState([...dd].length * 7 + [...name].length * 12 + 22);
-  useLayoutEffect(() => { const n = t.current?.getComputedTextLength?.(); if (n) setW(Math.ceil(n) + 22); }, [dd, name]);
+  // getComputedTextLength 는 두 글자 사이 띄움(dx 6)을 빼고 재서 오른쪽이 좁았다 → 상자 폭(getBBox)으로, 글꼴을 다 받은 뒤 한 번 더 잰다
+  useLayoutEffect(() => {
+    const measure = () => { try { const b = t.current?.getBBox(); if (b?.width) setW(Math.ceil(b.width) + 22); } catch { /* 아직 화면에 없음 */ } };
+    measure();
+    document.fonts?.ready.then(measure).catch(() => {});
+  }, [dd, name]);
   return (
     <g transform={`translate(${-w / 2},6)`}>
       <rect width={w} height={26} rx={13} className="fill-deep" />
