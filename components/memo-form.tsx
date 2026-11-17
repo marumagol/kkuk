@@ -118,8 +118,11 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
         {error && <p role="alert" className="text-sub font-semibold text-point-text">{error}</p>}
 
         {p && (
-          <button type="button" onClick={() => setConfirm(true)} disabled={busy}
-            className="press mt-auto h-12 self-start rounded-full px-1 text-sub font-semibold text-ink-sub underline underline-offset-2">메모 삭제</button>
+          /* 장소 상세와 같은 모양 (2026-11-17 마루님 "메모 삭제 UI 별로") : 가운데 휴지통 아이콘 + 빨간 글자 */
+          <div className="mt-auto flex justify-center pt-3">
+            <button type="button" onClick={() => setConfirm(true)} disabled={busy}
+              className="press inline-flex h-10 items-center gap-1 rounded-full px-3 text-sub font-semibold text-point-text"><Icon name="trash" size={16} />메모 삭제</button>
+          </div>
         )}
       </div>
 
