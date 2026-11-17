@@ -7,7 +7,7 @@
     다녀온 여행은 해마다 묶어 박 수와 장소 수
   - 나라 모양은 Natural Earth 50m (public/geo/countries-50m.json, world-atlas). 구글 지도 키 없이 그린다
 */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { geoMercator, geoPath } from "d3-geo";
@@ -120,16 +120,12 @@ export function WorldTrips({ trips, hubs }: { trips: WorldTrip[]; hubs: Record<s
           {pins.map(({ trip, name, lat, lng }) => {
             const [x, y] = projection([lng, lat])!;
             const dd = trip.dday?.label ?? "";
-            const w = [...dd].length * 7.5 + [...name].length * 12.5 + 26;
             return (
               <g key={trip.id} transform={`translate(${x},${y})`} className="cursor-pointer" role="link" tabIndex={0} aria-label={`${trip.title}, ${dd}`}
                 onClick={() => router.push(`/trips/${trip.id}`)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/trips/${trip.id}`); } }}>
                 <path d="M0 0c-8-10-14-16-14-23a14 14 0 1 1 28 0c0 7-6 13-14 23z" className="fill-point" style={{ filter: "drop-shadow(0 2px 3px rgb(0 0 0 / 0.2))" }} />
                 <circle cx={0} cy={-23} r={5} className="fill-surface" />
-                <g transform={`translate(${-w / 2},6)`}>
-                  <rect width={w} height={26} rx={13} className="fill-deep" />
-                  <text x={11} y={17.5} className="text-[12px] font-extrabold"><tspan className="fill-point">{dd}</tspan><tspan dx={6} className="fill-on-deep">{name}</tspan></text>
-                </g>
+                <PinLabel dd={dd} name={name} />
               </g>
             );
           })}
@@ -251,5 +247,18 @@ function Hub({ t, hub }: { t: WorldTrip; hub?: TripHub }) {
         </>}
       </div>
     </>
+  );
+}
+
+/* 다가오는 여행 핀 아래 이름표 : 글자 폭을 재서 좌우 여백을 똑같이 (2026-11-18 마루님 "오른쪽 여백이 넓어 보여") */
+function PinLabel({ dd, name }: { dd: string; name: string }) {
+  const t = useRef<SVGTextElement>(null);
+  const [w, setW] = useState([...dd].length * 7 + [...name].length * 12 + 22);
+  useLayoutEffect(() => { const n = t.current?.getComputedTextLength?.(); if (n) setW(Math.ceil(n) + 22); }, [dd, name]);
+  return (
+    <g transform={`translate(${-w / 2},6)`}>
+      <rect width={w} height={26} rx={13} className="fill-deep" />
+      <text ref={t} x={11} y={17.5} className="text-[12px] font-extrabold"><tspan className="fill-point">{dd}</tspan><tspan dx={6} className="fill-on-deep">{name}</tspan></text>
+    </g>
   );
 }
