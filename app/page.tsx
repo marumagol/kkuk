@@ -108,7 +108,7 @@ async function Before({ v, trip, today, missing }: { v: Viewer; trip: Trip; toda
         </span>
         <span className="flex w-[92px] flex-none flex-col items-center justify-center gap-0.5 px-2 py-4 text-center">
           <span className="text-tiny font-semibold text-on-deep-sub">출발까지</span>
-          <span className="text-[26px] font-extrabold leading-tight tabular-nums">D-{left}</span>
+          <span className="text-[26px] font-extrabold leading-tight text-point tabular-nums" /* 키 컬러 (2026-11-18 마루님) */>D-{left}</span>
         </span>
       </Link>
 
