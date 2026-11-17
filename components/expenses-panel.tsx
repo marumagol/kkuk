@@ -30,11 +30,18 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
   const nameOf = (id: string) => (id === view.me ? "나" : person(id)?.name ?? "나간 사람");
   const mixed = isMixed(view.expenses);
   // 통화가 섞이면 환율로 원화 하나로 바꿔서 정산 (모두 같은 여행 환율을 쓰니 사람마다 금액이 같다)
-  const base = useMemo(() => (mixed ? toKrw(view.expenses, view.rates, decimalsOf) : view.expenses), [mixed, view.expenses, view.rates]);
+  /*
+    정산 방식 (2026-11-17 마루님 "결제한 현지 통화로 나누는 경우도") : 원화로 한 번에(기본) | 통화별로 (엔은 엔대로). 이 기기에 기억
+    계산 결과만 바뀌고 경비 데이터는 그대로
+  */
+  const [byCur, setByCur] = useState(false);
+  useEffect(() => { try { setByCur(localStorage.getItem(`kkuk:settle-by-cur:${view.tripId}`) === "1"); } catch { /* 기본값 */ } }, [view.tripId]);
+  const pickMode = (v: boolean) => { setByCur(v); try { localStorage.setItem(`kkuk:settle-by-cur:${view.tripId}`, v ? "1" : "0"); } catch { /* 이번 화면만 */ } };
+  const base = useMemo(() => (mixed && !byCur ? toKrw(view.expenses, view.rates, decimalsOf) : view.expenses), [mixed, byCur, view.expenses, view.rates]);
   const transfers = useMemo(() => settle(base), [base]);
   const all = useMemo(() => balances(base), [base]);
   // 환율을 몰라 원화로 못 바꾼 통화 : 정산이 통화별로 갈라지니 [환율 정하기] 로 바로 넣게
-  const noRate = mixed ? [...new Set(base.filter((e) => e.currency !== "KRW").map((e) => e.currency))] : [];
+  const noRate = mixed && !byCur ? [...new Set(base.filter((e) => e.currency !== "KRW").map((e) => e.currency))] : [];
   const [rateCur, setRateCur] = useState<string | null>(null);
   const mine = all.filter((b) => b.userId === view.me && (b.paid || b.share));
   const [why, setWhy] = useState(false);
@@ -76,6 +83,14 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
       {/* 정산 : 함께하는 사람이 2명 이상일 때만 */}
       {active.length > 1 && (
         <Section title="정산" desc="누가 누구에게 얼마를 보내면 되는지 계산해요">
+          {mixed && (
+            <div role="radiogroup" aria-label="정산 방식" className="flex gap-1 rounded-btn bg-surface-soft p-1">
+              {[{ v: false, t: "원화로 한 번에" }, { v: true, t: "통화별로" }].map((o) => (
+                <button key={o.t} type="button" role="radio" aria-checked={byCur === o.v} onClick={() => pickMode(o.v)}
+                  className={"press flex h-9 flex-1 items-center justify-center rounded-[12px] text-sub " + (byCur === o.v ? "bg-surface font-bold text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]" : "font-medium text-ink-sub")}>{o.t}</button>
+              ))}
+            </div>
+          )}
           {people === 0 ? (
             <p className="text-sub text-ink-sub">경비를 적으면 여기서 정산해 줘요</p>
           ) : (
@@ -149,7 +164,7 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
                   </tbody>
                 </table>
               )}
-              <p className="text-tiny text-ink-sub">{mixed ? "여러 통화는 예산 카드의 환율 기준으로 원화로 바꿔 계산했어요. " : ""}나누어떨어지지 않는 나머지는 낸 사람이 떠안아요</p>
+              <p className="text-tiny text-ink-sub">{mixed ? (byCur ? "통화마다 따로 나눠요. 엔은 엔으로, 원은 원으로 보내면 돼요. " : "여러 통화는 예산 카드의 환율 기준으로 원화로 바꿔 계산했어요. ") : ""}나누어떨어지지 않는 나머지는 낸 사람이 떠안아요</p>
             </>
           )}
         </Section>
