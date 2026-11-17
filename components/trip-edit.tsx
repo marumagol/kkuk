@@ -3,7 +3,7 @@
   S09 여행 정보 수정 + S10 확인 창
   - 기간을 줄여 사라지는 날에 장소가 있으면 저장 전에 "날짜 미정으로 옮겨요" 확인
   - 시작 날짜를 옮기면 장소는 일차(1일차, 2일차)를 따라간다
-  - 여행 삭제는 여행 주인만, 확인 창을 거친다
+  - 여행 삭제는 호스트만, 확인 창을 거친다
 */
 import { LeaveGuard } from "@/components/leave-guard";
 import { useState, useTransition } from "react";
@@ -93,7 +93,7 @@ export function TripEdit({ trip, today, stampCities }: { trip: TripForEdit; toda
         {trip.role === "owner" && (
           <section className="mt-5 flex flex-col gap-2 border-t border-line pt-6">
             <div className="flex justify-center"><button type="button" onClick={remove} disabled={busy} className="press inline-flex h-10 items-center gap-1 rounded-full px-3 text-sub font-semibold text-point-text"><Icon name="trash" size={16} />여행 삭제</button></div>
-            <p className="text-center text-tiny text-ink-sub">여행 삭제는 여행 주인만 할 수 있어요</p>
+            <p className="text-center text-tiny text-ink-sub">여행 삭제는 호스트만 할 수 있어요</p>
           </section>
         )}
       </div>

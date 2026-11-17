@@ -13,7 +13,7 @@ export default async function Withdraw() {
   const v = await getViewer();
   if (v.kind !== "user") redirect("/login?next=/me/withdraw");
   const sb = (await createClient())!;
-  // 내가 주인인 여행과, 그중 다른 사람이 함께하는 여행 수
+  // 내가 호스트인 여행과, 그중 다른 사람이 함께하는 여행 수
   const { data: mine } = await sb.from("trip_members").select("trip_id").eq("user_id", v.id).eq("role", "owner").is("removed_at", null);
   const ids = (mine ?? []).map((m: { trip_id: string }) => m.trip_id);
   let shared = 0;
@@ -41,7 +41,7 @@ export default async function Withdraw() {
         </section>
         {shared > 0 ? (
           <p role="alert" className="rounded-field bg-warn-soft px-4 py-3 text-sub font-semibold text-warn-text">
-            함께하는 사람이 있는 여행이 {shared}개 있어요. 그 여행의 주인을 다른 사람에게 넘긴 뒤 탈퇴할 수 있어요
+            함께하는 사람이 있는 여행이 {shared}개 있어요. 그 여행의 호스트를 다른 사람에게 넘긴 뒤 탈퇴할 수 있어요
           </p>
         ) : (
           <WithdrawForm email={v.email} />

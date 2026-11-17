@@ -46,7 +46,7 @@ export async function saveName(_prev: NameState, formData: FormData): Promise<Na
   redirect(next);
 }
 
-/* 여행 만들기 (S06). 여행 + 여행 주인 + 도시를 DB 함수 create_trip 으로 한 번에 저장 */
+/* 여행 만들기 (S06). 여행 + 호스트 + 도시를 DB 함수 create_trip 으로 한 번에 저장 */
 /* 도시 : country 는 나라 목록 코드. 직접 입력한 나라는 country "ETC" + countryName (+ 올린 아이콘 icon) */
 export type TripCity = { name: string; country: string; countryName?: string; icon?: string; placeId?: string; lat?: number; lng?: number };
 export type NewTrip = { title: string; start: string; end: string; cities: TripCity[] };
@@ -141,26 +141,26 @@ export async function updateTrip(id: string, input: NewTrip & { prevFirstCountry
   redirect(`/trips/${id}?saved=1`);
 }
 
-/* 여행 삭제 (S10). 행을 지우지 않고 removed_at. 여행 주인만 (DB 트리거가 한 번 더 막음) */
+/* 여행 삭제 (S10). 행을 지우지 않고 removed_at. 호스트만 (DB 트리거가 한 번 더 막음) */
 export async function removeTrip(id: string): Promise<CreateTripResult> {
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 삭제할 수 없어요" };
   const { data: auth } = await sb.auth.getUser();
   if (!auth.user) redirect(`/login?next=/trips/${id}/edit`);
   const { data, error } = await sb.from("trips").update({ removed_at: new Date().toISOString() }).eq("id", id).is("removed_at", null).select("id");
-  if (error?.message?.includes("owner_only")) return { error: "여행 삭제는 여행 주인만 할 수 있어요" };
+  if (error?.message?.includes("owner_only")) return { error: "여행 삭제는 호스트만 할 수 있어요" };
   if (error || !data?.length) return { error: "삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   revalidatePath("/", "layout");
   redirect("/trips?deleted=1");
 }
 
-/* 삭제한 여행 되살리기 (5단계 3번). 여행 주인만, 30일 안에만 (DB 함수 restore_trip) */
+/* 삭제한 여행 되살리기 (5단계 3번). 호스트만, 30일 안에만 (DB 함수 restore_trip) */
 export async function restoreTrip(id: string): Promise<{ error?: string }> {
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
   const { error } = await sb.rpc("restore_trip", { p_trip: id });
   if (error?.message?.includes("too_old")) return { error: "삭제한 지 30일이 지나 되살릴 수 없어요" };
-  if (error?.message?.includes("owner_only")) return { error: "여행 주인만 되살릴 수 있어요" };
+  if (error?.message?.includes("owner_only")) return { error: "호스트만 되살릴 수 있어요" };
   if (error && !error.message?.includes("not_removed")) return { error: "되살리지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   revalidatePath("/", "layout");
   redirect(`/trips/${id}?restored=1`);
@@ -348,7 +348,7 @@ export async function withdraw(): Promise<CreateTripResult> {
   if (!auth.user) redirect("/login?next=/me/withdraw");
   const { error } = await sb.rpc("delete_my_account");
   if (error) {
-    if (error.message?.includes("transfer_required")) return { error: "함께하는 사람이 있는 여행은 먼저 여행 주인을 넘겨 주세요" };
+    if (error.message?.includes("transfer_required")) return { error: "함께하는 사람이 있는 여행은 먼저 호스트를 넘겨 주세요" };
     return { error: "탈퇴하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   }
   await sb.auth.signOut({ scope: "local" }).catch(() => {});
@@ -373,14 +373,14 @@ export async function saveAvatar(path: string | null): Promise<CreateTripResult>
 
 /* ───────── 같이 쓰기 (2단계) : 모두 DB 함수가 권한을 검사한다 ───────── */
 const MEMBER_ERRORS: Record<string, string> = {
-  forbidden: "여행 주인만 할 수 있어요",
+  forbidden: "호스트만 할 수 있어요",
   trip_removed: "삭제된 여행이에요",
-  transfer_required: "여행 주인은 먼저 다른 사람에게 주인을 넘겨야 나갈 수 있어요",
-  owner_role_fixed: "여행 주인의 권한은 바꿀 수 없어요. 주인 넘기기를 써 주세요",
-  owner_cannot_leave: "여행 주인은 내보낼 수 없어요",
+  transfer_required: "호스트는 먼저 다른 사람에게 호스트를 넘겨야 나갈 수 있어요",
+  owner_role_fixed: "호스트의 권한은 바꿀 수 없어요. 호스트 넘기기를 써 주세요",
+  owner_cannot_leave: "호스트는 내보낼 수 없어요",
   member_not_found: "이미 나간 사람이에요. 새로고침해 주세요",
   invite_not_found: "없는 초대 링크예요",
-  invite_revoked: "여행 주인이 끊은 초대 링크예요. 새 링크를 받아 주세요",
+  invite_revoked: "호스트가 끊은 초대 링크예요. 새 링크를 받아 주세요",
   invite_expired: "기간이 지난 초대 링크예요. 새 링크를 받아 주세요",
   trip_full: "함께하는 사람이 가득 찼어요 (최대 10명)",
   profile_required: "이름을 먼저 정해 주세요",

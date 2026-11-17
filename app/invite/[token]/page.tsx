@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
 
 type Preview = { trip_id: string | null; title: string | null; start_date: string | null; end_date: string | null; inviter: string | null; role: string | null; status: string };
 const BAD: Record<string, string> = {
-  revoked: "여행 주인이 끊은 초대 링크예요",
+  revoked: "호스트가 끊은 초대 링크예요",
   expired: "기간이 지난 초대 링크예요",
   trip_removed: "삭제된 여행이에요",
   not_found: "없는 초대 링크예요",

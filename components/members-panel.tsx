@@ -1,6 +1,6 @@
 "use client";
 /* 함께하는 사람 화면 내용. 버튼은 권한에 맞게만 보이고, 실제 검사는 DB 함수가 한다
-   초대 링크는 항상 보기만으로 들어오고, 주인이 들어온 뒤 권한을 바꾼다 (2026-11-14 마루님) */
+   초대 링크는 항상 보기만으로 들어오고, 호스트가 들어온 뒤 권한을 바꾼다 (2026-11-14 마루님) */
 import { useEffect, useState, useTransition } from "react";
 import { Button, Icon } from "@/components/kit";
 import { Avatar } from "@/components/screen";
@@ -9,7 +9,7 @@ import { makeInvite, revokeInvite, changeMemberRole, kickMember, giveOwner, leav
 import { safeCall } from "@/lib/safe-call";
 import type { MembersView, Member } from "@/lib/trips";
 
-const ROLE_NAME = { owner: "여행 주인", editor: "편집 가능", viewer: "보기만" } as const;
+const ROLE_NAME = { owner: "호스트", editor: "편집 가능", viewer: "보기만" } as const;
 type Ask = { title: string; desc: string; label: string; run: () => Promise<{ error?: string } | undefined | void> };
 
 export function MembersPanel({ view }: { view: MembersView }) {
@@ -85,7 +85,7 @@ export function MembersPanel({ view }: { view: MembersView }) {
             <MemberRow key={m.id} m={m} owner={owner} busy={busy}
               onRole={(role) => run(async () => changeMemberRole(view.tripId, m.id, role), `${m.name}님을 ${ROLE_NAME[role]}으로 바꿨어요`)}
               onKick={() => setAsk({ title: `${m.name}님을 내보낼까요?`, desc: "이 여행이 그 사람의 목록에서 사라져요. 다시 초대할 수 있어요", label: "내보내기", run: () => kickMember(view.tripId, m.id) })}
-              onGive={() => setAsk({ title: `${m.name}님에게 여행 주인을 넘길까요?`, desc: "나는 편집 가능이 되고, 초대와 삭제는 새 주인만 할 수 있어요", label: "넘기기", run: () => giveOwner(view.tripId, m.id) })} />
+              onGive={() => setAsk({ title: `${m.name}님에게 호스트를 넘길까요?`, desc: "나는 편집 가능이 되고, 초대와 삭제는 새 호스트만 할 수 있어요", label: "넘기기", run: () => giveOwner(view.tripId, m.id) })} />
           ))}
         </ul>
       </section>
@@ -96,7 +96,7 @@ export function MembersPanel({ view }: { view: MembersView }) {
       {!owner && (
         <Button variant="secondary" full disabled={busy} onClick={() => setAsk({ title: "이 여행에서 나갈까요?", desc: "여행이 내 목록에서 사라져요. 다시 들어오려면 초대 링크가 필요해요", label: "나가기", run: () => leaveTrip(view.tripId) })}>여행 나가기</Button>
       )}
-      {owner && view.members.length > 1 && <p className="text-tiny text-ink-sub">여행 주인은 다른 사람에게 주인을 넘긴 뒤에 나갈 수 있어요</p>}
+      {owner && view.members.length > 1 && <p className="text-tiny text-ink-sub">호스트는 다른 사람에게 호스트를 넘긴 뒤에 나갈 수 있어요</p>}
 
       {ask && <AlertDialog title={ask.title} desc={ask.desc} confirmLabel={ask.label} onClose={() => setAsk(null)}
         confirm={() => { const a = ask; setAsk(null); run(a.run); }} />}
@@ -129,7 +129,7 @@ function MemberRow({ m, owner, busy, onRole, onKick, onGive }: {
       </div>
       {manage && (
         <div className="flex gap-4 pl-[52px]">
-          <button type="button" disabled={busy} onClick={onGive} className="press h-9 text-tiny font-semibold text-ink-sub underline underline-offset-2">주인 넘기기</button>
+          <button type="button" disabled={busy} onClick={onGive} className="press h-9 text-tiny font-semibold text-ink-sub underline underline-offset-2">호스트 넘기기</button>
           <button type="button" disabled={busy} onClick={onKick} className="press h-9 text-tiny font-semibold text-point-text underline underline-offset-2">내보내기</button>
         </div>
       )}

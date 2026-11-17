@@ -1,4 +1,4 @@
-/* 설정 > 최근 삭제한 여행 (5단계 3번). 내가 주인인 여행만, 지운 지 30일 안 */
+/* 설정 > 최근 삭제한 여행 (5단계 3번). 내가 호스트인 여행만, 지운 지 30일 안 */
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon } from "@/components/kit";
@@ -23,7 +23,7 @@ export default async function Trash() {
         </Link>
         <h1 className="text-title-lg font-extrabold text-ink">최근 삭제한 여행</h1>
       </div>
-      <p className="px-5 pt-3 text-sub text-ink-sub">삭제한 지 30일 안에는 되살릴 수 있어요. 30일이 지나면 완전히 삭제돼 되돌릴 수 없어요. 여행 주인이 지운 여행만 보여요</p>
+      <p className="px-5 pt-3 text-sub text-ink-sub">삭제한 지 30일 안에는 되살릴 수 있어요. 30일이 지나면 완전히 삭제돼 되돌릴 수 없어요. 호스트가 지운 여행만 보여요</p>
       {trips.length === 0 ? (
         <p className="mx-5 mt-5 rounded-card bg-surface p-5 text-center text-sub text-ink-sub">최근 30일 안에 삭제한 여행이 없어요</p>
       ) : (

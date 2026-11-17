@@ -45,7 +45,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
         <div className="px-5 pt-6">
           <div role="alert" className="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-8 text-center">
             <h1 className="text-title font-bold text-ink">{removed ? "삭제된 여행이에요" : "볼 수 없는 여행이에요"}</h1>
-            <p className="text-sub text-ink-sub">{removed ? "여행 주인이 이 여행을 삭제했어요. 여행 주인은 30일 안에 설정 > 최근 삭제한 여행에서 되살릴 수 있어요" : loggedIn ? "지워졌거나 함께하는 사람에서 빠진 여행일 수 있어요" : "로그인하면 내 여행을 볼 수 있어요"}</p>
+            <p className="text-sub text-ink-sub">{removed ? "호스트가 이 여행을 삭제했어요. 호스트는 30일 안에 설정 > 최근 삭제한 여행에서 되살릴 수 있어요" : loggedIn ? "지워졌거나 함께하는 사람에서 빠진 여행일 수 있어요" : "로그인하면 내 여행을 볼 수 있어요"}</p>
             <Link href={loggedIn ? "/trips" : "/login"} className="press inline-flex h-11 items-center rounded-btn border border-line-strong bg-surface px-4 text-sub font-bold text-ink">
               {loggedIn ? "여행 목록으로" : "로그인"}
             </Link>
