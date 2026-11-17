@@ -130,7 +130,7 @@ export function moveTitle(category: string, title: string, d?: Details | null): 
 
 export function detailLine(category: string, d?: Details | null, skipRoute = false): string {
   if (!d) return "";
-  const route = !skipRoute && (d.from || d.to) ? `${d.from ?? ""} → ${d.to ?? ""}`.trim() : "";
+  const route = skipRoute ? "" : d.from && d.to ? `${d.from} → ${d.to}` : d.from || d.to || ""; // 한쪽만 있으면 화살표 없이 (2026-11-17 마루님)
   const book = d.site ? `${d.site} 예약` : ""; // 목록에는 예약번호 대신 예약한 곳 (2026-11-16 마루님). 없으면 비움
   const parts: string[] = [];
   if (category === "transport") {
