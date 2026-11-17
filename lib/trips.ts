@@ -15,7 +15,7 @@ import { placesEnabled, details } from "@/lib/places";
 import { detailLine, moveTitle, parsePos } from "@/lib/place-fields";
 import type { Viewer } from "@/lib/viewer";
 
-const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소", memo: "메모" };
+const CATEGORY: Record<string, Category> = { transport: "이동", food: "식사", sight: "관광", shopping: "쇼핑", stay: "숙소", etc: "기타", memo: "메모" };
 
 type Row = {
   id: string; title: string; start_date: string; end_date: string; time_zone: string; removed_at: string | null;

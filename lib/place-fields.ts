@@ -83,6 +83,7 @@ export function fieldsOf(category: string, mode?: string): FieldDef[] {
       { key: "booking", label: "예약/입장권 번호", half: true, max: 40 },
       { key: "hours", label: "운영 시간", placeholder: "예 : 9:00~17:00", half: true, max: 30 },
     ];
+    case "etc": return [{ key: "hours", label: "운영 시간", placeholder: "예 : 9:00~17:00", max: 30 }]; // 기타 : 관광에서 예약 빼고 (2026-11-17 마루님)
     case "shopping": return [{ key: "list", label: "살 것", placeholder: "예 : 로이스 초콜릿, 르타오", max: 100 }];
   }
   return [];
@@ -142,6 +143,8 @@ export function detailLine(category: string, d?: Details | null, skipRoute = fal
     parts.push(book, d.menu ?? "");
   } else if (category === "sight") {
     parts.push(d.hours ?? "", book);
+  } else if (category === "etc") {
+    parts.push(d.hours ?? "");
   } else if (category === "shopping") {
     parts.push(d.list ? `살 것 ${d.list}` : "");
   }

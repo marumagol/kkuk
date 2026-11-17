@@ -176,8 +176,8 @@ export type PlaceInput = {
   reserve?: boolean; // 예약 필요 → 준비 탭 예약 목록에 (0032). 없으면 그대로
   again?: boolean; // 새 장소 저장 뒤 같은 날로 장소 추가 화면을 다시 연다 (이어서 추가, 2026-11-16)
 };
-const HOURS_CATEGORIES = ["food", "sight", "shopping"]; // 영업시간을 볼 분류
-const CATEGORIES = ["transport", "food", "sight", "shopping", "stay", "memo"]; // memo = 일정 사이 메모 (0031)
+const HOURS_CATEGORIES = ["food", "sight", "shopping", "etc"]; // 영업시간을 볼 분류
+const CATEGORIES = ["transport", "food", "sight", "shopping", "stay", "memo", "etc"]; // etc = 기타 (0043) // memo = 일정 사이 메모 (0031)
 const placeCols = (pl: PlaceInput["place"]) => {
   if (pl === undefined) return {};
   const ok = pl && /^[A-Za-z0-9_-]{10,255}$/.test(String(pl.id)) && Number.isFinite(pl.lat) && Number.isFinite(pl.lng)

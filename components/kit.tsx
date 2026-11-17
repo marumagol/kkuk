@@ -133,13 +133,14 @@ export function FloatingPinButton() {
 }
 
 /* ---------- 칩 ---------- */
-export type Category = "이동" | "식사" | "관광" | "쇼핑" | "숙소" | "메모";
+export type Category = "이동" | "식사" | "관광" | "쇼핑" | "숙소" | "기타" | "메모";
 const CAT: Record<Category, string> = {
   이동: "bg-surface-soft text-ink",
   식사: "bg-warn-soft text-warn-text",
   관광: "bg-ok-soft text-ok-text",
   쇼핑: "bg-point-soft text-point-text",
   숙소: "bg-accent-soft text-accent-text",
+  기타: "bg-surface-soft text-ink-sub",
   메모: "border border-line-strong/50 bg-surface text-ink-sub",
 };
 export function Chip({ children, tone = "soft", selected, size = "sm" }: {

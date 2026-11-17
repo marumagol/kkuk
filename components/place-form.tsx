@@ -24,7 +24,7 @@ import { fieldsOf, guessCategory, moveTitle, MODES, MOVE_PLACE_KEYS, MOVE_TIME_K
 
 const CATS = [
   { code: "sight", label: "관광" }, { code: "food", label: "식사" }, { code: "shopping", label: "쇼핑" },
-  { code: "stay", label: "숙소" }, { code: "transport", label: "이동" },
+  { code: "stay", label: "숙소" }, { code: "transport", label: "이동" }, { code: "etc", label: "기타" },
 ]; // 메모는 components/memo-form.tsx 에서 (2026-11-16)
 /* "09:30" + 분 → "10:00" (23:59 를 넘지 않게) */
 const addMin = (t: string, m: number) => {
@@ -115,7 +115,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
   };
   const currencies = currencyOptions(ctx.currencies, currency);
   // 도보, 자동차는 예약과 비용 칸을 숨긴다 (2026-11-17 마루님). 저장할 때도 비운다
-  const noBooking = isMove && (extra.mode === "walk" || extra.mode === "car");
+  const noBooking = (isMove && (extra.mode === "walk" || extra.mode === "car")) || category === "etc"; // 기타는 예약과 비용 없음 (2026-11-17 마루님)
   const titleLen = [...title.trim()].length;
   const autoName = [extra.from, extra.to].map((x) => x?.trim()).filter(Boolean).join(" → ");
   // 이동의 표시 이름은 "출발 → 도착"을 값으로 채워 둔다 (2026-11-16 마루님). 직접 고친 이름은 그대로
