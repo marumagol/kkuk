@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 import { StampFace } from "@/components/kit";
 import { stampColor } from "@/lib/stamp-art";
 
-const CHARGE_MS = 600;
+const CHARGE_MS = 1200;
 
 const BITS = Array.from({ length: 14 }, (_, i) => {
   const a = (i / 14) * Math.PI * 2 + (i % 2 ? 0.2 : -0.1);
@@ -19,7 +19,7 @@ const BITS = Array.from({ length: 14 }, (_, i) => {
 
 /* city 가 아직 없으면(서버 답을 기다리는 동안) 빛만 모이고, 오면 바로 찍힌다. 글자로 기다리라고 하지 않는다 */
 export function StampReveal({ city: cityIn, country, title, sub, onClose }: { city?: string | null; country?: string | null; title: string; sub: string; onClose: () => void }) {
-  /* 0.88.0 : 답이 바로 와도 0.6초는 긴장 고조 연출을 보여 준 뒤 찍는다 */
+  /* 0.88.0 : 답이 바로 와도 1.2초(0.89.2)는 긴장 고조 연출을 보여 준 뒤 찍는다 */
   const [ready, setReady] = useState(false);
   useEffect(() => { const t = setTimeout(() => setReady(true), CHARGE_MS); return () => clearTimeout(t); }, []);
   const city = ready ? cityIn : null;
@@ -36,7 +36,7 @@ export function StampReveal({ city: cityIn, country, title, sub, onClose }: { ci
   }, [city]);
   useEffect(() => {
     if (!city) return;
-    const t = setTimeout(() => navigator.vibrate?.([0, 30, 40, 90]), 380); // 찍히는 순간에 맞춘 진동
+    const t = setTimeout(() => navigator.vibrate?.([0, 30, 40, 90]), 560); // 찍히는 순간에 맞춘 진동
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") close.current(); };
     window.addEventListener("keydown", k);
     return () => { clearTimeout(t); window.removeEventListener("keydown", k); };
@@ -58,7 +58,7 @@ export function StampReveal({ city: cityIn, country, title, sub, onClose }: { ci
         <span aria-hidden className="sr-ring sr-ring-2 absolute size-[180px] rounded-full" />
         {BITS.map((b, i) => (
           <span key={i} aria-hidden className="sr-bit absolute rounded-full"
-            style={{ width: b.s, height: b.s, ["--x" as string]: `${b.x}px`, ["--y" as string]: `${b.y}px`, animationDelay: `${380 + b.delay}ms` }} />
+            style={{ width: b.s, height: b.s, ["--x" as string]: `${b.x}px`, ["--y" as string]: `${b.y}px`, animationDelay: `${560 + b.delay * 1.5}ms` }} />
         ))}
         <div className="sr-stamp relative overflow-hidden rounded-full">
           <StampFace name={city} country={country} size={200} />
@@ -67,10 +67,10 @@ export function StampReveal({ city: cityIn, country, title, sub, onClose }: { ci
         </>}
       </div>
       {city && <>
-      <p className="sr-text mt-6 text-center text-[24px] font-extrabold text-white" style={{ animationDelay: "620ms" }}>{title}</p>
-      <p className="sr-text mt-1 text-center text-sub text-white/80" style={{ animationDelay: "720ms" }}>{sub}</p>
+      <p className="sr-text mt-6 text-center text-[24px] font-extrabold text-white" style={{ animationDelay: "950ms" }}>{title}</p>
+      <p className="sr-text mt-1 text-center text-sub text-white/80" style={{ animationDelay: "1100ms" }}>{sub}</p>
       <button type="button" onClick={onClose}
-        className="sr-text press mt-8 h-12 rounded-btn bg-white px-10 text-sub font-bold text-[#111]" style={{ animationDelay: "900ms" }}>확인</button>
+        className="sr-text press mt-8 h-12 rounded-btn bg-white px-10 text-sub font-bold text-[#111]" style={{ animationDelay: "1350ms" }}>확인</button>
       </>}
     </div>,
     document.body,
