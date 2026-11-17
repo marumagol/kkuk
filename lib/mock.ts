@@ -4,7 +4,7 @@
 */
 import type { Category } from "@/components/kit";
 
-export type Item = { id?: string; time?: string; category: Category; title: string; desc?: string; detail?: string /* 맞춤 칸 한 줄 (편명, 예약번호) */; editedBy?: string; editedFace?: string /* 고친 사람 프로필 사진 */; editedAgo?: string /* "2시간 전" */; editedKey?: string /* 한 번 본 수정은 다시 안 보이게 (id@updated_at) */; lat?: number; lng?: number; photos?: { path: string; url: string }[] /* 장소 사진 (url 은 1시간짜리 주소) */; addr?: string; gpid?: string /* 구글 장소 id (길찾기) */; cost?: number; cur?: string; hours?: string /* 영업시간 (lib/hours.ts 형식) */; arrive?: { lat: number; lng: number; name: string } /* 이동의 도착지 (지도에 점 하나 더, 2026-11-16) */; mode?: string /* 이동 수단 코드 (일정에 수단 아이콘, 2026-11-17) */ };
+export type Item = { id?: string; time?: string; timeEnd?: string /* 이동의 도착 시간 (details.arrive) */; category: Category; title: string; desc?: string; detail?: string /* 맞춤 칸 한 줄 (편명, 예약번호) */; editedBy?: string; editedFace?: string /* 고친 사람 프로필 사진 */; editedAgo?: string /* "2시간 전" */; editedKey?: string /* 한 번 본 수정은 다시 안 보이게 (id@updated_at) */; lat?: number; lng?: number; photos?: { path: string; url: string }[] /* 장소 사진 (url 은 1시간짜리 주소) */; addr?: string; gpid?: string /* 구글 장소 id (길찾기) */; cost?: number; cur?: string; hours?: string /* 영업시간 (lib/hours.ts 형식) */; arrive?: { lat: number; lng: number; name: string } /* 이동의 도착지 (지도에 점 하나 더, 2026-11-16) */; mode?: string /* 이동 수단 코드 (일정에 수단 아이콘, 2026-11-17) */ };
 export type Trip = {
   id: string; title: string; start: string; end: string; // YYYY-MM-DD
   cities: string[]; members: { initial: string; name?: string; tone: "point" | "accent"; userId?: string; avatar?: string }[];

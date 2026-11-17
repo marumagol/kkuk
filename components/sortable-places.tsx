@@ -72,7 +72,7 @@ export function SortablePlaces({ tripId, items, editable }: { tripId: string; it
           <li key={it.id ?? i} ref={(el) => { if (el && it.id) rows.current.set(it.id, el); }}
             className={"flex items-start gap-1 transition-transform " + (dragId === it.id ? "relative z-10 scale-[1.02] opacity-90 drop-shadow-lg" : "")}>
             <div className="min-w-0 flex-1">
-              <PinCard index={i + 1} time={it.time ?? ""} category={it.category} title={it.title}
+              <PinCard index={i + 1} time={it.time ?? ""} timeEnd={it.timeEnd} category={it.category} title={it.title}
                 desc={it.desc ?? ""}  photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === order.length - 1}
                 href={editable && it.id ? `/trips/${tripId}/places/${it.id}` : undefined} />
             </div>

@@ -199,7 +199,7 @@ async function During({ v, trip, today }: { v: Viewer; trip: Trip; today: string
         {items.length ? (
           <div>
             {items.map((it, i) => (
-              <PinCard key={it.id ?? i} index={i + 1} time={it.time ?? ""} category={it.category} title={it.title}
+              <PinCard key={it.id ?? i} index={i + 1} time={it.time ?? ""} timeEnd={it.timeEnd} category={it.category} title={it.title}
                 desc={it.desc ?? ""} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === items.length - 1}
                 href={canEdit && it.id ? `/trips/${trip.id}/places/${it.id}` : undefined} />
             ))}

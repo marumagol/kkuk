@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 19:15", version: "0.72.6", items: ["일정 카드에서 이동은 \"09:00 → 11:30\"처럼 도착 시간까지 보여요"] },
   { at: "2026-11-17 15:25", version: "0.72.5", items: ["일정 지도의 \"위치 없는 장소 찾기\" 단추를 뺐어요"] },
   { at: "2026-11-17 15:20", version: "0.72.4", items: ["화면마다 폭이 조금씩 달라 보이던 것을 맞췄어요"] },
   { at: "2026-11-17 12:15", version: "0.72.3", items: ["화면을 옮길 때 기다림을 줄였어요. 한 번 본 화면은 다시 열 때 바로 보여요"] },

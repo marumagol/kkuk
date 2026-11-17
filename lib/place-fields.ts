@@ -133,7 +133,7 @@ export function detailLine(category: string, d?: Details | null, skipRoute = fal
   const parts: string[] = [];
   if (category === "transport") {
     // 수단 이름은 카드에 쓰지 않는다. 일정 왼쪽 수단 아이콘으로 보인다 (2026-11-17 마루님)
-    parts.push(d.code ? (d.mode === "flight" && airlineOf(d.code) ? `${airlineOf(d.code)} ${d.code}` : d.code) : "", route, d.arrive ? `${d.arrive} 도착` : "", /* 출발 시간은 카드 왼쪽 시간으로 보인다 */ d.seat ? `좌석 ${d.seat}` : "", book);
+    parts.push(d.code ? (d.mode === "flight" && airlineOf(d.code) ? `${airlineOf(d.code)} ${d.code}` : d.code) : "", route, /* 출발, 도착 시간은 카드 위 시간 줄에 "출발 → 도착" 으로 보인다 (2026-11-17) */ d.seat ? `좌석 ${d.seat}` : "", book);
   } else if (category === "stay") {
     parts.push(d.checkin ? `체크인 ${d.checkin}` : "", d.checkout ? `체크아웃 ${d.checkout}` : "", book);
   } else if (category === "food") {

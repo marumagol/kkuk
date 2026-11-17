@@ -181,8 +181,8 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, mark, time, category, title, desc, detail, editedBy, editedFace, editedAgo, last, href, photo, photoCount, warn, corner }: {
-  index: number; mark?: "dot" | "plane" | "train" | "bus" | "ship" | "car" | "foot"; /* 이동 수단 아이콘(비행기는 공항 이름 포함, 2026-11-17 모든 수단) / 점(메모) : 번호 대신 */ time?: string; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; editedFace?: string; editedAgo?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
+export function PinCard({ index, mark, time, timeEnd, category, title, desc, detail, editedBy, editedFace, editedAgo, last, href, photo, photoCount, warn, corner }: {
+  index: number; mark?: "dot" | "plane" | "train" | "bus" | "ship" | "car" | "foot"; /* 이동 수단 아이콘(비행기는 공항 이름 포함, 2026-11-17 모든 수단) / 점(메모) : 번호 대신 */ time?: string; timeEnd?: string /* 이동의 도착 시간 */; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; editedFace?: string; editedAgo?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
   warn?: string /* 영업시간 경고 */; corner?: ReactNode /* 오른쪽 위 작은 버튼 (길찾기). 링크 밖에 겹쳐 두어 따로 눌린다 (2026-11-16 마루님 "카드가 길어지지 않게") */;
 }) {
   /* 누가 고쳤는지 (2026-11-16 마루님 "더 간략하게") : 카드 오른쪽 아래 작은 얼굴만. 머리 줄 오른쪽(길찾기 왼쪽). 누르면 "○○님 · 2시간 전 수정" (다른 사람이 24시간 안에 고친 것만) */
@@ -211,7 +211,8 @@ export function PinCard({ index, mark, time, category, title, desc, detail, edit
       <Box>
         <div className={"flex min-h-7 items-center justify-between gap-2 " + (corner && editedBy ? "pr-[4.5rem]" : corner || editedBy ? "pr-9" : "")}>
           <div className="flex items-center gap-2">
-            {time && <span className="text-sub font-bold text-ink">{time}</span>}
+            {/* 이동은 "출발 → 도착" 시간 (2026-11-17 마루님 "이동수단일 때 도착시간도 카드에") */}
+            {(time || timeEnd) && <span className="text-sub font-bold text-ink tabular-nums">{time && timeEnd ? <>{time}<span className="mx-1 text-ink-sub">→</span>{timeEnd}</> : time || <>{timeEnd} 도착</>}</span>}
             {category !== "메모" && <CategoryChip category={category} />}
           </div>
         </div>

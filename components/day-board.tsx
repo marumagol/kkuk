@@ -443,7 +443,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                         </button>
                       )}
                       <div className={"min-w-0 flex-1 " + (editing && it.id ? "cursor-pointer select-none" : "")} onClick={editing && editable && it.id ? () => togglePick(it.id!) : undefined}>
-                        <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} category={it.category} title={it.title} detail={it.detail}
+                        <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} timeEnd={it.timeEnd} category={it.category} title={it.title} detail={it.detail}
                           desc={it.desc ?? ""} editedBy={showEditor(it) ? it.editedBy : undefined} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === list.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.id}` : undefined}
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
