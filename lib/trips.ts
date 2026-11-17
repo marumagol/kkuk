@@ -696,3 +696,31 @@ export const loadBooking = cache(async (v: Viewer, tripId: string, id: string): 
     files: paths.map((p) => ({ path: p, url: url.get(p) ?? "", pdf: p.endsWith(".pdf") })),
   };
 });
+
+/* 여행 탭 다가오는 여행 카드 (2026-11-17 마루님 "할 일 허브") : 준비율, 챙길 것, 남은 예약, 날짜 미정 장소, 마감이 가장 가까운 할 일 */
+export type TripHub = { items: { done: number; total: number }; resLeft: number; undated: number; pct: number; next: { title: string; due: string | null; kind: "item" | "reservation"; id: string } | null };
+export const loadTripHubs = cache(async (v: Viewer, tripIds: string[]): Promise<Record<string, TripHub>> => {
+  if (v.kind === "preview") return Object.fromEntries(tripIds.map((id) => [id, { items: { done: 8, total: 20 }, resLeft: 3, undated: 4, pct: 40, next: { title: "비에이 투어 예약", due: "2026-12-20", kind: "reservation" as const, id: "" } }]));
+  if (v.kind !== "user" || !tripIds.length) return {};
+  const sb = (await createClient())!;
+  const [{ data: rows }, { data: und }] = await Promise.all([
+    sb.from("checklist_items").select("id, trip_id, kind, title, due_date, done_at, sort_order").in("trip_id", tripIds).is("removed_at", null).order("sort_order"),
+    sb.from("itinerary_items").select("trip_id").in("trip_id", tripIds).is("removed_at", null).is("day_index", null).neq("category", "memo"),
+  ]);
+  type R = { id: string; trip_id: string; kind: "item" | "reservation"; title: string; due_date: string | null; done_at: string | null };
+  const list = (rows ?? []) as R[];
+  return Object.fromEntries(tripIds.map((id) => {
+    const mine = list.filter((r) => r.trip_id === id);
+    const items = mine.filter((r) => r.kind === "item"), res = mine.filter((r) => r.kind === "reservation");
+    const done = mine.filter((r) => r.done_at).length;
+    const open = mine.filter((r) => !r.done_at);
+    const dated = open.filter((r) => r.due_date).sort((a, b) => a.due_date!.localeCompare(b.due_date!));
+    const n = dated[0] ?? open.find((r) => r.kind === "reservation") ?? null;
+    return [id, {
+      items: { done: items.filter((r) => r.done_at).length, total: items.length }, resLeft: res.filter((r) => !r.done_at).length,
+      undated: ((und ?? []) as { trip_id: string }[]).filter((r) => r.trip_id === id).length,
+      pct: mine.length ? Math.round((done / mine.length) * 100) : 0,
+      next: n ? { title: n.title, due: n.due_date, kind: n.kind, id: n.id } : null,
+    }];
+  }));
+});

@@ -8,8 +8,8 @@ import { AppShell, MainTabs, MockNote } from "@/components/screen";
 import { GateButton, GateCta } from "@/components/gate";
 import { Icon } from "@/components/kit";
 import { getViewer } from "@/lib/viewer";
-import { upcomingOf, pastOf, periodText, placeCount, ddayOf } from "@/lib/mock";
-import { loadTrips, loadMapTrips } from "@/lib/trips";
+import { upcomingOf, pastOf, periodText, placeCount, ddayOf, tripLength } from "@/lib/mock";
+import { loadTrips, loadMapTrips, loadTripHubs } from "@/lib/trips";
 import { WorldTrips } from "@/components/world-trips";
 
 export const metadata = { title: "여행" };
@@ -24,6 +24,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
   // 보기 방식은 지도 하나 (2026-11-16 마루님 "목록 유형은 필요 없겠다"). 목록은 지도 아래 다가오는/다녀온 여행 탭
   const asMap = next.length + past.length > 0;
   const map = asMap ? await loadMapTrips(viewer, trips) : [];
+  const hubs = asMap ? await loadTripHubs(viewer, next.map((t) => t.id)) : {}; // 다가오는 여행 카드 숫자 (2026-11-17)
   const addBtn = (
     <GateButton label="여행 만들기" href="/trips/new"
       className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink">
@@ -38,9 +39,9 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
   );
 
   if (asMap) {
-    const rowOf = (t: (typeof trips)[number]) => {
+    const extra = (t: (typeof trips)[number]) => {
       const done = past.includes(t);
-      return { title: t.title, sub: periodText(t), meta: `${t.cities.join(", ")} · 장소 ${placeCount(t)}개`, country: t.country, icon: t.countryIcon, ...(done ? {} : { badge: ddayOf(t).label, badgeTone: ddayOf(t).tone }) };
+      return { title: t.title, sub: periodText(t), nights: tripLength(t) - 1, places: placeCount(t), country: t.country, icon: t.countryIcon, ...(done ? {} : { dday: ddayOf(t) }) };
     };
     return (
       <AppShell bottomGap={false}>
@@ -51,7 +52,7 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
           </header>
           {viewer.kind === "preview" && <MockNote />}
           {notes}
-          <WorldTrips trips={map.map((m) => ({ ...m, row: rowOf(trips.find((t) => t.id === m.id)!) }))} />
+          <WorldTrips trips={map.map((m) => ({ ...m, ...extra(trips.find((t) => t.id === m.id)!) }))} hubs={hubs} />
           <div className="flex-1 bg-surface pb-32" />
         </div>
         <MainTabs active="여행" />
