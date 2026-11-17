@@ -23,6 +23,7 @@ import { mapsDirUrl, canMap } from "@/lib/maps-link";
 import { formatMoney } from "@/lib/countries";
 import { hoursWarning } from "@/lib/hours";
 import { modeIcon } from "@/lib/place-fields";
+import { FileViewer, isPdf, type ViewFile } from "@/components/file-viewer";
 
 type Props = {
   tripId: string; start: string; days: { title?: string; items: Item[] }[]; undated: Item[];
@@ -106,6 +107,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const [q, setQ] = useState("");
   const [jump, setJump] = useState<string | null>(null); // 검색 결과를 누르면 그 카드로
   const closeFind = () => { setFinding(false); setQ(""); };
+  const [viewing, setViewing] = useState<{ files: ViewFile[]; start: number } | null>(null); // 카드 사진 크게 보기
   const [more, setMore] = useState(false); // 점 세 개 메뉴 (검색, 편집)
   const moreRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -503,6 +505,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           )}
           </>}
         </nav>
+        {viewing && <FileViewer files={viewing.files} start={viewing.start} onClose={() => setViewing(null)} />}
         {finding && (
           <div role="region" aria-label="일정 검색 결과" className="min-h-[40dvh]">
             <div className="px-5 pb-10 pt-1">
@@ -610,7 +613,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                       )}
                       <div className={"min-w-0 flex-1 " + (editing && it.id && !it.virt ? "cursor-pointer select-none" : "")} onClick={editing && editable && it.id && !it.virt ? () => togglePick(it.id!) : undefined}>
                         <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} timeEnd={it.timeEnd} badge={it.virt ? (it.virt.out ? "체크아웃" : `${it.virt.n}박째`) : it.category === "숙소" && it.nights ? `체크인 · ${it.nights}박` : undefined} category={it.category} title={it.title} detail={it.detail}
-                          desc={it.desc ?? ""} editedBy={showEditor(it) ? it.editedBy : undefined} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} photoCount={it.photos?.length} last={i === list.length - 1}
+                          desc={it.desc ?? ""} editedBy={showEditor(it) ? it.editedBy : undefined} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} onPhoto={it.photos?.length && !editing ? () => setViewing({ files: it.photos!.map((x) => ({ url: x.url, pdf: isPdf(x.path) })), start: Math.max(0, it.photos!.findIndex((x) => !isPdf(x.path))) }) : undefined} photoCount={it.photos?.length} last={i === list.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.virt?.id ?? it.id}` : undefined}
                           warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
                           corner={!editing && it.category !== "메모" && canMap(it) ? (

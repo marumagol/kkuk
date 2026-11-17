@@ -184,9 +184,9 @@ export function StatTile({ label, value, caption, tone, icon }: { label: string;
 }
 
 /* 일정의 장소 카드 (피그마 PinCard) */
-export function PinCard({ index, mark, time, timeEnd, badge, category, title, desc, detail, editedBy, editedFace, editedAgo, last, href, photo, photoCount, warn, corner }: {
+export function PinCard({ index, mark, time, timeEnd, badge, category, title, desc, detail, editedBy, editedFace, editedAgo, last, href, photo, photoCount, warn, corner, onPhoto }: {
   index: number; mark?: "dot" | "plane" | "train" | "bus" | "ship" | "car" | "foot"; /* 이동 수단 아이콘(비행기는 공항 이름 포함, 2026-11-17 모든 수단) / 점(메모) : 번호 대신 */ time?: string; timeEnd?: string /* 이동의 도착 시간 */; badge?: string /* 숙소 체크인, n박째, 체크아웃 */; category: Category; title: string; desc?: string; detail?: string; editedBy?: string; editedFace?: string; editedAgo?: string; last?: boolean; href?: string; photo?: string; photoCount?: number;
-  warn?: string /* 영업시간 경고 */; corner?: ReactNode /* 오른쪽 위 작은 버튼 (길찾기). 링크 밖에 겹쳐 두어 따로 눌린다 (2026-11-16 마루님 "카드가 길어지지 않게") */;
+  onPhoto?: () => void /* 사진을 누르면 크게 보기 (2026-11-17 마루님 "리스트에서도") */; warn?: string /* 영업시간 경고 */; corner?: ReactNode /* 오른쪽 위 작은 버튼 (길찾기). 링크 밖에 겹쳐 두어 따로 눌린다 (2026-11-16 마루님 "카드가 길어지지 않게") */;
 }) {
   /* 누가 고쳤는지 (2026-11-16 마루님 "더 간략하게") : 카드 오른쪽 아래 작은 얼굴만. 머리 줄 오른쪽(길찾기 왼쪽). 누르면 "○○님 · 2시간 전 수정" (다른 사람이 24시간 안에 고친 것만) */
   const editor = editedBy ? (
@@ -231,7 +231,9 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
             {desc && <p className={category === "메모" ? "mt-1.5 line-clamp-4 whitespace-pre-line text-body text-ink" : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}>{desc}</p>}
           </div>
           {photo && (
-            <span className="relative mt-1.5 flex-none">
+            <span className={"relative mt-1.5 flex-none " + (onPhoto ? "cursor-zoom-in" : "")} {...(onPhoto ? { role: "button", tabIndex: 0, "aria-label": "사진 크게 보기",
+              onClick: (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); onPhoto(); },
+              onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onPhoto(); } } } : {})}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={photo} alt="" width={56} height={56} loading="lazy" className="size-14 rounded-field object-cover" />
               {(photoCount ?? 0) > 1 && <span className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 text-[11px] font-bold leading-4 text-white">{photoCount}</span>}

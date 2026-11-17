@@ -26,7 +26,7 @@ export function FileViewer({ files, start, onClose }: { files: ViewFile[]; start
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="첨부 미리보기" className="fixed inset-0 z-[60] flex flex-col bg-black/95 text-white"
       onTouchStart={(e) => { touch.current = e.touches[0]?.clientX ?? null; }}
-      onTouchEnd={(e) => { const s = touch.current, x = e.changedTouches[0]?.clientX; touch.current = null; if (s != null && x != null && n > 1 && !f.pdf && Math.abs(x - s) > 60) go(x < s ? 1 : -1); }}>
+      onTouchEnd={(e) => { const s = touch.current, x = e.changedTouches[0]?.clientX; touch.current = null; if (s != null && x != null && n > 1 && Math.abs(x - s) > 60) go(x < s ? 1 : -1); }}>
       <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-[max(10px,env(safe-area-inset-top))]">
         <span className="px-2 text-sub font-semibold tabular-nums text-white/80">{n > 1 ? `${i + 1} / ${n}` : ""}</span>
         <span className="flex items-center gap-1">
@@ -34,7 +34,7 @@ export function FileViewer({ files, start, onClose }: { files: ViewFile[]; start
           <button type="button" onClick={onClose} aria-label="닫기" className="press flex size-11 items-center justify-center rounded-full"><Icon name="x" size={22} /></button>
         </span>
       </div>
-      <div className="relative flex min-h-0 flex-1 items-center justify-center px-2 pb-[max(12px,env(safe-area-inset-bottom))]" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={"relative flex min-h-0 flex-1 items-center justify-center px-2 " + (n > 1 ? "" : "pb-[max(12px,env(safe-area-inset-bottom))]")} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
         {f.pdf
           ? <iframe key={f.url} src={f.url} title={`PDF ${i + 1}`} className="size-full rounded-field bg-white" />
           // eslint-disable-next-line @next/next/no-img-element
@@ -44,6 +44,15 @@ export function FileViewer({ files, start, onClose }: { files: ViewFile[]; start
           <button type="button" onClick={() => go(1)} aria-label="다음" className="press absolute right-2 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50"><Icon name="right" size={20} /></button>
         </>}
       </div>
+      {/* 여러 개면 아래 점 (사진, PDF 섞여도 순서대로). PDF 위에서는 브라우저가 밀기를 가져가니 점 줄이나 위 줄에서 밀어도 넘어간다 */}
+      {n > 1 && (
+        <div className="flex h-10 items-center justify-center gap-1.5 pb-[max(8px,env(safe-area-inset-bottom))]">
+          {files.map((x, k) => (
+            <button key={k} type="button" onClick={() => setI(k)} aria-label={`${k + 1}번째 첨부${x.pdf ? " (PDF)" : ""}`}
+              className={"rounded-full transition-all " + (k === i ? "h-2 w-5 bg-white" : "size-2 bg-white/40")} />
+          ))}
+        </div>
+      )}
     </div>,
     document.body,
   );
