@@ -22,6 +22,7 @@ export function BudgetCard({ view, Sheet }: { view: ExpensesView; Sheet: (p: { t
   const s = budgetSummary({ expenses: view.expenses, planned: view.planned, budget: view.budget, cash: view.cash, rates: view.rates, decimals: decimalsOf });
   const [editing, setEditing] = useState(false);
   const [rateCur, setRateCur] = useState<string | null>(null);
+  const [more, setMore] = useState(false); // 자세히 (2026-11-17 마루님 "정보가 너무 많아 더보기로") : 통화별, 예상 경비, 환율 기준
   const over = s.remain != null && s.remain < 0;
   const hasForeign = s.rows.some((r) => r.currency !== "KRW");
   const approx = hasForeign ? "약 " : "";
@@ -63,7 +64,7 @@ export function BudgetCard({ view, Sheet }: { view: ExpensesView; Sheet: (p: { t
       </div>
 
       {/* 통화별 */}
-      {hasForeign && (
+      {more && hasForeign && (
         <ul className="flex flex-col gap-3 border-t border-deep-soft pt-4" aria-label="통화별로 쓴 돈">
           {s.rows.map((r) => {
             const left = r.left, cashPct = r.cash ? Math.min(100, Math.round((r.spent / r.cash) * 100)) : 0;
@@ -94,7 +95,7 @@ export function BudgetCard({ view, Sheet }: { view: ExpensesView; Sheet: (p: { t
       )}
 
       {/* 예상 경비, 환율 기준 */}
-      {(s.planned > 0 || s.foreign.length > 0) && (
+      {more && (s.planned > 0 || s.foreign.length > 0) && (
         <div className="flex flex-col gap-2 border-t border-deep-soft pt-4 text-tiny text-on-deep-sub">
           {s.planned > 0 && (
             <p className="flex justify-between gap-2"><span>일정에 적은 예상 경비</span><span className="font-semibold tabular-nums text-on-deep">{hasForeign || view.planned.some((p) => p.currency !== "KRW") ? "약 " : ""}{won(s.planned)}</span></p>
@@ -111,6 +112,12 @@ export function BudgetCard({ view, Sheet }: { view: ExpensesView; Sheet: (p: { t
         </div>
       )}
 
+      {(hasForeign || s.planned > 0 || s.foreign.length > 0) && (
+        <button type="button" onClick={() => setMore((v) => !v)} aria-expanded={more}
+          className="press -my-1 inline-flex h-9 w-full items-center justify-center gap-1 border-t border-deep-soft pt-1 text-tiny font-semibold text-on-deep-sub">
+          {more ? "접기" : hasForeign ? "통화별 금액, 환율 더보기" : "더보기"}<Icon name="chevron-down" size={14} className={more ? "rotate-180" : ""} />
+        </button>
+      )}
       {editing && <BudgetSheet view={view} Sheet={Sheet} onClose={() => setEditing(false)} />}
       {rateCur && <RateDialog tripId={view.tripId} cur={rateCur} current={view.rates[rateCur]?.krw ?? null} auto={view.rates[rateCur]?.auto ?? null}
         custom={!!view.rates[rateCur]?.custom} canEdit={canEdit} onClose={() => setRateCur(null)} />}
