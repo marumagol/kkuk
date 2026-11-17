@@ -258,7 +258,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
           </div>
         )}
         <Field label={isMemo ? "메모 제목" : isMove ? "표시 이름 (선택)" : "장소 이름"} name="title" placeholder={isMemo ? "예 : 체크아웃 전에 짐 맡기기" : isMove ? autoName || "출발지와 도착지를 고르면 자동으로 채워져요" : "예 : 오타루 운하"} value={title} maxLength={MAX_PLACE_TITLE + 10} disabled={busy}
-          onChange={(e) => { setTitle(e.target.value); autoTitle.current = null; setError(""); }} autoFocus={!p}
+          onChange={(e) => { const v = e.target.value; setTitle(v); autoTitle.current = null; setError(""); /* 이름을 다 지우면 연결을 끊고 다시 검색 (2026-11-17 마루님) */ if (!v.trim() && isLinked && !isMove && !isMemo) setLinked(null); }} autoFocus={!p}
           error={titleLen > MAX_PLACE_TITLE ? `장소 이름은 ${MAX_PLACE_TITLE}자까지 쓸 수 있어요` : undefined} />
         {ctx.searchable && !isLinked && !isMemo && !isMove && (
           <PlaceSuggest query={title} kind="place" bias={ctx.bias} disabled={busy}

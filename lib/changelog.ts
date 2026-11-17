@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 19:25", version: "0.72.7", items: ["장소 수정에서 장소 이름을 다 지우면 연결이 끊기고, 다시 적으면 장소 검색이 떠요"] },
   { at: "2026-11-17 19:15", version: "0.72.6", items: ["일정 카드에서 이동은 \"09:00 → 11:30\"처럼 도착 시간까지 보여요"] },
   { at: "2026-11-17 15:25", version: "0.72.5", items: ["일정 지도의 \"위치 없는 장소 찾기\" 단추를 뺐어요"] },
   { at: "2026-11-17 15:20", version: "0.72.4", items: ["화면마다 폭이 조금씩 달라 보이던 것을 맞췄어요"] },
