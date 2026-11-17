@@ -106,6 +106,15 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const [q, setQ] = useState("");
   const [jump, setJump] = useState<string | null>(null); // 검색 결과를 누르면 그 카드로
   const closeFind = () => { setFinding(false); setQ(""); };
+  const [more, setMore] = useState(false); // 점 세 개 메뉴 (검색, 편집)
+  const moreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!more) return;
+    const away = (e: PointerEvent) => { if (!moreRef.current?.contains(e.target as Node)) setMore(false); };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setMore(false);
+    addEventListener("pointerdown", away); addEventListener("keydown", esc);
+    return () => { removeEventListener("pointerdown", away); removeEventListener("keydown", esc); };
+  }, [more]);
   const swipe = useRef<{ x: number; y: number } | null>(null); // 일정 좌우로 밀어 날짜 넘기기 (2026-11-16 마루님)
   const [overCol, setOverCol] = useState<number | null>(null); // 끄는 중 날짜 칩 위
   const [msg, setMsg] = useState("");
@@ -467,22 +476,30 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
             {days.map((_, c) => chip(c, `${c + 1}일차`))}
             {showUndated && chip(U, `미정 ${cols[U].length}`)}
           </div>
-          {!editing && (
-            <button type="button" onClick={() => { setFinding(true); if (scrollY > sheetTop()) scrollTo({ top: sheetTop() }); }} aria-label="일정 검색"
-              className="press flex size-10 flex-none items-center justify-center rounded-full border border-line-strong bg-surface text-ink">
-              <Icon name="search" size={18} strokeWidth={2} />
-            </button>
-          )}
-          {editable && sel !== ALL && (
-            /* 아이콘만 (2026-11-17 마루님). 글자는 화면 읽기용 이름으로. 점 6개(옮기기 손잡이와 같아 보임) 대신 연필 (2026-11-17) */
-            editing ? (
-              <button type="button" onClick={endEdit} className="press flex h-10 flex-none items-center rounded-full px-3 text-sub font-bold text-point-text">완료</button>
-            ) : (
-              <button type="button" onClick={() => { setEditing(true); setPicked([]); }} aria-label="일정 편집"
-                className="press flex size-10 flex-none items-center justify-center rounded-full border border-line-strong bg-surface text-ink">
-                <Icon name="pencil" size={18} strokeWidth={2} />
+          {/* 검색, 편집을 점 세 개 하나로 (2026-11-17 마루님). 메뉴 모양은 홈 프로필 메뉴와 같게 */}
+          {editing ? (
+            <button type="button" onClick={endEdit} className="press flex h-10 flex-none items-center rounded-full px-3 text-sub font-bold text-point-text">완료</button>
+          ) : (
+            <div ref={moreRef} className="relative flex-none">
+              <button type="button" onClick={() => setMore((v) => !v)} aria-label="일정 메뉴" aria-haspopup="menu" aria-expanded={more}
+                className="press flex size-10 items-center justify-center rounded-full border border-line-strong bg-surface text-ink">
+                <Icon name="more" size={18} />
               </button>
-            )
+              {more && (
+                <div role="menu" className="absolute right-0 top-full z-40 mt-1.5 w-44 rounded-[20px] bg-surface p-1.5 shadow-float">
+                  <button role="menuitem" type="button" onClick={() => { setMore(false); setFinding(true); if (scrollY > sheetTop()) scrollTo({ top: sheetTop() }); }}
+                    className="press flex h-12 w-full items-center gap-3.5 rounded-field px-3 text-left text-body font-medium text-ink">
+                    <Icon name="search" size={20} className="text-ink-sub" />검색
+                  </button>
+                  {editable && (
+                    <button role="menuitem" type="button" disabled={sel === ALL} onClick={() => { setMore(false); setEditing(true); setPicked([]); }}
+                      className="press flex h-12 w-full items-center gap-3.5 rounded-field px-3 text-left text-body font-medium text-ink disabled:opacity-40">
+                      <Icon name="pencil" size={20} className="text-ink-sub" />편집{sel === ALL && <span className="text-tiny text-ink-sub">날짜를 고르면</span>}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           </>}
         </nav>
