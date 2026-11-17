@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 22:55", version: "0.80.3", items: ["알림 종에 마우스를 올렸을 때 효과를 은은하게 바꿨어요"] },
   { at: "2026-11-17 22:50", version: "0.80.2", items: ["점 세 개 메뉴와 프로필 메뉴의 여백을 줄였어요"] },
   { at: "2026-11-17 22:45", version: "0.80.1", items: ["일정 카드의 사진을 눌러도 크게 볼 수 있어요", "첨부가 여러 개면 밀어서 넘기고, 아래 점으로 몇 번째인지 보여요"] },
   { at: "2026-11-17 22:40", version: "0.80.0", items: ["첨부한 사진과 PDF를 누르면 앱 안에서 크게 미리 볼 수 있어요 (장소, 메모, 예약)"] },
