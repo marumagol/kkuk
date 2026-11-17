@@ -3,7 +3,7 @@
   여행 탭 (2026-11-17 마루님 "여행 탭 개선" 시안 반영, 피그마 핀모리 v2 > 여행 탭 개선 (11.17))
   - 발자취 지도 : 다녀온 나라는 주황으로 칠하고, 다녀온 도시는 점과 이름, 다가오는 여행은 핀과 "D-41 삿포로" 이름표
   - 지도 위 : 다녀온 나라, 도시 수와 총 박 수 요약, 연도 칩. 지도는 보이는 곳이 다 들어오게 저절로 맞춘다
-  - 아래 시트 : 다가오는 여행은 할 일 허브 카드(준비율, 챙길 것, 남은 예약, 날짜 미정 장소, [일정][준비][비용]),
+  - 아래 시트 : 다가오는 여행은 할 일 허브 카드(준비율, 챙길 것, 남은 예약, 날짜 미정 장소, 칸을 누르면 준비/일정으로),
     다녀온 여행은 해마다 묶어 박 수와 장소 수
   - 나라 모양은 Natural Earth 50m (public/geo/countries-50m.json, world-atlas). 구글 지도 키 없이 그린다
 */
@@ -213,15 +213,11 @@ function PastRow({ t }: { t: WorldTrip }) {
 /* 다가오는 여행 : 할 일 허브 카드 */
 function Hub({ t, hub }: { t: WorldTrip; hub?: TripHub }) {
   const tone = t.dday?.tone === "hot" ? "bg-[#C23A18] text-white" : "bg-point-soft text-point-text";
-  const stat = (icon: "check" | "book" | "pin", label: string, value: string, warn?: boolean) => (
-    <div className="flex flex-col gap-1 rounded-field bg-surface px-2.5 py-2.5">
+  /* 칸을 누르면 바로 그 화면으로 : 챙길 것, 예약 남음 → 준비 / 날짜 미정 → 일정 (2026-11-17 마루님) */
+  const stat = (href: string, icon: "check" | "book" | "pin", label: string, value: string, warn?: boolean) => (
+    <Link href={href} className="press flex flex-col gap-1 rounded-field bg-surface px-2.5 py-2.5">
       <span className="flex items-center gap-1 text-[11px] font-semibold text-ink-sub"><Icon name={icon} size={13} />{label}</span>
       <b className={"text-body font-extrabold tabular-nums " + (warn ? "text-point-text" : "text-ink")}>{value}</b>
-    </div>
-  );
-  const link = (href: string, icon: "list" | "check" | "won", label: string, dark?: boolean) => (
-    <Link href={href} className={"press flex h-11 items-center justify-center gap-1.5 rounded-field text-sub font-bold " + (dark ? "bg-deep text-on-deep" : "border border-line-strong bg-surface text-ink")}>
-      <Icon name={icon} size={17} />{label}
     </Link>
   );
   return (
@@ -246,16 +242,11 @@ function Hub({ t, hub }: { t: WorldTrip; hub?: TripHub }) {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {stat("check", "챙길 것", hub.items.total ? `${hub.items.done}/${hub.items.total}` : "없음")}
-            {stat("book", "예약 남음", `${hub.resLeft}건`, hub.resLeft > 0)}
-            {stat("pin", "날짜 미정", `${hub.undated}곳`)}
+            {stat(`/trips/${t.id}/prep`, "check", "챙길 것", hub.items.total ? `${hub.items.done}/${hub.items.total}` : "없음")}
+            {stat(`/trips/${t.id}/prep`, "book", "예약 남음", `${hub.resLeft}건`, hub.resLeft > 0)}
+            {stat(`/trips/${t.id}`, "pin", "날짜 미정", `${hub.undated}곳`)}
           </div>
         </>}
-        <div className="grid grid-cols-3 gap-2">
-          {link(`/trips/${t.id}`, "list", "일정", true)}
-          {link(`/trips/${t.id}/prep`, "check", "준비")}
-          {link(`/trips/${t.id}/expenses`, "won", "비용")}
-        </div>
       </div>
     </>
   );
