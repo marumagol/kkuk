@@ -3,7 +3,7 @@
   여행 탭 (2026-11-17 마루님 "여행 탭 개선" 시안 반영, 피그마 핀모리 v2 > 여행 탭 개선 (11.17))
   - 발자취 지도 : 다녀온 나라는 주황으로 칠하고, 다녀온 도시는 점과 이름, 다가오는 여행은 핀과 "D-41 삿포로" 이름표
   - 지도 위 : 다녀온 나라, 도시 수와 총 박 수 요약, 연도 칩. 지도는 보이는 곳이 다 들어오게 저절로 맞춘다
-  - 아래 시트 : 다가오는 여행은 할 일 허브 카드(준비율, 챙길 것, 남은 예약, 날짜 미정 장소, [일정][준비][비용], 다음에 할 일),
+  - 아래 시트 : 다가오는 여행은 할 일 허브 카드(준비율, 챙길 것, 남은 예약, 날짜 미정 장소, [일정][준비][비용]),
     다녀온 여행은 해마다 묶어 박 수와 장소 수
   - 나라 모양은 Natural Earth 50m (public/geo/countries-50m.json, world-atlas). 구글 지도 키 없이 그린다
 */
@@ -170,7 +170,7 @@ export function WorldTrips({ trips, hubs }: { trips: WorldTrip[]; hubs: Record<s
         </div>
         <div role="tabpanel" className="flex flex-col gap-3">
           {tab === "upcoming" ? (
-            upcoming.length ? upcoming.map((t, i) => <Hub key={t.id} t={t} hub={hubs[t.id]} showNext={i === 0} />)
+            upcoming.length ? upcoming.map((t) => <Hub key={t.id} t={t} hub={hubs[t.id]} />)
               : <p className="rounded-pin bg-bg px-4 py-6 text-center text-sub text-ink-sub">다가오는 여행이 없어요</p>
           ) : past.length ? (
             [...new Set(past.map((t) => t.start.slice(0, 4)))].map((y) => (
@@ -211,7 +211,7 @@ function PastRow({ t }: { t: WorldTrip }) {
 }
 
 /* 다가오는 여행 : 할 일 허브 카드 */
-function Hub({ t, hub, showNext }: { t: WorldTrip; hub?: TripHub; showNext: boolean }) {
+function Hub({ t, hub }: { t: WorldTrip; hub?: TripHub }) {
   const tone = t.dday?.tone === "hot" ? "bg-[#C23A18] text-white" : "bg-point-soft text-point-text";
   const stat = (icon: "check" | "book" | "pin", label: string, value: string, warn?: boolean) => (
     <div className="flex flex-col gap-1 rounded-field bg-surface px-2.5 py-2.5">
@@ -257,13 +257,6 @@ function Hub({ t, hub, showNext }: { t: WorldTrip; hub?: TripHub; showNext: bool
           {link(`/trips/${t.id}/expenses`, "won", "비용")}
         </div>
       </div>
-      {showNext && hub?.next && (
-        <Link href={`/trips/${t.id}/prep`} className="press -mt-1 flex items-center gap-2 px-1 py-1.5">
-          <span className="flex-none text-tiny font-semibold text-ink-sub">다음에 할 일</span>
-          <span className="min-w-0 flex-1 truncate text-sub font-semibold text-ink">{hub.next.title}{hub.next.due ? ` (${md(hub.next.due)}까지)` : ""}</span>
-          <Icon name="right" size={16} className="flex-none text-ink-sub" />
-        </Link>
-      )}
     </>
   );
 }
