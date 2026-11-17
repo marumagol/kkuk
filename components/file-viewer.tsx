@@ -3,6 +3,7 @@
   첨부 미리보기 (2026-11-17 마루님 "첨부된 사진, pdf는 미리보기가 필요") : 화면 전체에 크게.
   사진은 꽉 차게, PDF 는 앱 안에서 바로 연다(브라우저가 못 그리면 [새 탭에서 열기]). 좌우 버튼이나 밀어서 넘기기, Esc 로 닫기
 */
+import { useBackClose } from "@/lib/use-back-close";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/kit";
@@ -15,6 +16,7 @@ export function FileViewer({ files, start, onClose }: { files: ViewFile[]; start
   const touch = useRef<number | null>(null);
   const n = files.length;
   const go = (d: number) => setI((v) => (v + d + n) % n);
+  useBackClose(onClose); // 휴대폰 뒤로가기는 첨부 보기만 닫기 (2026-11-18)
   useEffect(() => {
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); else if (e.key === "ArrowLeft") go(-1); else if (e.key === "ArrowRight") go(1); };
     addEventListener("keydown", key);

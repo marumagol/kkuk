@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-18 07:30", version: "0.85.4", items: ["일정 미리보기 창이나 첨부 보기가 떠 있을 때 휴대폰 뒤로가기를 하면 창만 닫혀요"] },
   { at: "2026-11-18 00:30", version: "0.85.3", items: ["일정 미리보기 창에서 여러 줄 메모가 빠지던 문제를 고쳤어요"] },
   { at: "2026-11-18 00:25", version: "0.85.2", items: ["여행 탭 지도의 다가오는 여행 이름표 좌우 여백을 똑같이 맞췄어요"] },
   { at: "2026-11-18 00:20", version: "0.85.1", items: ["홈 다음 여행 카드의 D-day 숫자를 주황(키 컬러)으로 바꿨어요"] },

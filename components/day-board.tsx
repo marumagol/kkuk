@@ -25,6 +25,7 @@ import { hoursWarning } from "@/lib/hours";
 import { modeIcon } from "@/lib/place-fields";
 import { FileViewer, isPdf, type ViewFile } from "@/components/file-viewer";
 import { Linkify } from "@/components/linkify";
+import { useBackClose } from "@/lib/use-back-close";
 
 type Props = {
   tripId: string; start: string; days: { title?: string; items: Item[] }[]; undated: Item[];
@@ -812,6 +813,7 @@ function AddFab({ user, base, pick }: { user: boolean; base: string; pick?: { da
 */
 function ItemPreview({ it, warn, editHref, onClose, onPhoto }: { it: Item; warn?: string; editHref?: string; onClose: () => void; onPhoto: (i: number) => void }) {
   const [copied, setCopied] = useState("");
+  useBackClose(onClose); // 휴대폰 뒤로가기는 창만 닫기
   useEffect(() => {
     const back = document.activeElement as HTMLElement | null;
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -888,7 +890,7 @@ function ItemPreview({ it, warn, editHref, onClose, onPhoto }: { it: Item; warn?
               </a>
             )}
             {editHref && (
-              <Link href={editHref} className="press flex h-12 flex-1 items-center justify-center gap-1.5 rounded-btn bg-btn text-body font-bold text-on-btn">
+              <Link href={editHref} replace /* 창 기록 자리를 수정 화면으로 바꿔, 수정에서 뒤로 한 번이면 일정으로 */ className="press flex h-12 flex-1 items-center justify-center gap-1.5 rounded-btn bg-btn text-body font-bold text-on-btn">
                 <Icon name="pencil" size={18} />수정
               </Link>
             )}
