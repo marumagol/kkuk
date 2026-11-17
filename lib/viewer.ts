@@ -24,11 +24,13 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     return on ? { kind: "preview" } : { kind: "guest", configured: false };
   }
   const sb = await createClient();
-  const { data } = await sb!.auth.getUser();
-  if (!data.user) return { kind: "guest", configured: true };
+  // getClaims (2026-11-17 화면 이동 지연 줄이기) : 서명 확인을 앱 안에서 해서 화면마다 인증 서버에 묻지 않는다. 저장 같은 쓰기는 actions 에서 getUser 로 한 번 더 확인
+  const { data } = await sb!.auth.getClaims();
+  const uid = typeof data?.claims?.sub === "string" ? data.claims.sub : null;
+  if (!uid) return { kind: "guest", configured: true };
   // RLS 가 내 행만 보여 주지만 조건은 항상 적는다
-  const { data: profile } = await sb!.from("profiles").select("display_name, avatar_url").eq("user_id", data.user.id).is("deleted_at", null).maybeSingle();
-  return { kind: "user", id: data.user.id, email: data.user.email ?? "", name: profile?.display_name ?? null, avatar: avatarUrl(profile?.avatar_url) };
+  const { data: profile } = await sb!.from("profiles").select("display_name, avatar_url").eq("user_id", uid).is("deleted_at", null).maybeSingle();
+  return { kind: "user", id: uid, email: typeof data?.claims?.email === "string" ? data.claims.email : "", name: profile?.display_name ?? null, avatar: avatarUrl(profile?.avatar_url) };
 });
 
 /* 아바타에 넣을 한 글자 */

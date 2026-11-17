@@ -27,7 +27,8 @@ export async function middleware(request: NextRequest) {
       },
     },
   });
-  await sb.auth.getUser();
+  // getClaims : 토큰 서명을 앱 안에서 확인해 인증 서버 왕복을 줄인다 (필요하면 토큰 갱신은 그대로). 2026-11-17 화면 이동 지연 줄이기
+  await sb.auth.getClaims();
   return response;
 }
 
