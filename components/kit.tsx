@@ -220,7 +220,7 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
         {head && <div className={"flex min-h-7 items-center justify-between gap-2 " + (corner && editedBy ? "pr-[4.5rem]" : corner || editedBy ? "pr-9" : "")}>
           <div className="flex items-center gap-2">
             {/* 이동은 "출발 → 도착" 시간 (2026-11-17 마루님 "이동수단일 때 도착시간도 카드에") */}
-            {(time || timeEnd) && <span className="text-sub font-bold text-ink tabular-nums">{time && timeEnd ? <>{time}<span className="mx-1 text-ink-sub">→</span>{timeEnd}</> : time || <>{timeEnd} 도착</>}</span>}
+            {(time || timeEnd) && <span className="text-tiny text-ink-sub tabular-nums">{time && timeEnd ? <>{time}<span className="mx-1 text-ink-sub">→</span>{timeEnd}</> : time || <>{timeEnd} 도착</>}</span>}
             {category !== "메모" && <CategoryChip category={category} />}
             {badge && <span className="inline-flex h-6 items-center rounded-full border border-accent-text/30 px-2 text-[12px] font-bold text-accent-text" /* 연하게 (2026-11-17 마루님 "너무 진해") */>{badge}</span>}
           </div>
@@ -230,8 +230,9 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
           <div className={"min-w-0 flex-1 " + (head ? "" : "[&>*:first-child]:mt-0 " + (editedBy ? "pr-9" : ""))}>
             {/* 메모 (2026-11-16) : 제목 없이 글 한 칸. 예전 메모(글이 제목으로 시작하지 않음)만 제목을 따로 보인다 */}
             {(category !== "메모" || !desc || !desc.startsWith(title)) && <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>}
-            {detail && <p className={category === "숙소" ? "mt-0.5 line-clamp-1 text-tiny text-ink-sub" /* 체크인, 체크아웃 시간은 금액, 메모 줄과 같은 모양 (2026-11-17 마루님) */ : "mt-1 line-clamp-2 text-tiny font-semibold text-ink"}>{detail}</p>}
-            {warn && <p className="mt-1 flex items-center gap-1 text-tiny font-bold text-point-text"><Icon name="alert" size={14} />{warn}</p>}
+            {/* 제목 말고 카드 안 글자는 한 가지 모양 : 작은 회색 (2026-11-17 마루님 "메인 글자 외에는 통일") */}
+            {detail && <p className={"mt-0.5 text-tiny text-ink-sub " + (category === "숙소" ? "line-clamp-1" : "line-clamp-2")}>{detail}</p>}
+            {warn && <p className="mt-0.5 flex items-center gap-1 text-tiny text-point-text"><Icon name="alert" size={14} />{warn}</p>}
             {desc && <p className={category === "메모" ? "mt-1 line-clamp-2 whitespace-pre-line text-sub text-ink" /* 리스트에서는 작게, 두 줄까지 (2026-11-17 마루님). 상세는 그대로 */ : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}><Linkify text={desc} /></p>}
           </div>
           {photo && (
