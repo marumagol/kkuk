@@ -22,7 +22,7 @@ import type { MapTrip, TripHub } from "@/lib/trips";
 
 export type WorldTrip = MapTrip & { title: string; sub: string; nights: number; places: number; country?: string; icon?: string; dday?: { label: string; tone: "hot" | "near" | "far" } };
 
-const W = 400, H = 400;
+const W = 400, H = 300; // 지도 높이 줄여 아래 목록이 더 올라오게 (2026-11-17 마루님)
 let geoCache: Promise<FeatureCollection> | null = null;
 const loadGeo = () => (geoCache ??= fetch("/geo/countries-50m.json").then((r) => r.json()).then((t: Topology) => feature(t, t.objects.countries) as unknown as FeatureCollection)
   .catch((e) => { geoCache = null; throw e; }));
@@ -62,12 +62,12 @@ export function WorldTrips({ trips, hubs }: { trips: WorldTrip[]; hubs: Record<s
   const projection = useMemo(() => {
     const pts = [...dots, ...pins].map((g) => [g.lng, g.lat] as [number, number]);
     const p = geoMercator();
-    if (!pts.length) return p.fitExtent([[10, 120], [W - 10, H - 30]], { type: "MultiPoint", coordinates: [[-170, -50], [170, 72]] });
+    if (!pts.length) return p.fitExtent([[10, 100], [W - 10, H - 25]], { type: "MultiPoint", coordinates: [[-170, -50], [170, 72]] });
     const lats = pts.map((x) => x[1]), lngs = pts.map((x) => x[0]);
     const cy = (Math.min(...lats) + Math.max(...lats)) / 2, cx = (Math.min(...lngs) + Math.max(...lngs)) / 2;
     const half = Math.max(7, (Math.max(...lats) - Math.min(...lats)) / 2, (Math.max(...lngs) - Math.min(...lngs)) / 2.6);
     const box: [number, number][] = [[cx - half * 1.2, Math.max(-80, cy - half)], [cx + half * 1.2, Math.min(80, cy + half)]];
-    return p.fitExtent([[44, 150], [W - 60, H - 50]], { type: "MultiPoint", coordinates: [...pts, ...box] });
+    return p.fitExtent([[44, 118], [W - 60, H - 40]], { type: "MultiPoint", coordinates: [...pts, ...box] });
   }, [dots, pins]);
   const path = useMemo(() => geoPath(projection), [projection]);
 
