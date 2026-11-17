@@ -19,7 +19,7 @@ export const readState = (v: string | string[] | undefined): ScreenState =>
 
 export function AppShell({ children, bottomGap = true }: { children: ReactNode; bottomGap?: boolean }) {
   return (
-    <main className={cx("mx-auto flex min-h-dvh w-full max-w-[560px] flex-col", bottomGap && "pb-32")}>
+    <main className={cx("mx-auto flex min-h-dvh w-full max-w-[560px] flex-col", bottomGap && "pb-[calc(88px+env(safe-area-inset-bottom))]")}>
       {children}
     </main>
   );
@@ -29,7 +29,7 @@ export function AppShell({ children, bottomGap = true }: { children: ReactNode; 
 export function BottomDock({ children, align = "center" }: { children: ReactNode; align?: "center" | "end" }) {
   return (
     <div className={cx("pointer-events-none fixed inset-x-0 z-20 mx-auto flex w-full max-w-[560px] px-5",
-      align === "end" ? "bottom-[88px] pb-[env(safe-area-inset-bottom)]" : "bottom-0 pb-[max(20px,env(safe-area-inset-bottom))]",
+      align === "end" ? "bottom-[calc(72px+env(safe-area-inset-bottom))]" : "bottom-0 pb-[max(20px,env(safe-area-inset-bottom))]",
       align === "center" ? "justify-center" : "justify-end")}>
       <div className="pointer-events-auto">{children}</div>
     </div>

@@ -14,7 +14,7 @@ export function Toast({ children, action, onAction, tone = "default" }: {
 }) {
   return (
     <div role="status" aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(156px+env(safe-area-inset-bottom))] z-40 mx-auto flex w-full max-w-[560px] justify-center px-5">
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(80px+env(safe-area-inset-bottom))] z-40 mx-auto flex w-full max-w-[560px] justify-center px-5">
       <div className={"toast-in pointer-events-auto flex min-h-[52px] w-full items-center gap-3 rounded-[18px] bg-deep py-2.5 pl-4 text-on-deep shadow-float " + (action ? "pr-2.5" : "pr-4")}>
         {tone === "error" && <span aria-hidden className="flex size-5 flex-none items-center justify-center rounded-full bg-point text-[13px] font-extrabold text-white">!</span>}
         <p className="line-clamp-2 min-w-0 flex-1 py-1 text-left text-sub font-semibold leading-snug">{children}</p>

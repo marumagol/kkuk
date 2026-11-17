@@ -430,28 +430,49 @@ export function SkeletonPinCard() {
   );
 }
 
-/* ---------- 하단 탭 (떠 있는 알약) ---------- */
-/* 2026-11-14 : "지도" 탭을 "도장" 으로 (마루님 결정. 지도는 4단계라 아직 없음) */
-/* 하단 탭 : 홈/여행/도장/설정 (일기는 2026-11-17 삭제). 가운데 + 는 뺐음 (2026-11-14 마루님) */
-/* 2026-11-15 마루님 : 도장은 여행 탭 안으로 합침 (아래 탭 4칸). 도장 화면에서는 여행 탭이 켜진다 */
-export function TabBar({ active: asked = "홈" }: { active?: "홈" | "여행" | "도장" | "설정" }) {
-  const active = asked;
-  // 도장은 따로 탭 (2026-11-16 마루님 "도장을 새로운 탭 메뉴로")
-  const tabs: { name: "홈" | "여행" | "도장" | "설정"; icon: IconName; href: string }[] = [
-    { name: "홈", icon: "home", href: "/" }, { name: "여행", icon: "cal", href: "/trips" },
-    { name: "도장", icon: "stamp", href: "/stamps" }, // 설정은 홈 프로필 메뉴로 (2026-11-17 마루님)
+/* ---------- 하단 탭 (화면 맨 아래 고정형) ---------- */
+/*
+  2026-11-17 마루님 "일반적으로 쓰는 고정형으로, 아이콘 선은 과하지 않게" → 피그마 "하단 탭 (11.17)" (page 114:121)
+  - 막대는 화면 맨 아래에 붙고 위 모서리만 둥글게(20), 선 없이 옅은 위쪽 그림자, 살짝 비치는 바탕 + 뒤 흐림
+  - 탭 3개(홈/여행/도장), 글자는 늘 보임. 아이콘 24, 선 1.5
+  - 현재 탭 : 아이콘 뒤 연한 주황 알약(56x30), 아이콘 주황 + 안쪽 옅게 채움, 글자 진하게
+*/
+const TAB_ICON: Record<"홈" | "여행" | "도장", { line: ReactNode; fill: ReactNode }> = {
+  홈: {
+    line: <path d="M4.5 10.2 12 4l7.5 6.2V19a1.5 1.5 0 0 1-1.5 1.5h-3.5V15h-5v5.5H6A1.5 1.5 0 0 1 4.5 19z" />,
+    fill: <path d="M4.5 10.2 12 4l7.5 6.2V19a1.5 1.5 0 0 1-1.5 1.5h-3.5V15h-5v5.5H6A1.5 1.5 0 0 1 4.5 19z" />,
+  },
+  여행: {
+    line: <><path d="M9 4.5 3.75 6.4v13.1L9 17.6l6 1.9 5.25-1.9V4.5L15 6.4z" /><path d="M9 4.5v13.1M15 6.4v13.1" /></>,
+    fill: <path d="M9 4.5 3.75 6.4v13.1L9 17.6l6 1.9 5.25-1.9V4.5L15 6.4z" />,
+  },
+  도장: {
+    line: <><circle cx="12" cy="6.8" r="2.8" /><path d="M10.6 9.4v3.6M13.4 9.4v3.6" /><path d="M5.5 13h13a1 1 0 0 1 1 1v2.5h-15V14a1 1 0 0 1 1-1z" /><path d="M6 20h12" /></>,
+    fill: <><circle cx="12" cy="6.8" r="2.8" /><path d="M5.5 13h13a1 1 0 0 1 1 1v2.5h-15V14a1 1 0 0 1 1-1z" /></>,
+  },
+};
+export function TabBar({ active = "홈" }: { active?: "홈" | "여행" | "도장" | "설정" }) {
+  const tabs: { name: "홈" | "여행" | "도장"; href: string }[] = [
+    { name: "홈", href: "/" }, { name: "여행", href: "/trips" }, { name: "도장", href: "/stamps" }, // 설정은 홈 프로필 메뉴로 (2026-11-17)
   ];
-  const item = (t: (typeof tabs)[number]) => (
-    <Link key={t.name} href={t.href} aria-label={t.name} aria-current={active === t.name ? "page" : undefined}
-      className={cx("press flex h-[52px] items-center justify-center gap-1.5 rounded-full",
-        active === t.name ? "bg-deep-soft px-4 text-on-deep" : "w-[54px] text-on-deep-sub")}>
-      <Icon name={t.icon} size={22} strokeWidth={1.85} />
-      {active === t.name && <span className="text-sub font-bold">{t.name}</span>}
-    </Link>
-  );
   return (
-    <nav className="mx-auto flex w-fit items-center gap-0.5 rounded-bar bg-deep p-2 shadow-float" aria-label="하단 메뉴">
-      {tabs.map(item)}
+    <nav aria-label="하단 메뉴"
+      className="flex w-full rounded-t-[20px] bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-[var(--tab-shadow)] backdrop-blur-lg">
+      {tabs.map((t) => {
+        const on = active === t.name;
+        return (
+          <Link key={t.name} href={t.href} aria-current={on ? "page" : undefined}
+            className={cx("press flex h-14 flex-1 flex-col items-center justify-center gap-0.5", on ? "text-ink" : "text-ink-sub")}>
+            <span className={cx("flex h-[30px] w-14 items-center justify-center rounded-full transition-colors", on && "bg-point-soft text-point")}>
+              <svg width={24} height={24} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                {on && <g fill="currentColor" fillOpacity={0.16}>{TAB_ICON[t.name].fill}</g>}
+                <g stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">{TAB_ICON[t.name].line}</g>
+              </svg>
+            </span>
+            <span className={cx("text-[11px] leading-none", on ? "font-bold" : "font-medium")}>{t.name}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

@@ -59,6 +59,7 @@
 
   /* 그림자는 떠 있는 것에만 */
   --float-shadow: 0 12px 28px rgb(45 49 57 / 0.28);
+  --tab-shadow: 0 -4px 18px rgb(45 49 57 / 0.07); /* 하단 탭 막대 (2026-11-17) */
 }
 
 /* 다크 모드 : 기기 설정을 따르고, data-theme 으로 강제할 수 있다 */
@@ -92,6 +93,7 @@
     --btn: #F2F1EC;
     --on-btn: #17181C;
     --float-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
+    --tab-shadow: 0 -4px 18px rgb(0 0 0 / 0.4);
     --scrim: rgb(0 0 0 / 0.6);
   }
 }
@@ -124,6 +126,7 @@
   --btn: #F2F1EC;
   --on-btn: #17181C;
   --float-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
+  --tab-shadow: 0 -4px 18px rgb(0 0 0 / 0.4);
   --scrim: rgb(0 0 0 / 0.6);
 }
 
@@ -321,6 +324,7 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 
   /* 그림자는 떠 있는 것에만 */
   --float-shadow: 0 12px 28px rgb(45 49 57 / 0.28);
+  --tab-shadow: 0 -4px 18px rgb(45 49 57 / 0.07);
   }
   body { background: #fff; }
 }
