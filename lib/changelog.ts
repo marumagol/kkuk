@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-18 08:10", version: "0.86.0", items: ["도장 테스트 계정은 도장 탭 맨 위에서 도시를 골라 테스트 도장을 받아 보고 지울 수 있어요"] },
   { at: "2026-11-18 07:40", version: "0.85.6", items: ["일정 전체 보기에서는 편집 메뉴 없이 검색 버튼만 보여요"] },
   { at: "2026-11-18 07:35", version: "0.85.5", items: ["여행 지도 이름표 오른쪽 여백이 좁던 것을 왼쪽과 같게 고쳤어요"] },
   { at: "2026-11-18 07:30", version: "0.85.4", items: ["일정 미리보기 창이나 첨부 보기가 떠 있을 때 휴대폰 뒤로가기를 하면 창만 닫혀요"] },

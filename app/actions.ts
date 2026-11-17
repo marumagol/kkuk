@@ -691,6 +691,36 @@ export async function claimStamp(tripId: string, lat: number, lng: number, accur
   return { ok: true, status: r.status, city: r.city_name, country: r.country_code, visits: r.visits, byMe: r.verified_by_me };
 }
 
+/*
+  ───────── 도장 테스트 (2026-11-18 마루님 계정만) ─────────
+  권한 검사는 DB 함수(test_stamp, test_stamp_clear)가 한다. private.stamp_testers 에 없는 계정은 not_tester 로 막힌다
+*/
+const TEST_ERRORS: Record<string, string> = {
+  not_tester: "테스트 권한이 없어요", no_city: "도장 목록에 없는 도시예요", no_trip: "함께하는 여행이 하나는 있어야 테스트 도장을 붙일 수 있어요",
+};
+export async function testStamp(country: string, city: string): Promise<ClaimResult> {
+  if (typeof country !== "string" || typeof city !== "string" || country.length > 5 || city.length > 40)
+    return { ok: false, code: "no_city", error: TEST_ERRORS.no_city };
+  const sb = await createClient();
+  if (!sb) return { ok: false, code: "server", error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data, error } = await sb.rpc("test_stamp", { p_country: country, p_name: city });
+  if (error) {
+    const code = Object.keys(TEST_ERRORS).find((k) => error.message.includes(k)) ?? "server";
+    return { ok: false, code, error: TEST_ERRORS[code] ?? "테스트 도장을 받지 못했어요" };
+  }
+  const r = (Array.isArray(data) ? data[0] : data) as { status: "new" | "again" | "already"; city_name: string; country_code: string; visits: number };
+  revalidatePath("/stamps"); revalidatePath("/");
+  return { ok: true, status: r.status, city: r.city_name, country: r.country_code, visits: r.visits, byMe: true };
+}
+export async function clearTestStamps(): Promise<{ error?: string; removed?: number }> {
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data, error } = await sb.rpc("test_stamp_clear");
+  if (error) return { error: error.message.includes("not_tester") ? TEST_ERRORS.not_tester : "지우지 못했어요" };
+  revalidatePath("/stamps"); revalidatePath("/");
+  return { removed: Number(data) || 0 };
+}
+
 /* ───────── 장소 검색 (4단계 2~3) : 로그인한 사람만. 키는 서버에서만 쓴다 ───────── */
 /* 구글 호출 전 하루 상한 검사 (migration 0017). 상한을 넘거나 검사를 못 하면 구글을 부르지 않는다 */
 async function underPlaceQuota(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, kind: "autocomplete" | "details" | "hours" | "find"): Promise<boolean> {

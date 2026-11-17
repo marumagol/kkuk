@@ -16,6 +16,8 @@ import { loadStamps, type StampCard } from "@/lib/trips";
 import { flagOf, countryOf } from "@/lib/countries";
 import { addDays, daysBetween, md, todayKST } from "@/lib/mock";
 import { GOALS, type Goal } from "@/lib/stamp-goals";
+import { StampTester } from "@/components/stamp-tester";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "도장" };
 
@@ -71,6 +73,9 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
   const pct = goal ? Math.round(((value(goal) - prevNeed) / (goal.need - prevNeed)) * 100) : 100;
   const upcoming = s.missing.find((x) => status(x, today).tone !== "past");
   const newSince = addDays(today, -7);
+  // 도장 테스트 칸 : DB 테스터 목록에 있는 계정만 (2026-11-18 마루님)
+  let tester = false;
+  if (viewer.kind === "user") { const sb = await createClient(); const { data } = sb ? await sb.rpc("am_stamp_tester") : { data: false }; tester = data === true; }
 
   /* 나라별 묶음 (많이 모은 나라 먼저) */
   const groups = [...s.earned.reduce((m, x) => m.set(x.country, [...(m.get(x.country) ?? []), x]), new Map<string, StampCard[]>())]
@@ -83,6 +88,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
       </header>
       {viewer.kind === "preview" && <MockNote />}
       <div className="flex flex-col gap-7 px-5 pb-6 pt-4">
+        {tester && <StampTester />}
         {/* 수집 현황 */}
         <section aria-label="수집 현황" className="relative overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-5 text-on-deep">
           <p className="text-tiny font-semibold text-on-deep-sub">모은 도장</p>
