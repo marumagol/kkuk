@@ -18,7 +18,9 @@ export function TripTabs({ tripId, active }: { tripId: string; active: TripTab }
     { name: "일정", href: `/trips/${tripId}` }, { name: "준비", href: `/trips/${tripId}/prep` }, { name: "경비", href: `/trips/${tripId}/expenses` },
   ]; // 기록 탭은 2026-11-17 일기 기능 삭제로 뺌
   return (
-    <nav aria-label="여행 안 메뉴" className="mx-5 mt-4 flex gap-1 rounded-btn bg-surface-soft p-1">
+    // 스크롤해도 위에 고정 (2026-11-17 마루님). 높이 66px 은 globals.css --tabs-h 와 맞춘다 (일정의 지도, 날짜 줄이 그 아래에 붙음)
+    <div data-trip-tabs className="sticky top-0 z-30 h-[66px] bg-bg px-5 pb-2 pt-3">
+    <nav aria-label="여행 안 메뉴" className="flex gap-1 rounded-btn bg-surface-soft p-1">
       {tabs.map((t) => (
         <Link key={t.name} href={t.href} replace aria-current={active === t.name ? "page" : undefined}
           className={"press flex h-[38px] flex-1 items-center justify-center rounded-[14px] text-body " +
@@ -27,6 +29,7 @@ export function TripTabs({ tripId, active }: { tripId: string; active: TripTab }
         </Link>
       ))}
     </nav>
+    </div>
   );
 }
 

@@ -324,3 +324,6 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
   }
   body { background: #fff; }
 }
+
+/* 여행 안 탭 줄 높이 (components/trip-tabs.tsx). 탭이 있는 화면에서 고정 요소가 그 아래에 붙게 */
+:root:has([data-trip-tabs]) { --tabs-h: 66px; }
