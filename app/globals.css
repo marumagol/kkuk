@@ -327,3 +327,11 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 
 /* 여행 안 탭 줄 높이 (components/trip-tabs.tsx). 탭이 있는 화면에서 고정 요소가 그 아래에 붙게 */
 :root:has([data-trip-tabs]) { --tabs-h: 66px; }
+
+/*
+  화면마다 폭이 조금씩 달라 보이던 것 (2026-11-17 마루님)
+  - PC : 글이 길어 세로 스크롤바가 생기는 화면만 가운데 앱 폭이 스크롤바만큼 밀렸다 → 스크롤바 자리를 늘 비워 둔다
+  - 휴대폰 : 어느 한 줄이 화면 밖으로 넘치면 브라우저가 화면 전체를 살짝 축소해 보여 준다 → 가로로 넘친 부분은 잘라 낸다 (clip 은 sticky 를 깨지 않음)
+*/
+html { scrollbar-gutter: stable; }
+html, body { overflow-x: clip; }
