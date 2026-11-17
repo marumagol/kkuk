@@ -144,7 +144,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
                     {done ? <Icon name={g.of === "stamp" ? "stamp" : "globe"} size={22} /> : <span className="text-body font-extrabold">?</span>}
                   </span>
                   <span className={`text-tiny font-bold ${done ? "text-point-text" : "text-ink"}`}>{g.label}</span>
-                  <span className="text-[11px] text-ink-sub">{done ? "이뤘어요" : `${value(g)}/${g.need}`}</span>
+                  <span className="text-[11px] text-ink-sub">{done ? "달성" : `${value(g)}/${g.need}`}</span>
                 </li>
               );
             })}
