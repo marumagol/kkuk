@@ -131,7 +131,7 @@ export function detailRows(category: string, d?: Details | null): DetailRow[] {
     if (MOVE_TIME_KEYS.includes(f.key)) continue;
     const v = d[f.key]?.trim();
     if (!v) continue;
-    rows.push({ label: f.label, value: f.unit ? `${v}${f.unit}` : v, copy: f.key === "booking" || f.key === "code" || f.key === "phone" });
+    rows.push({ label: f.label, value: f.unit && !v.endsWith(f.unit) ? `${v}${f.unit}` : v, copy: f.key === "booking" || f.key === "code" || f.key === "phone" });
   }
   return rows;
 }
