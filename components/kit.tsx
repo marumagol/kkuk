@@ -3,6 +3,7 @@
   모든 화면은 이 조각과 globals.css 토큰으로 만든다. 색 값을 직접 쓰지 않는다.
   서버/클라이언트 어디서나 import 할 수 있게 상태(useState)는 넣지 않았다.
 */
+import { Linkify } from "@/components/linkify";
 import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes } from "react";
 import Link from "next/link";
 import { blobPath, stampArt, stampColor } from "@/lib/stamp-art";
@@ -228,7 +229,7 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
             {(category !== "메모" || !desc || !desc.startsWith(title)) && <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>}
             {detail && <p className={category === "숙소" ? "mt-0.5 line-clamp-1 text-tiny text-ink-sub" /* 체크인, 체크아웃 시간은 금액, 메모 줄과 같은 모양 (2026-11-17 마루님) */ : "mt-1 line-clamp-2 text-tiny font-semibold text-ink"}>{detail}</p>}
             {warn && <p className="mt-1 flex items-center gap-1 text-tiny font-bold text-point-text"><Icon name="alert" size={14} />{warn}</p>}
-            {desc && <p className={category === "메모" ? "mt-1.5 line-clamp-4 whitespace-pre-line text-body text-ink" : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}>{desc}</p>}
+            {desc && <p className={category === "메모" ? "mt-1.5 line-clamp-4 whitespace-pre-line text-body text-ink" : "mt-0.5 line-clamp-1 text-tiny text-ink-sub"}><Linkify text={desc} /></p>}
           </div>
           {photo && (
             <span className={"relative mt-1.5 flex-none " + (onPhoto ? "cursor-zoom-in" : "")} {...(onPhoto ? { role: "button", tabIndex: 0, "aria-label": "사진 크게 보기",

@@ -6,6 +6,7 @@ import { FileViewer } from "@/components/file-viewer";
   - DB 는 그대로 : title = 첫 줄(80자까지), memo = 글 전체. 예전 메모(제목 + 내용 따로)는 "제목\n내용" 으로 합쳐서 연다
 */
 import { LeaveGuard } from "@/components/leave-guard";
+import { LinkList } from "@/components/linkify";
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/kit";
@@ -91,6 +92,7 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
           <textarea id="memo-text" value={text} onChange={(e) => { setText(e.target.value); setError(""); }} maxLength={MAX_PLACE_MEMO} disabled={busy} autoFocus={!p}
             rows={8} placeholder={"잊기 쉬운 정보나 사진을 남겨 보세요.\n여권, 신분증 같은 개인 정보는 올릴 때 조심해 주세요."}
             className="min-h-[40dvh] w-full resize-none rounded-card border border-line-strong bg-surface px-4 py-4 text-body leading-relaxed text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+          <div className="mt-2 empty:hidden"><LinkList text={text} /></div>
         </div>
 
         <div className="flex flex-wrap gap-2">

@@ -7,6 +7,7 @@ import { FileViewer, isPdf } from "@/components/file-viewer";
   사진은 최대 5장 (2026-11-14). 고르는 즉시 줄여서 비공개 저장소 place-photos/<여행 id>/ 에 올리고, 저장할 때 위치 목록을 함께 저장
 */
 import { LeaveGuard } from "@/components/leave-guard";
+import { LinkList } from "@/components/linkify";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button, Field, FormCard, Icon } from "@/components/kit";
 import { createClient } from "@/lib/supabase/client";
@@ -341,6 +342,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
             <textarea id="place-memo" value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={MAX_PLACE_MEMO} rows={4} disabled={busy}
               placeholder={isMemo ? "그날 기억할 것, 할 일 등" : "가는 방법, 챙길 것 등"}
               className="rounded-field border border-line-strong bg-surface px-4 py-3 text-body text-ink outline-none placeholder:text-ink-sub focus:border-ink focus:ring-2 focus:ring-ink/15" />
+            <LinkList text={memo} />
           </div>
 
           {/* 첨부 파일 : 예약 화면과 같은 모양 (2026-11-16 마루님). PDF 는 카드에 그림 없이 개수에만 */}
