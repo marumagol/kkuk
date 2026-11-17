@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 11:25", version: "0.71.3", items: ["예산 카드의 큰 금액 글자 크기를 줄였어요"] },
   { at: "2026-11-17 10:10", version: "0.71.2", items: ["\"여행 주인\"을 \"호스트\"로 바꿔 불러요"] },
   { at: "2026-11-17 09:50", version: "0.71.1", items: ["여행 화면의 경비 탭 이름을 비용으로 바꿨어요"] },
   { at: "2026-11-17 09:45", version: "0.71.0", items: ["여러 통화로 쓴 여행은 정산을 [원화로 한 번에]와 [통화별로] 중에 골라 볼 수 있어요"] },

@@ -43,7 +43,7 @@ export function BudgetCard({ view, Sheet }: { view: ExpensesView; Sheet: (p: { t
       {/* 큰 숫자 + 막대 */}
       <div className="flex flex-col gap-2">
         <p className="-mb-1 text-sub font-semibold text-on-deep-sub">{s.total == null ? "지금까지 쓴 돈" : over ? "예산을 넘었어요" : "남은 예산"}</p>
-        <p className="text-number font-extrabold tabular-nums" style={over ? { color: OVER } : undefined}>
+        <p className="text-title-lg font-extrabold tabular-nums" style={over ? { color: OVER } : undefined}>
           {approx}{won(s.total == null ? s.spent : Math.abs(s.remain!))}
         </p>
         {s.total != null ? (
