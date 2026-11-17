@@ -5,7 +5,7 @@
 */
 import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes } from "react";
 import Link from "next/link";
-import { blobPath, stampArt } from "@/lib/stamp-art";
+import { blobPath, stampArt, stampColor } from "@/lib/stamp-art";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -309,11 +309,12 @@ const BLOB_IN = blobPath(43, 43, 37.75);
 const BLOB_OUT = blobPath(43, 43, 42.5);
 export function StampFace({ name, country, earned = true, size = 86 }: { name: string; country?: string | null; earned?: boolean; size?: number }) {
   const art = stampArt(country, name);
+  const color = stampColor(country); // 나라별 도장 색 (마루님 피그마 "도장 (11.15)")
   return (
     <svg viewBox="0 0 86 86" width={size} height={size} aria-hidden="true" className="block"
-      style={{ ["--stamp-hole" as string]: earned ? "#FF5A36" : "var(--color-bg)" }}>
-      <path d={BLOB_OUT} fill="none" stroke={earned ? "#FF5A36" : "var(--color-line-strong)"} strokeWidth={1} strokeDasharray="2 2" />
-      {earned && <path d={BLOB_IN} fill="#FF5A36" />}
+      style={{ ["--stamp-hole" as string]: earned ? color : "var(--color-bg)" }}>
+      <path d={BLOB_OUT} fill="none" stroke={earned ? color : "var(--color-line-strong)"} strokeWidth={1} strokeDasharray="2 2" />
+      {earned && <path d={BLOB_IN} fill={color} />}
       {art ? (
         <g color={earned ? "#FFFFFF" : "var(--color-line-strong)"} opacity={earned ? 1 : 0.5} dangerouslySetInnerHTML={{ __html: art }} />
       ) : earned ? (
