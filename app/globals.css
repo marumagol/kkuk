@@ -342,3 +342,34 @@ html, body { overflow-x: clip; }
 
 /* 입력창 안내 글자는 연하게 (2026-11-17 마루님 "플레이스홀더가 너무 진해 입력 글자와 구분이 어려워") : 앱 전체 공통 */
 input::placeholder, textarea::placeholder { opacity: 0.55; }
+
+/* 도장 등장 연출 (components/stamp-reveal.tsx, 0.87.1) */
+@keyframes sr-backdrop { from { background: rgb(10 10 12 / 0); backdrop-filter: blur(0); } to { background: rgb(10 10 12 / .72); backdrop-filter: blur(10px); } }
+.sr-backdrop { animation: sr-backdrop 260ms ease-out both; }
+@keyframes sr-stamp {
+  0% { transform: translateY(-40px) scale(2.4) rotate(-22deg); opacity: 0; filter: blur(6px); }
+  55% { transform: translateY(0) scale(0.88) rotate(-4deg); opacity: 1; filter: blur(0); }
+  72% { transform: scale(1.06) rotate(-8deg); }
+  100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+}
+.sr-stamp { animation: sr-stamp 700ms cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes sr-shake { 0%, 100% { transform: none; } 20% { transform: translate(-6px, 3px); } 40% { transform: translate(5px, -4px); } 60% { transform: translate(-3px, 2px); } 80% { transform: translate(2px, -1px); } }
+.sr-shake { animation: sr-shake 280ms 380ms ease-out both; }
+@keyframes sr-ring { 0% { transform: scale(.6); opacity: .9; border-width: 10px; } 100% { transform: scale(2); opacity: 0; border-width: 1px; } }
+.sr-ring { border: 6px solid var(--sr-color); opacity: 0; animation: sr-ring 650ms 380ms cubic-bezier(.1, .7, .3, 1) both; }
+.sr-ring-2 { animation-delay: 480ms; border-color: #fff; }
+@keyframes sr-glow { 0% { opacity: 0; transform: scale(.5); } 40% { opacity: .7; } 100% { opacity: .35; transform: scale(1.15); } }
+.sr-glow { background: radial-gradient(circle, var(--sr-color) 0%, transparent 65%); opacity: 0; animation: sr-glow 900ms 380ms ease-out both; }
+@keyframes sr-bit { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(.2); opacity: 0; } }
+.sr-bit { background: var(--sr-color); opacity: 0; animation: sr-bit 700ms cubic-bezier(.1, .8, .3, 1) both; }
+.sr-bit:nth-child(3n) { background: #fff; }
+@keyframes sr-sheen { 0% { transform: translateX(-120%) skewX(-20deg); } 100% { transform: translateX(140%) skewX(-20deg); } }
+.sr-sheen { background: linear-gradient(90deg, transparent 30%, rgb(255 255 255 / .55) 50%, transparent 70%); transform: translateX(-120%); animation: sr-sheen 700ms 760ms ease-in-out both; }
+@keyframes sr-text { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sr-text { animation: sr-text 380ms cubic-bezier(.2, .8, .2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .sr-stamp, .sr-text, .sr-backdrop { animation-duration: 1ms; animation-delay: 0ms; }
+  .sr-shake, .sr-ring, .sr-bit, .sr-sheen, .sr-glow { animation: none; display: none; }
+}
+@keyframes sr-charge { 0%, 100% { transform: scale(.85); opacity: .35; } 50% { transform: scale(1.05); opacity: .7; } }
+.sr-charge { background: radial-gradient(circle, var(--color-point, #FF5A36) 0%, transparent 65%); animation: sr-charge 700ms ease-in-out infinite; }

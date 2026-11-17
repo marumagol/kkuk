@@ -1,8 +1,10 @@
 "use client";
 /* 도장 받기 (3단계 2) : 여행 중인 여행에서만 보인다. 위치는 저장하지 않고 DB 함수에 한 번 보내 확인만 한다
+   0.87.1 : 게이지가 다 차면 대기 문구 없이 바로 등장 연출(stamp-reveal)이 뜨고, 서버 답이 오면 도장이 찍힌다
    0.86.1 : 버튼을 0.8초 꾹 누르면 게이지가 차고 도장이 찍힌다. 짧게 떼면 안내만. 키보드(Enter, Space)는 바로 받는다 */
 import { useRef, useState, useTransition } from "react";
 import { HoldButton } from "@/components/hold-button";
+import { StampReveal } from "@/components/stamp-reveal";
 import { Icon, StampFace } from "@/components/kit";
 import { claimStamp, type ClaimResult } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
@@ -16,22 +18,23 @@ export function StampClaim({ tripId, inset = true }: { tripId: string; inset?: b
   const busy = locating || pending;
 
   const [hint, setHint] = useState(false);
+  const [reveal, setReveal] = useState(false);
   const pos = useRef<GeolocationPosition | "fail" | null>(null);
   const waiting = useRef(false);
 
   const claim = (p: GeolocationPosition) => start(async () => {
     const r = await safeCall(() => claimStamp(tripId, p.coords.latitude, p.coords.longitude, p.coords.accuracy));
-    if (!("ok" in r) || !r.ok) return setState({ kind: "error", text: r.error });
+    if (!("ok" in r) || !r.ok) { setReveal(false); return setState({ kind: "error", text: r.error }); }
     setState({ kind: "done", r });
-    if (r.status !== "already" && "vibrate" in navigator) navigator.vibrate?.([30, 40, 80]);
   });
 
   /* 꾹 누르기가 끝났을 때 : 위치가 아직이면 기다렸다가 받는다 */
   const finish = () => {
     const p = pos.current;
-    if (p === null) { waiting.current = true; setLocating(true); return; }
+    if (p === null) { waiting.current = true; setLocating(true); setReveal(true); return; }
     waiting.current = false; setLocating(false);
-    if (p === "fail") return;
+    if (p === "fail") return setReveal(false);
+    setReveal(true);
     pos.current = null;
     claim(p);
   };
@@ -63,6 +66,10 @@ export function StampClaim({ tripId, inset = true }: { tripId: string; inset?: b
 
   return (
     <section className={(inset ? "mx-5 mt-4 " : "") + "flex flex-col gap-3 rounded-card bg-surface px-4 py-4"} aria-label="도장 받기">
+      {reveal && (
+        <StampReveal city={state.kind === "done" ? state.r.city : null} country={state.kind === "done" ? state.r.country : null}
+          title={state.kind === "done" && state.r.status === "already" ? "이미 받은 도장" : "도장 꾹!"} sub={msg ?? ""} onClose={() => setReveal(false)} />
+      )}
       {state.kind === "done" && (
         <div className="flex justify-center">
           <div className={state.r.status === "already" ? "-rotate-6" : "stamp-hit"}>
@@ -76,7 +83,7 @@ export function StampClaim({ tripId, inset = true }: { tripId: string; inset?: b
       </div>
       {state.kind !== "done" && (
         <HoldButton onStart={locate} onComplete={finish} onShort={() => setHint(true)} disabled={busy}
-          label={locating ? "위치 확인 중" : pending ? "도장 찍는 중" : state.kind === "idle" ? "꾹 눌러 도장 받기" : "다시 꾹 눌러 받기"} />
+          label={state.kind === "idle" ? "꾹 눌러 도장 받기" : "다시 꾹 눌러 받기"} />
       )}
     </section>
   );

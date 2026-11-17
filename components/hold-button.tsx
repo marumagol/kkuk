@@ -13,6 +13,7 @@ export function HoldButton({ onStart, onComplete, onShort, disabled, label, hold
   label: ReactNode; holdingLabel?: ReactNode; className?: string;
 }) {
   const [holding, setHolding] = useState(false);
+  const [full, setFull] = useState(false); // 다 찼으면 줄어들지 않고 잠시 그대로
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
@@ -21,7 +22,12 @@ export function HoldButton({ onStart, onComplete, onShort, disabled, label, hold
     if (onStart && !onStart()) return;
     setHolding(true);
     navigator.vibrate?.(10);
-    timer.current = setTimeout(() => { timer.current = null; setHolding(false); onComplete(); }, HOLD_MS);
+    timer.current = setTimeout(() => {
+      timer.current = null; setFull(true); setHolding(false);
+      navigator.vibrate?.(60); // 다 찬 순간 딱
+      onComplete();
+      setTimeout(() => setFull(false), 1500);
+    }, HOLD_MS);
   };
   const up = () => {
     if (!timer.current) return;
@@ -40,7 +46,7 @@ export function HoldButton({ onStart, onComplete, onShort, disabled, label, hold
       onClick={key} onContextMenu={(e) => e.preventDefault()}
       className={"relative select-none overflow-hidden rounded-btn bg-btn font-bold text-on-btn transition-transform duration-100 [-webkit-touch-callout:none] [touch-action:manipulation] disabled:bg-surface-soft disabled:text-ink-sub " + (holding ? "scale-[0.97] " : "") + className}>
       <span aria-hidden className="absolute inset-y-0 left-0 bg-point"
-        style={{ width: holding ? "100%" : "0%", transition: `width ${holding ? HOLD_MS : 200}ms ${holding ? "linear" : "ease-out"}` }} />
+        style={{ width: holding || full ? "100%" : "0%", transition: full ? "none" : `width ${holding ? HOLD_MS : 200}ms ${holding ? "linear" : "ease-out"}` }} />
       <span className="relative">{holding ? holdingLabel : label}</span>
     </button>
   );
