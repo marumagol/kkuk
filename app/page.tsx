@@ -23,7 +23,7 @@ import { mapsDirUrl, canMap } from "@/lib/maps-link";
 import { nextGoal, goalValue } from "@/lib/stamp-goals";
 import type { Viewer } from "@/lib/viewer";
 
-function Header({ loggedIn, initial, avatar, unread = 0 }: { loggedIn: boolean; initial: string; avatar: string | null; unread?: number }) {
+function Header({ loggedIn, initial, avatar, unread = 0, name, email }: { loggedIn: boolean; initial: string; avatar: string | null; unread?: number; name?: string; email?: string }) {
   return (
     <header className="flex items-center justify-between px-5 pb-2 pt-4">
       <Link href="/" aria-label="홈" className="flex h-11 items-center"><Logo /></Link>
@@ -33,7 +33,7 @@ function Header({ loggedIn, initial, avatar, unread = 0 }: { loggedIn: boolean; 
             <Icon name="bell" size={22} />
             {unread > 0 && <span aria-hidden className="absolute right-2 top-2 size-2.5 rounded-full bg-point ring-2 ring-bg" />}
           </Link>
-          <ProfileMenu><Avatar initial={initial} src={avatar} /></ProfileMenu>
+          <ProfileMenu name={name ?? "나"} email={email ?? ""} face={<Avatar initial={initial} src={avatar} size={52} />}><Avatar initial={initial} src={avatar} /></ProfileMenu>
         </div>
       ) : (
         <Link href="/login" className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-sub font-bold text-ink">로그인</Link>
@@ -317,7 +317,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
 
   return (
     <AppShell>
-      <Header loggedIn={loggedIn} initial={initialOf(viewer)} avatar={avatarOf(viewer)} unread={unread} />
+      <Header loggedIn={loggedIn} initial={initialOf(viewer)} avatar={avatarOf(viewer)} unread={unread} name={viewer.kind === "user" ? viewer.name ?? undefined : undefined} email={viewer.kind === "user" ? viewer.email : undefined} />
       {viewer.kind === "preview" && <MockNote />}
       {bye && <FlashToast message="탈퇴했어요. 그동안 KKuK를 써 주셔서 고마워요" param="bye" />}
       <div className="flex flex-col gap-3 px-5 pb-4 pt-4">

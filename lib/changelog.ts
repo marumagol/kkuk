@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 22:00", version: "0.78.2", items: ["프로필 메뉴에 내 사진, 이름, 이메일이 보이고 설정, 로그아웃이 넉넉하게 정리됐어요"] },
   { at: "2026-11-17 22:15", version: "0.78.1", items: ["홈 위 프로필을 누르면 설정, 로그아웃 메뉴가 떠요"] },
   { at: "2026-11-17 22:10", version: "0.78.0", items: ["내 정보 > 앱 설정에 [앱 설치] 가 생겼어요. 브라우저에서 홈 화면에 앱처럼 설치해요"] },
   { at: "2026-11-17 22:00", version: "0.77.3", items: ["메모 삭제 버튼을 장소 삭제와 같은 모양으로 맞췄어요"] },
