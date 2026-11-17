@@ -37,7 +37,18 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
   const noRate = mixed ? [...new Set(base.filter((e) => e.currency !== "KRW").map((e) => e.currency))] : [];
   const [rateCur, setRateCur] = useState<string | null>(null);
   const mine = all.filter((b) => b.userId === view.me && (b.paid || b.share));
-  const [why, setWhy] = useState(false); // 계산 근거 (2026-11-17 마루님 "정산에 데이터가 제대로 들어가는지") : 사람마다 낸 돈, 나눌 몫
+  const [why, setWhy] = useState(false);
+  // 맞비기기 전 서로 줄 돈 (2026-11-17 마루님 "일반 유저가 헷갈리지 않게") : 경비마다 나눌 몫을 낸 사람에게 갚는 돈으로 모은다
+  const gross = useMemo(() => {
+    const m = new Map<string, { from: string; to: string; currency: string; amount: number }>();
+    for (const e of base) for (const b of balances([e])) {
+      if (b.userId === e.paidBy || !b.share) continue;
+      const k = `${b.userId}>${e.paidBy}>${e.currency}`;
+      const x = m.get(k) ?? { from: b.userId, to: e.paidBy, currency: e.currency, amount: 0 };
+      x.amount += b.share; m.set(k, x);
+    }
+    return [...m.values()].sort((a, b) => b.amount - a.amount);
+  }, [base]); // 계산 근거 (2026-11-17 마루님 "정산에 데이터가 제대로 들어가는지") : 사람마다 낸 돈, 나눌 몫
   const active = view.people.filter((p) => p.active);
   const [sheet, setSheet] = useState<Draft | null>(openAdd && view.role !== "viewer" ? {} : null); // 홈 [+ 경비] 로 오면 바로 입력 창
   const [picking, setPicking] = useState(false);
@@ -88,7 +99,7 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
               )}
               {transfers.length > 0 && (
                 <div className="flex flex-col gap-1">
-                  <p className="text-tiny font-semibold text-ink-sub">누가 누구에게 보내요</p>
+                  <p className="text-tiny font-semibold text-ink-sub">누가 누구에게 보내요 <span className="font-normal">(서로 줄 돈을 맞비긴 금액)</span></p>
                   <ul className="flex flex-col divide-y divide-line">
                     {transfers.map((t, i) => (
                       <li key={i} className="flex min-h-14 items-center gap-2 py-1 text-sub text-ink">
@@ -114,6 +125,15 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
                 className="press -mb-1 inline-flex h-8 w-fit items-center gap-1 text-tiny font-semibold text-ink-sub">
                 계산 근거 {why ? "접기" : "보기"}<Icon name="chevron-down" size={14} className={why ? "rotate-180" : ""} />
               </button>
+              {why && gross.length > 0 && (
+                <div className="flex flex-col gap-1 rounded-field bg-surface-soft px-3 py-2.5 text-tiny tabular-nums">
+                  <p className="font-semibold text-ink-sub">맞비기기 전, 서로 줄 돈</p>
+                  {gross.map((g) => (
+                    <p key={g.from + g.to + g.currency} className="flex justify-between gap-2 text-ink"><span>{nameOf(g.from)} → {nameOf(g.to)}에게</span><span className="font-semibold">{formatMoney(g.amount, g.currency)}</span></p>
+                  ))}
+                  <p className="mt-1 text-ink-sub">서로 줄 돈을 빼고 남은 만큼만 위에서 한 번 보내면 끝나요</p>
+                </div>
+              )}
               {why && (
                 <table className="w-full text-tiny tabular-nums">
                   <thead><tr className="text-ink-sub"><th className="py-1 text-left font-semibold">사람</th><th className="py-1 text-right font-semibold">낸 돈</th><th className="py-1 text-right font-semibold">나눌 몫</th><th className="py-1 text-right font-semibold">차이</th></tr></thead>
