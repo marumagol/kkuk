@@ -16,6 +16,7 @@ import { getViewer, isIn, initialOf, avatarOf } from "@/lib/viewer";
 import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, md, type Trip, type Item } from "@/lib/mock";
 import { loadTrips, loadTrip, loadStamps, loadUnreadCount, loadPrep, loadExpenses, loadTripBook, type StampCard } from "@/lib/trips";
 import { StampClaim } from "@/components/stamp-claim";
+import { ProfileMenu } from "@/components/profile-menu";
 import { settle, toKrw, isMixed } from "@/lib/settle";
 import { formatMoney, flagOf, decimalsOf } from "@/lib/countries";
 import { mapsDirUrl, canMap } from "@/lib/maps-link";
@@ -32,7 +33,7 @@ function Header({ loggedIn, initial, avatar, unread = 0 }: { loggedIn: boolean; 
             <Icon name="bell" size={22} />
             {unread > 0 && <span aria-hidden className="absolute right-2 top-2 size-2.5 rounded-full bg-point ring-2 ring-bg" />}
           </Link>
-          <Link href="/me" aria-label="설정" className="flex size-11 items-center justify-center"><Avatar initial={initial} src={avatar} /></Link>
+          <ProfileMenu><Avatar initial={initial} src={avatar} /></ProfileMenu>
         </div>
       ) : (
         <Link href="/login" className="press inline-flex h-11 items-center rounded-full bg-surface px-4 text-sub font-bold text-ink">로그인</Link>
