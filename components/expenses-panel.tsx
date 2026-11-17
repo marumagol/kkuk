@@ -64,13 +64,13 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
           ) : (
             <>
               {mine.length === 0 || mine.every((b) => b.net === 0) ? (
-                <p className="text-title font-extrabold text-ink">{transfers.length ? "내가 주고받을 돈은 없어요" : "주고받을 돈이 없어요"}</p>
+                <p className="text-body font-bold text-ink">{transfers.length ? "내가 주고받을 돈은 없어요" : "주고받을 돈이 없어요"}</p>
               ) : (
                 <div className="flex flex-col gap-1 rounded-field bg-surface-soft px-4 py-3">
                   {mine.filter((b) => b.net !== 0).map((b) => (
-                    <p key={b.currency} className="flex flex-wrap items-baseline justify-between gap-x-2">
+                    <p key={b.currency} className="flex flex-wrap items-center justify-between gap-x-2">
                       <span className="text-sub font-semibold text-ink-sub">{b.net > 0 ? "내가 받을 돈" : "내가 보낼 돈"}</span>
-                      <span className={"text-number font-extrabold tabular-nums " + (b.net > 0 ? "text-ink" : "text-point-text")}>{formatMoney(Math.abs(b.net), b.currency)}</span>
+                      <span className={"text-title font-extrabold tabular-nums " + (b.net > 0 ? "text-ink" : "text-point-text")}>{formatMoney(Math.abs(b.net), b.currency)}</span>
                     </p>
                   ))}
                 </div>
