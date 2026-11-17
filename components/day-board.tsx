@@ -488,15 +488,15 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                 <Icon name="more" size={18} />
               </button>
               {more && (
-                <div role="menu" className="absolute right-0 top-full z-40 mt-1.5 w-36 rounded-[18px] bg-surface p-1.5 shadow-float">
+                <div role="menu" className="absolute right-0 top-full z-40 mt-1 w-max min-w-28 rounded-[14px] bg-surface p-1 shadow-float">
                   <button role="menuitem" type="button" onClick={() => { setMore(false); setFinding(true); if (scrollY > sheetTop()) scrollTo({ top: sheetTop() }); }}
-                    className="press flex h-10 w-full items-center gap-2.5 rounded-field px-2.5 text-left text-sub font-medium text-ink">
-                    <Icon name="search" size={18} className="text-ink-sub" />검색
+                    className="press flex h-9 w-full items-center gap-2 rounded-[10px] px-2.5 pr-4 text-left text-sub font-medium text-ink">
+                    <Icon name="search" size={16} className="text-ink-sub" />검색
                   </button>
                   {editable && (
                     <button role="menuitem" type="button" disabled={sel === ALL} onClick={() => { setMore(false); setEditing(true); setPicked([]); }}
-                      className="press flex h-10 w-full items-center gap-2.5 rounded-field px-2.5 text-left text-sub font-medium text-ink disabled:opacity-40">
-                      <Icon name="pencil" size={18} className="text-ink-sub" />편집{sel === ALL && <span className="text-tiny text-ink-sub">날짜를 고르면</span>}
+                      className="press flex h-9 w-full items-center gap-2 rounded-[10px] px-2.5 pr-4 text-left text-sub font-medium text-ink disabled:opacity-40">
+                      <Icon name="pencil" size={16} className="text-ink-sub" />편집{sel === ALL && <span className="text-tiny text-ink-sub">날짜를 고르면</span>}
                     </button>
                   )}
                 </div>
