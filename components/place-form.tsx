@@ -114,6 +114,8 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
     if (!(ctx.photos ?? []).some((x) => x.path === path)) void createClient()?.storage.from("place-photos").remove([path]);
   };
   const currencies = currencyOptions(ctx.currencies, currency);
+  // 도보, 자동차는 예약과 비용 칸을 숨긴다 (2026-11-17 마루님). 저장할 때도 비운다
+  const noBooking = isMove && (extra.mode === "walk" || extra.mode === "car");
   const titleLen = [...title.trim()].length;
   const autoName = [extra.from, extra.to].map((x) => x?.trim()).filter(Boolean).join(" → ");
   // 이동의 표시 이름은 "출발 → 도착"을 값으로 채워 둔다 (2026-11-16 마루님). 직접 고친 이름은 그대로
@@ -139,7 +141,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
         const main = f && extra.from_id ? { id: extra.from_id, ...f } : t && extra.to_id ? { id: extra.to_id, ...t } : null;
         if (main) place = main; else if (moveTouched.current) place = null;
       }
-      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title: titleLen ? title : isMove ? autoName.slice(0, MAX_PLACE_TITLE) : title, address, category, time: isMemo || !timed ? "" : isMove ? extra.depart ?? "" : time, cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: isMove && !timed ? { ...extra, depart: "", arrive: "" } : extra, reserve, again, ...(place !== undefined ? { place } : {}) }));
+      const r = await safeCall(() => savePlace(ctx.tripId, p?.id ?? null, { title: titleLen ? title : isMove ? autoName.slice(0, MAX_PLACE_TITLE) : title, address, category, time: isMemo || !timed ? "" : isMove ? extra.depart ?? "" : time, cost: noBooking ? "" : cost, currency, memo, day: dayNum, photos: isMemo ? [] : photos.map((x) => x.path), details: isMove && !timed ? { ...extra, depart: "", arrive: "" } : extra, reserve: noBooking ? false : reserve, again, ...(place !== undefined ? { place } : {}) }));
       if (r?.error) setError(r.error);
     });
   };
@@ -286,7 +288,7 @@ export function PlaceForm({ ctx, day, memo: startMemo = false }: { ctx: PlaceCon
 
         {/* 예약, 비용, 주소, 메모, 사진은 늘 펼쳐 둔다 (2026-11-16 마루님 "더 적기는 별로"). 카드로 묶음 (0.57.2) */}
           {/* 맞춤 칸 + 예약 필요를 한 카드에 (예약번호 옆에 예약 체크) */}
-          {!isMemo && (
+          {!isMemo && !noBooking && (
             <FormCard title="예약과 비용">
                 {fields.length > 0 && <div className="grid grid-cols-2 gap-3">
                 {fields.map((f) => (
