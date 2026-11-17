@@ -15,7 +15,7 @@ import { GateButton, AlertDialog } from "@/components/gate";
 import { BottomDock } from "@/components/screen";
 import { Toast, TOAST_MS } from "@/components/toast";
 import { DayMap, type DayPoint } from "@/components/day-map";
-import { reorderPlaces, moveItem, deletePlace, fillTripCoords, setItemTimes } from "@/app/actions";
+import { reorderPlaces, moveItem, deletePlace, setItemTimes } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { safeCall } from "@/lib/safe-call";
 import { addDays, md, weekday, type Item } from "@/lib/mock";
@@ -121,20 +121,6 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     if (r?.error) { setCols(prev); setMsg(r.error); } else { setMsg(ok); setUndo(keepUndo); }
   };
   const router = useRouter();
-  const [finding, setFinding] = useState(false);
-  const noPin = cols.flat().filter((x) => x.id && x.lat == null && x.category !== "이동" && x.category !== "메모" && !/→|->/.test(x.title)).length;
-  const findCoords = async () => {
-    if (finding) return;
-    setFinding(true); setUndo(null); setMsg("");
-    let r: Awaited<ReturnType<typeof fillTripCoords>> | undefined;
-    try { r = (await safeCall(() => fillTripCoords(tripId))) as typeof r; } catch { r = undefined; } finally { setFinding(false); }
-    if (!r || r.error) { setMsg(r?.error ?? "위치를 찾지 못했어요"); return; }
-    const parts = [`${r.filled ?? 0}곳 위치를 찾았어요`];
-    if (r.missed) parts.push(`${r.missed}곳은 못 찾았어요`);
-    if (r.limited) parts.push("오늘 찾기 횟수를 다 써서 나머지는 내일 다시 눌러 주세요");
-    setMsg(parts.join(". "));
-    router.refresh();
-  };
   const sortRoute = (c: number) => {
     if (busy.current) return; // 앞의 저장이 끝나기 전에 또 누르면 무시
     const cur = colsRef.current[c];
@@ -359,12 +345,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
       {/* 지도 : 스크롤해도 그 자리에 있고, 시트가 그 위로 올라온다 */}
       <div className="sticky top-[var(--tabs-h,0px)] z-0 mt-3 h-[40dvh] min-h-[240px]">
         <DayMap points={points} onPick={onPin} className="size-full" />
-        {editable && noPin > 0 && (
-          <button type="button" onClick={findCoords} disabled={finding}
-            className="press absolute bottom-10 left-1/2 inline-flex h-10 -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-surface px-4 text-tiny font-bold text-ink shadow-float">
-            <Icon name="map" size={16} />{finding ? "위치 찾는 중" : `위치 없는 장소 ${noPin}곳 찾기`}
-          </button>
-        )}
+        {/* "위치 없는 장소 n곳 찾기" 단추는 2026-11-17 마루님 "필요 없을 것 같아" 로 뺌 (fillTripCoords 는 남김) */}
       </div>
 
       <section ref={sheet} aria-label="일정" className="relative z-10 -mt-6 flex min-h-[100dvh] flex-col rounded-t-[28px] bg-bg pb-8 shadow-[0_-6px_20px_rgb(0_0_0/0.06)]">
