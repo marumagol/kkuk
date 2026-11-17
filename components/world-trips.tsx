@@ -134,6 +134,8 @@ export function WorldTrips({ trips, hubs }: { trips: WorldTrip[]; hubs: Record<s
             );
           })}
         </svg>
+        {/* 제목과 지도 사이가 끊기지 않게 위쪽을 바다 색으로 흐리게 (2026-11-17 마루님 "부드럽게 넘어가지 않는 느낌") */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-sea via-sea/70 to-transparent" />
         {/* 지도 위 : 누적 요약과 연도 칩 */}
         <div className="pointer-events-none absolute left-5 right-5 top-0 flex flex-col items-start gap-3">
           <div className="pointer-events-auto rounded-[18px] bg-surface/95 px-3.5 py-2.5 shadow-[0_2px_8px_rgb(0_0_0/0.08)]">
@@ -156,7 +158,7 @@ export function WorldTrips({ trips, hubs }: { trips: WorldTrip[]; hubs: Record<s
         {!geo && <p className="absolute inset-x-0 top-2/3 text-center text-sub text-ink-sub">{failed ? "지도를 불러오지 못했어요" : "지도를 불러오는 중"}</p>}
       </div>
 
-      <section className="relative -mt-6 flex flex-col gap-4 rounded-t-[28px] bg-surface px-5 pb-8 pt-4">
+      <section className="relative -mt-6 flex flex-col gap-4 rounded-t-[28px] bg-surface px-5 pb-2 pt-4">
         <div className="flex flex-col gap-2">
           <div role="tablist" aria-label="여행 나눠 보기" className="flex gap-1 rounded-btn bg-bg p-1">
             {([["upcoming", "다가오는 여행", upcoming.length, "bg-point"], ["past", "다녀온 여행", past.length, "bg-deep"]] as const).map(([k, label, n, dot]) => (

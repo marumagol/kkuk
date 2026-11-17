@@ -46,14 +46,14 @@ export default async function Trips({ searchParams }: { searchParams: Promise<{ 
     return (
       <AppShell bottomGap={false}>
         <div className="flex min-h-dvh flex-col bg-sea">
-          <header className="flex items-center justify-between px-5 pb-4 pt-6">
+          <header className="flex items-center justify-between px-5 pb-2 pt-6">
             <h1 className="text-title-xl font-extrabold text-ink">여행</h1>
             {addBtn}
           </header>
           {viewer.kind === "preview" && <MockNote />}
           {notes}
           <WorldTrips trips={map.map((m) => ({ ...m, ...extra(trips.find((t) => t.id === m.id)!) }))} hubs={hubs} />
-          <div className="flex-1 bg-surface pb-32" />
+          <div className="flex-1 bg-surface pb-[calc(64px+env(safe-area-inset-bottom))]" /* 아래 탭 높이만큼만 (2026-11-17 마루님 "여백이 많다") */ />
         </div>
         <MainTabs active="여행" />
       </AppShell>
