@@ -75,25 +75,34 @@ export function ExpensesPanel({ view, openAdd }: { view: ExpensesView; openAdd?:
                 <div className="flex flex-col gap-1 rounded-field bg-surface-soft px-4 py-3">
                   {mine.filter((b) => b.net !== 0).map((b) => (
                     <p key={b.currency} className="flex flex-wrap items-center justify-between gap-x-2">
-                      <span className="text-sub font-semibold text-ink-sub">{b.net > 0 ? "내가 받을 돈" : "내가 보낼 돈"}</span>
+                      <span className="text-sub font-semibold text-ink-sub">{(() => {
+                        // 누구에게 보내고 누구에게 받는지 이름까지 (2026-11-17 마루님 "누가 누구에게 내는지가 안 나와")
+                        const who = transfers.filter((t) => t.currency === b.currency && (b.net > 0 ? t.to === view.me : t.from === view.me)).map((t) => nameOf(b.net > 0 ? t.from : t.to));
+                        const names = who.length > 2 ? `${who.slice(0, 2).join(", ")} 외 ${who.length - 2}명` : who.join(", ");
+                        return b.net > 0 ? `${names}에게 받을 돈` : `${names}에게 보낼 돈`;
+                      })()}</span>
                       <span className={"text-title font-extrabold tabular-nums " + (b.net > 0 ? "text-ink" : "text-point-text")}>{formatMoney(Math.abs(b.net), b.currency)}</span>
                     </p>
                   ))}
                 </div>
               )}
               {transfers.length > 0 && (
-                <ul className="flex flex-col divide-y divide-line">
-                  {transfers.map((t, i) => (
-                    <li key={i} className="flex min-h-12 items-center gap-2 text-sub text-ink">
-                      <Face id={t.from} view={view} size={28} />
-                      <span className="font-bold">{nameOf(t.from)}</span>
-                      <Icon name="right" size={14} className="text-ink-sub" />
-                      <Face id={t.to} view={view} size={28} />
-                      <span className="min-w-0 flex-1 truncate font-bold">{nameOf(t.to)}</span>
-                      <span className="flex-none font-extrabold tabular-nums">{formatMoney(t.amount, t.currency)}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="flex flex-col gap-1">
+                  <p className="text-tiny font-semibold text-ink-sub">누가 누구에게 보내요</p>
+                  <ul className="flex flex-col divide-y divide-line">
+                    {transfers.map((t, i) => (
+                      <li key={i} className="flex min-h-14 items-center gap-2 py-1 text-sub text-ink">
+                        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1">
+                          <span className="flex items-center gap-1.5"><Face id={t.from} view={view} size={26} /><b>{nameOf(t.from)}</b></span>
+                          <span aria-hidden="true" className="font-extrabold text-point-text">→</span>
+                          <span className="flex items-center gap-1.5"><Face id={t.to} view={view} size={26} /><span><b>{nameOf(t.to)}</b>에게</span></span>
+                          <span className="sr-only">{nameOf(t.from)}, {nameOf(t.to)}에게 보내요</span>
+                        </span>
+                        <span className="flex-none font-extrabold tabular-nums">{formatMoney(t.amount, t.currency)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
               {noRate.map((c) => (
                 <div key={c} role="alert" className="flex items-center justify-between gap-2 rounded-field bg-surface-soft px-3 py-2">
