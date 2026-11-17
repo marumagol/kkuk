@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Stamp, StampFace } from "@/components/kit";
+import { MedalSpin } from "@/components/medal-spin";
 import { AlertDialog } from "@/components/gate";
 import { flagOf, countryOf } from "@/lib/countries";
 import { md } from "@/lib/mock";
@@ -70,11 +71,24 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
         {/* 메달 : 뒤로 퍼지는 빛 + 리본 + 찍히는 도장 */}
         <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-60px] size-[360px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgb(255_90_54/0.45)_0%,rgb(255_90_54/0.12)_40%,transparent_68%)]" />
         <div className="relative flex flex-col items-center">
-          <div className="relative flex size-[176px] items-center justify-center rounded-full bg-gradient-to-b from-[#FFD9A8] via-[#F2B36B] to-[#C9853D] p-[6px] shadow-[0_10px_30px_rgb(0_0_0/0.35)]">
-            <div className="flex size-full items-center justify-center rounded-full bg-[#FFF8EE]">
-              <div className="stamp-hit"><StampFace name={x.name} country={x.country} size={136} /></div>
-            </div>
-          </div>
+          <MedalSpin size={176}
+            front={
+              <div className="flex size-full items-center justify-center rounded-full bg-gradient-to-b from-[#FFD9A8] via-[#F2B36B] to-[#C9853D] p-[6px]">
+                <div className="flex size-full items-center justify-center rounded-full bg-[#FFF8EE]">
+                  <div className="stamp-hit"><StampFace name={x.name} country={x.country} size={136} /></div>
+                </div>
+              </div>
+            }
+            back={
+              <div className="flex size-full items-center justify-center rounded-full bg-gradient-to-b from-[#F2B36B] via-[#D99A52] to-[#A86A2C] p-[6px]">
+                <div className="flex size-full flex-col items-center justify-center rounded-full border-2 border-dashed border-[#FFE6C4]/70 bg-gradient-to-br from-[#E8A95E] to-[#B97934] text-[#FFF3E0] [text-shadow:0_1px_0_rgb(0_0_0/0.25)]">
+                  <span className="text-[11px] font-bold tracking-[0.3em] opacity-80">KKUK</span>
+                  <span className="mt-1 max-w-[120px] truncate text-[20px] font-extrabold">{x.name}</span>
+                  {x.firstDate && <span className="mt-0.5 text-[11px] font-semibold opacity-90">{dot(x.firstDate)}</span>}
+                  <span className="mt-1 text-[11px] font-semibold opacity-80">{x.visits}번 방문</span>
+                </div>
+              </div>
+            } />
           <span className="relative -mt-3 rounded-full bg-point px-3 py-1 text-tiny font-extrabold text-white shadow-[0_4px_10px_rgb(0_0_0/0.25)]">
             {x.visits > 1 ? `${x.visits}번 방문` : "첫 방문"}
           </span>
