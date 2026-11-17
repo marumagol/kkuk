@@ -193,7 +193,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92dvh] w-full max-w-[560px] flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-[28px] bg-bg px-5 pb-[max(24px,env(safe-area-inset-bottom))]">
+        className="flex max-h-[92dvh] w-full max-w-[560px] flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-[28px] [&>*]:flex-none bg-bg px-5 pb-[max(24px,env(safe-area-inset-bottom))]">
         {/* 머리 고정 (2026-11-17 마루님 "스크롤할 때 헤더는 고정") */}
         <div className="sticky top-0 z-10 -mx-5 flex flex-none flex-col gap-1 rounded-t-[28px] bg-bg px-5 pb-1 pt-2.5">
           <span className="mx-auto h-1.5 w-10 flex-none rounded-full bg-line-strong/50" />
