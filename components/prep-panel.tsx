@@ -141,7 +141,7 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
         {items.length > 0 && !selecting && (items.length - done > 0
           ? <span className="text-sub font-bold text-point-text">{items.length - done}개 남음</span>
           : <span className="text-sub text-ink-sub">모두 끝냈어요</span>)}
-        {canEdit && items.length > 0 && <SelectToggle on={selecting} onClick={() => (selecting ? stopSelect() : setSelecting(true))} />}
+        {canEdit && items.length > 0 && <SelectToggle label="편집" on={selecting} onClick={() => (selecting ? stopSelect() : setSelecting(true))} />}
         </span>
       </div>
       {/* 목록과 추가 줄을 한 카드에 (2026-11-16 마루님 "하나의 섹션으로 보여야") */}
@@ -150,13 +150,22 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
           {items.length > 0 && (
             <ul className="divide-y divide-line">
               {selecting ? items.map((it) => (
-                <li key={it.id}>
-                  <button type="button" role="checkbox" aria-checked={picked.includes(it.id)} onClick={() => toggle(it.id)}
-                    className="press flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left">
+                /* 편집 (2026-11-17 마루님 "순서 변경도") : 왼쪽 동그라미로 골라 삭제, 오른쪽 손잡이를 끌어 순서 바꾸기 */
+                <li key={it.id} ref={(el) => { if (el) rowEls.current.set(it.id, el); else rowEls.current.delete(it.id); }}
+                  className={"flex items-center " + (dragId === it.id ? "relative z-10 scale-[1.02] bg-surface shadow-float" : "")}>
+                  <button type="button" role="checkbox" aria-checked={picked.includes(it.id)} onClick={() => toggle(it.id)} disabled={!!dragId}
+                    className="press flex min-h-14 min-w-0 flex-1 items-center gap-3 py-2 pl-4 text-left">
                     <PickBox checked={picked.includes(it.id)} />
                     <span className={"min-w-0 flex-1 truncate text-body " + (it.done ? "text-ink-sub line-through" : "font-semibold text-ink")}>{it.title}</span>
                     {it.due && <span className="flex-none text-tiny text-ink-sub">{md(it.due)}</span>}
                   </button>
+                  {items.length > 1 && (
+                    <button type="button" aria-label={`${it.title} 순서 옮기기`} disabled={busy}
+                      onPointerDown={(e) => { e.preventDefault(); setDragId(it.id); }}
+                      className="press flex size-12 flex-none cursor-grab touch-none items-center justify-center text-ink-sub active:cursor-grabbing">
+                      <Icon name="menu" size={20} />
+                    </button>
+                  )}
                 </li>
               )) : items.map((it) => (
                 <li key={it.id} ref={(el) => { if (el) rowEls.current.set(it.id, el); else rowEls.current.delete(it.id); }}

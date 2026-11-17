@@ -2,10 +2,10 @@
 /* 여러 개 골라 한꺼번에 삭제 (2026-11-17 마루님 "예약, 체크리스트, 경비 일괄 선택 삭제") : 머리의 [선택] 버튼, 줄 앞 동그라미, 아래 바 */
 import { Icon } from "@/components/kit";
 
-export function SelectToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
+export function SelectToggle({ on, onClick, label = "선택" }: { on: boolean; onClick: () => void; label?: string }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={on}
-      className="press inline-flex h-8 flex-none items-center rounded-full bg-surface-soft px-3 text-tiny font-semibold text-ink">{on ? "선택 취소" : "선택"}</button>
+      className="press inline-flex h-8 flex-none items-center rounded-full bg-surface-soft px-3 text-tiny font-semibold text-ink">{on ? "완료" : label}</button>
   );
 }
 
