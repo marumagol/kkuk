@@ -6,7 +6,7 @@ import { ExpensesPanel } from "@/components/expenses-panel";
 import { getViewer } from "@/lib/viewer";
 import { loadExpenses, loadTrip } from "@/lib/trips";
 
-export const metadata = { title: "경비" };
+export const metadata = { title: "비용" };
 
 export default async function Expenses({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ add?: string }> }) {
   const { id } = await params;
@@ -19,7 +19,7 @@ export default async function Expenses({ params, searchParams }: { params: Promi
   return (
     <AppShell>
       <TripHeader trip={r.trip} meId={viewer.id} user owner={r.role === "owner"} editable={r.role !== "viewer"} />
-      <TripTabs tripId={id} active="경비" />
+      <TripTabs tripId={id} active="비용" />
       <ExpensesPanel openAdd={add === "1"} view={view} />
     </AppShell>
   );

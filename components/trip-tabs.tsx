@@ -11,11 +11,11 @@ import { FEATURES } from "@/lib/features";
 import { TripMenu } from "@/components/trip-menu";
 import { TripBack } from "@/components/trip-back";
 
-export type TripTab = "일정" | "준비" | "경비";
+export type TripTab = "일정" | "준비" | "비용";
 
 export function TripTabs({ tripId, active }: { tripId: string; active: TripTab }) {
   const tabs = [
-    { name: "일정", href: `/trips/${tripId}` }, { name: "준비", href: `/trips/${tripId}/prep` }, { name: "경비", href: `/trips/${tripId}/expenses` },
+    { name: "일정", href: `/trips/${tripId}` }, { name: "준비", href: `/trips/${tripId}/prep` }, { name: "비용", href: `/trips/${tripId}/expenses` },
   ]; // 기록 탭은 2026-11-17 일기 기능 삭제로 뺌
   return (
     // 스크롤해도 위에 고정 (2026-11-17 마루님). 높이 66px 은 globals.css --tabs-h 와 맞춘다 (일정의 지도, 날짜 줄이 그 아래에 붙음)

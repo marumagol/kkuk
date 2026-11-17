@@ -246,7 +246,7 @@ async function After({ v, trip }: { v: Viewer; trip: Trip }) {
 
       {mine.length > 0 && (
         <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="남은 정산">
-          <Head title="남은 정산" href={`/trips/${trip.id}/expenses`} more="경비 탭" />
+          <Head title="남은 정산" href={`/trips/${trip.id}/expenses`} more="비용 탭" />
           <ul className="flex flex-col gap-1.5">
             {mine.map((t, i) => {
               const send = t.from === me;
