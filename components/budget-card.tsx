@@ -28,8 +28,11 @@ export function BudgetCard({ view, Sheet }: { view: ExpensesView; Sheet: (p: { t
 
   return (
     <section className="flex flex-col gap-4 rounded-deep bg-deep p-5 text-on-deep" aria-labelledby="budget-title">
-      <div className="flex items-center justify-between gap-2">
-        <h2 id="budget-title" className="text-sub font-semibold text-on-deep-sub">{s.total == null ? "지금까지 쓴 돈" : over ? "예산을 넘었어요" : "남은 예산"}</h2>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 id="budget-title" className="text-title font-extrabold">예산</h2>
+          <p className="mt-0.5 text-tiny text-on-deep-sub">총예산은 원화로, 통화별로 쓴 돈도 함께 봐요</p>
+        </div>
         {canEdit && (
           <button type="button" onClick={() => setEditing(true)} className="press inline-flex h-8 items-center gap-1 rounded-full bg-deep-soft px-3 text-tiny font-semibold text-on-deep">
             <Icon name="pencil" size={13} />{view.budget ? "예산 수정" : "예산 정하기"}
@@ -39,6 +42,7 @@ export function BudgetCard({ view, Sheet }: { view: ExpensesView; Sheet: (p: { t
 
       {/* 큰 숫자 + 막대 */}
       <div className="flex flex-col gap-2">
+        <p className="-mb-1 text-sub font-semibold text-on-deep-sub">{s.total == null ? "지금까지 쓴 돈" : over ? "예산을 넘었어요" : "남은 예산"}</p>
         <p className="text-number font-extrabold tabular-nums" style={over ? { color: OVER } : undefined}>
           {approx}{won(s.total == null ? s.spent : Math.abs(s.remain!))}
         </p>
