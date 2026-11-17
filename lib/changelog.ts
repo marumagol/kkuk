@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-17 20:45", version: "0.74.1", items: ["시간 없는 메모 카드 위 빈 여백을 없앴어요"] },
   { at: "2026-11-17 20:40", version: "0.74.0", items: ["연박, 체크아웃 날 숙소 카드도 편집에서 끌어 자리를 바꿀 수 있어요 (기본은 맨 위)", "숙소 카드도 앞뒤 장소와의 거리 계산에 들어가요"] },
   { at: "2026-11-17 20:25", version: "0.73.10", items: ["식사 장소의 인원 칸을 뺐어요"] },
   { at: "2026-11-17 20:15", version: "0.73.9", items: ["연박 숙소 카드(n박째)도 그날 일정 맨 위에 보여요"] },

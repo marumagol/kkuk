@@ -199,6 +199,7 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
     const inner = href ? <Link href={href} className="press block rounded-pin px-4 py-3.5">{children}</Link> : <div className="px-4 py-3.5">{children}</div>;
     return <article className="relative mb-3 min-w-0 flex-1 rounded-pin bg-surface">{inner}{corner && <div className="absolute right-2.5 top-2.5">{corner}</div>}{editor}</article>;
   };
+  const head = !!(time || timeEnd || badge) || category !== "메모";
   return (
     <div className="flex gap-3">
       <div className="flex w-7 flex-none flex-col items-center gap-1 pt-3.5">
@@ -209,16 +210,17 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
         {!last && <span className="w-0 flex-1 border-l-2 border-dashed border-line-strong/60" />}
       </div>
       <Box>
-        <div className={"flex min-h-7 items-center justify-between gap-2 " + (corner && editedBy ? "pr-[4.5rem]" : corner || editedBy ? "pr-9" : "")}>
+        {head && <div className={"flex min-h-7 items-center justify-between gap-2 " + (corner && editedBy ? "pr-[4.5rem]" : corner || editedBy ? "pr-9" : "")}>
           <div className="flex items-center gap-2">
             {/* 이동은 "출발 → 도착" 시간 (2026-11-17 마루님 "이동수단일 때 도착시간도 카드에") */}
             {(time || timeEnd) && <span className="text-sub font-bold text-ink tabular-nums">{time && timeEnd ? <>{time}<span className="mx-1 text-ink-sub">→</span>{timeEnd}</> : time || <>{timeEnd} 도착</>}</span>}
             {category !== "메모" && <CategoryChip category={category} />}
             {badge && <span className="inline-flex h-6 items-center rounded-full bg-deep px-2 text-[12px] font-bold text-on-deep">{badge}</span>}
           </div>
-        </div>
+        </div>}
         <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
+          {/* 시간 없는 메모는 머리 줄이 비어 위 여백만 생기니 빼고 바로 글부터 (2026-11-17 마루님) */}
+          <div className={"min-w-0 flex-1 " + (head ? "" : "[&>*:first-child]:mt-0 " + (editedBy ? "pr-9" : ""))}>
             {/* 메모 (2026-11-16) : 제목 없이 글 한 칸. 예전 메모(글이 제목으로 시작하지 않음)만 제목을 따로 보인다 */}
             {(category !== "메모" || !desc || !desc.startsWith(title)) && <h3 className="mt-1.5 line-clamp-2 text-[16px] font-bold leading-snug text-ink">{title}</h3>}
             {detail && <p className="mt-1 line-clamp-2 text-tiny font-semibold text-ink">{detail}</p>}
