@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-18 12:30", version: "0.91.7", items: ["홈 준비 카드에서 예약을 누르면 수정 화면 대신 준비 탭과 같은 미리보기 창이 떠요"] },
   { at: "2026-11-18 12:30", version: "0.91.6", items: ["알림 허용 창이 뜨지 않으면 브라우저 설정에서 켜는 방법을 알려 줘요"] },
   { at: "2026-11-18 12:25", version: "0.91.5", items: ["휴대폰 알림을 켜지 못하면 어디서 막혔는지 알려 줘요"] },
   { at: "2026-11-18 11:45", version: "0.91.4", items: ["운영 알림을 받을 수 있게 알림 화면을 준비했어요"] },

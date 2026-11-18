@@ -16,6 +16,7 @@ import { getViewer, isIn, initialOf, avatarOf } from "@/lib/viewer";
 import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, md, type Trip, type Item } from "@/lib/mock";
 import { loadTrips, loadTrip, loadStamps, loadUnreadCount, loadPrep, loadExpenses, loadTripBook, type StampCard } from "@/lib/trips";
 import { StampClaim } from "@/components/stamp-claim";
+import { BookingOpen } from "@/components/booking-preview";
 import { ProfileMenu } from "@/components/profile-menu";
 import { settle, toKrw, isMixed } from "@/lib/settle";
 import { formatMoney, flagOf, decimalsOf } from "@/lib/countries";
@@ -131,12 +132,21 @@ async function Before({ v, trip, today, missing }: { v: Viewer; trip: Trip; toda
               <ul className="flex flex-col gap-1.5">
                 {todo.slice(0, 3).map((i) => (
                   <li key={i.id}>
-                    <Link href={i.kind === "reservation" ? `/trips/${trip.id}/bookings/${i.id}` : `/trips/${trip.id}/prep`}
-                      className="press flex min-h-11 items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
+                    {/* 예약은 누르면 준비 탭과 같은 가운데 미리보기 창 (0.91.5) */}
+                    {i.kind === "reservation" ? (
+                      <BookingOpen tripId={trip.id} id={i.id} title={i.title} due={i.due ?? null}
+                        className="press flex min-h-11 w-full items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
                       <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-bold ${i.kind === "reservation" ? "bg-point-soft text-point-text" : "bg-surface text-ink-sub"}`}>{i.kind === "reservation" ? "예약" : "체크리스트"}</span>
-                      <span className="min-w-0 flex-1 truncate font-semibold text-ink">{i.title}</span>
+                      <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
                       {i.due && <span className="flex-none text-tiny text-ink-sub">{md(i.due)}</span>}
-                    </Link>
+                      </BookingOpen>
+                    ) : (
+                      <Link href={`/trips/${trip.id}/prep`} className="press flex min-h-11 items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
+                      <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-bold bg-surface text-ink-sub`}>체크리스트</span>
+                      <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
+                      {i.due && <span className="flex-none text-tiny text-ink-sub">{md(i.due)}</span>}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

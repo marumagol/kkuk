@@ -6,7 +6,8 @@
   - 0.89.5 : 정보를 다 읽은 뒤에 창을 연다 (읽는 동안 빈 자리가 잠깐 보이지 않게). 읽기는 prep-panel 에서 누르는 순간 시작
 */
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { getBooking } from "@/app/actions";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/kit";
 import { useBackClose } from "@/lib/use-back-close";
@@ -80,5 +81,19 @@ export function BookingPreview({ tripId, id, title, due, who, canEdit, data: v, 
       </div>
     </div>,
     document.body,
+  );
+}
+
+/* 예약 줄 버튼 (홈 준비 카드, 0.91.5) : 누르면 수정 화면 대신 위 미리보기 창. 누르기 시작할 때 미리 읽고, 다 읽은 뒤 연다 */
+export function BookingOpen({ tripId, id, title, due, className, children }: { tripId: string; id: string; title: string; due: string | null; className?: string; children: ReactNode }) {
+  const [peek, setPeek] = useState<{ data: BookingView | null } | null>(null);
+  const loading = useRef<Promise<BookingView | null> | null>(null);
+  const load = () => (loading.current ??= getBooking(tripId, id).catch(() => null));
+  return (
+    <>
+      <button type="button" onPointerDown={() => void load()} onClick={() => load().then((data) => { loading.current = null; setPeek({ data }); })}
+        aria-label={`${title} 보기`} className={className}>{children}</button>
+      {peek && <BookingPreview tripId={tripId} id={id} title={title} due={due} canEdit={peek.data?.canEdit ?? false} data={peek.data} onClose={() => setPeek(null)} />}
+    </>
   );
 }
