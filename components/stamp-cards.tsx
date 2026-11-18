@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 import { Stamp, StampFace } from "@/components/kit";
 import { MedalSpin } from "@/components/medal-spin";
 import { AlertDialog } from "@/components/gate";
-import { flagOf, countryOf } from "@/lib/countries";
+import { flagWideOf, countryOf } from "@/lib/countries";
 import { md } from "@/lib/mock";
 import type { StampCard } from "@/lib/trips";
 
@@ -63,7 +63,7 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
     const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
     return () => { removeEventListener("keydown", esc); document.body.style.overflow = prev; back?.focus?.(); };
   }, [onClose]);
-  const flag = flagOf(x.country);
+  const flag = flagWideOf(x.country);
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장`} onClick={(e) => e.stopPropagation()}
@@ -95,7 +95,7 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
         </div>
         <h2 className="relative mt-4 flex items-center justify-center gap-1.5 text-title-lg font-extrabold">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {flag && <img src={flag} alt="" width={20} height={20} className="rounded-sm" />}
+          {flag && <img src={flag} alt="" width={27} height={18} className="rounded-[3px]" />}
           {x.name}
         </h2>
         <p className="relative mt-1 text-sub text-on-deep-sub">{countryOf(x.country)?.name ?? ""}{x.firstDate ? `, ${dot(x.firstDate)} 처음 받음` : ""}</p>

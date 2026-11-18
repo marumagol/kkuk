@@ -145,6 +145,8 @@ export const POPULAR_CITIES: Record<string, string[]> = {
 export const FLAG_CODES = new Set("KR JP TW HK MO CN MN TH VN PH SG MY ID LA KH IN AE TR GU MP US CA AU NZ GB FR IT ES PT DE CH AT CZ NL GR".split(" "));
 export const POPULAR_COUNTRIES = ["JP", "VN", "TH", "TW", "PH", "KR", "US", "GU", "CN", "FR", "IT", "ES"];
 export const flagOf = (code?: string | null) => (code && FLAG_CODES.has(code.slice(0, 2)) ? `/flags/${code.slice(0, 2)}.svg` : null);
+/* 가로로 긴 국기 (3:2, 도장 상세 창 0.92.5) */
+export const flagWideOf = (code?: string | null) => (code && FLAG_CODES.has(code.slice(0, 2)) ? `/flags/3x2/${code.slice(0, 2)}.svg` : null);
 /* 직접 입력한 나라에 올린 아이콘 (저장소 country-icons, 공개 읽기) */
 export const ICON_PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(png|jpg|webp)$/;
 export const iconUrl = (path?: string | null) => {
