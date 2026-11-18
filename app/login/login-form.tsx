@@ -1,27 +1,15 @@
 "use client";
 /*
-  이메일 → 숫자 코드(Supabase 설정에 따라 6~8자리) → 로그인
-  Supabase : signInWithOtp (메일 보내기) → verifyOtp type "email" (확인)
-  구글 : signInWithOAuth → 구글 화면 → /auth/callback 에서 세션으로 바꾼다
-  메일 템플릿에 {{ .Token }} 이 있어야 링크 대신 6자리가 간다 (guides/ 안내 참고)
+  카카오, 구글 두 가지로만 로그인한다 (2026-11-18 마루님 결정. 이메일 코드 로그인은 뺐다)
+  signInWithOAuth → 카카오/구글 화면 → /auth/callback 에서 세션으로 바꾼다
+  같은 이메일로 들어오면 Supabase 가 한 계정으로 이어 준다
 */
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Field, Button } from "@/components/kit";
+import { useState } from "react";
+import { Button } from "@/components/kit";
 import { createClient } from "@/lib/supabase/client";
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const WAIT = 60; // 다시 보내기까지 초
-
-const OFFLINE = "인터넷 연결을 확인하고 다시 시도해 주세요";
-const offline = (e: { status?: number } | null) => (typeof navigator !== "undefined" && navigator.onLine === false) || e?.status === 0;
-
-function sendError(e: { status?: number; code?: string } | null) {
-  if (!e) return "";
-  if (offline(e)) return OFFLINE;
-  if (e.status === 429 || e.code === "over_email_send_rate_limit") return "잠시 뒤에 다시 보내 주세요. 짧은 시간에 너무 많이 보냈어요";
-  return "코드를 보내지 못했어요. 이메일 주소를 확인하고 다시 시도해 주세요";
-}
+type Provider = "kakao" | "google";
+const NAME: Record<Provider, string> = { kakao: "카카오", google: "구글" };
 
 function GoogleMark() {
   return (
@@ -34,102 +22,44 @@ function GoogleMark() {
   );
 }
 
-export function LoginForm({ next, configured, googleFailed }: { next: string; configured: boolean; googleFailed?: boolean }) {
-  const router = useRouter();
-  const [step, setStep] = useState<"email" | "code">("email");
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [left, setLeft] = useState(0);
-  const [notice, setNotice] = useState("");
-  const [gError, setGError] = useState(googleFailed ? "구글 로그인을 마치지 못했어요. 다시 시도하거나 이메일로 로그인해 주세요" : "");
+/* 카카오 말풍선 심볼 (카카오 로그인 디자인 가이드 : 노란 바탕 #FEE500, 검정 심볼과 글자) */
+function KakaoMark() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#000" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7l-1 3.6c-.1.3.3.6.6.4l4.3-2.8c.5.1 1 .1 1.5.1 5.5 0 10-3.6 10-8S17.5 3 12 3z" />
+    </svg>
+  );
+}
 
-  const google = async () => {
+export function LoginForm({ next, configured, failed }: { next: string; configured: boolean; failed?: Provider | "any" }) {
+  const [busy, setBusy] = useState<Provider | null>(null);
+  const [error, setError] = useState(failed ? `${failed === "any" ? "" : `${NAME[failed]} `}로그인을 마치지 못했어요. 다시 시도해 주세요` : "");
+
+  const go = async (provider: Provider) => {
     const sb = createClient();
     if (!sb) return;
-    setBusy(true); setGError("");
-    const back = `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-    const { error: e } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: back } }).catch(() => ({ error: { status: 0 } }));
-    // 성공하면 구글 화면으로 넘어가므로 여기는 실패할 때만 온다
-    if (e) { setBusy(false); setGError("구글 로그인을 열지 못했어요. 잠시 뒤에 다시 시도해 주세요"); }
-  };
-
-  useEffect(() => {
-    if (left <= 0) return;
-    const t = setTimeout(() => setLeft(left - 1), 1000);
-    return () => clearTimeout(t);
-  }, [left]);
-
-  /* 보냈으면 true. 인터넷이 끊겨 요청이 아예 실패해도 안내만 하고 멈추지 않는다 */
-  const send = async () => {
-    const sb = createClient();
-    if (!sb) return false;
-    setBusy(true); setError(""); setNotice("");
-    let e: { status?: number; code?: string } | null = null;
-    try { ({ error: e } = await sb.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } })); }
-    catch { e = { status: 0 }; }
-    setBusy(false);
-    if (e) { setError(sendError(e)); return false; }
-    setStep("code"); setCode(""); setLeft(WAIT);
-    return true;
-  };
-
-  const onEmail = (ev: React.FormEvent) => {
-    ev.preventDefault();
-    if (!EMAIL.test(email.trim())) return setError("이메일 주소를 다시 확인해 주세요");
-    send();
-  };
-
-  const onCode = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    if (!/^\d{6,8}$/.test(code)) return setError("메일로 받은 숫자 코드를 모두 넣어 주세요");
-    const sb = createClient();
-    if (!sb) return;
-    setBusy(true); setError("");
-    let e: { status?: number } | null = null;
-    try { ({ error: e } = await sb.auth.verifyOtp({ email: email.trim(), token: code, type: "email" })); }
-    catch { e = { status: 0 }; }
+    setBusy(provider); setError("");
+    const back = `${location.origin}/auth/callback?provider=${provider}&next=${encodeURIComponent(next)}`;
+    const { error: e } = await sb.auth.signInWithOAuth({ provider, options: { redirectTo: back } }).catch(() => ({ error: { status: 0 } }));
+    // 성공하면 카카오/구글 화면으로 넘어가므로 여기는 실패할 때만 온다
     if (e) {
-      setBusy(false);
-      // Supabase 는 틀린 코드와 시간이 지난 코드를 같은 오류로 알려 줘서 한 문장으로 안내한다
-      return setError(offline(e) ? OFFLINE : e.status === 429 ? "너무 여러 번 시도했어요. 잠시 뒤에 다시 해 주세요" : "코드가 맞지 않거나 시간이 지났어요. 다시 확인하거나 새 코드를 받아 주세요");
+      setBusy(null);
+      setError(typeof navigator !== "undefined" && navigator.onLine === false
+        ? "인터넷 연결을 확인하고 다시 시도해 주세요"
+        : `${NAME[provider]} 로그인을 열지 못했어요. 잠시 뒤에 다시 시도해 주세요`);
     }
-    router.replace(next);
-    router.refresh();
   };
-
-  if (step === "email") {
-    return (
-      <form onSubmit={onEmail} noValidate className="flex flex-col gap-4">
-        <Button full type="button" variant="secondary" onClick={google} disabled={!configured || busy}>
-          <GoogleMark />구글로 계속하기
-        </Button>
-        {gError && <p role="alert" className="-mt-2 text-tiny font-semibold text-point-text">{gError}</p>}
-        <div className="flex items-center gap-3 text-tiny text-ink-sub" aria-hidden="true">
-          <span className="h-px flex-1 bg-line" />또는 이메일로<span className="h-px flex-1 bg-line" />
-        </div>
-        <Field label="이메일" type="email" name="email" inputMode="email" autoComplete="email" placeholder="name@example.com"
-          value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} error={error || undefined} disabled={!configured || busy} />
-        <Button full type="submit" disabled={!configured || busy || !email}>{busy ? "보내는 중" : "로그인 코드 받기"}</Button>
-      </form>
-    );
-  }
 
   return (
-    <form onSubmit={onCode} noValidate className="flex flex-col gap-4">
-      <p className="text-sub text-ink"><b className="font-bold">{email}</b> 로 로그인 코드를 보냈어요. 메일이 안 보이면 스팸함도 확인해 주세요</p>
-      <Field label="로그인 코드" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={8} placeholder="숫자 코드"
-        value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, "").slice(0, 8)); setError(""); }}
-        error={error || undefined} hint={notice || undefined} disabled={busy} autoFocus />
-      <Button full type="submit" disabled={busy || code.length < 6}>{busy ? "확인하는 중" : "로그인"}</Button>
-      <div className="flex items-center justify-between">
-        <button type="button" onClick={() => { setStep("email"); setError(""); }} className="press h-11 px-1 text-sub font-semibold text-ink-sub underline underline-offset-4">이메일 바꾸기</button>
-        <button type="button" disabled={left > 0 || busy} onClick={async () => { if (await send()) setNotice("새 코드를 보냈어요"); }}
-          className="press h-11 px-1 text-sub font-bold text-ink disabled:text-ink-sub">
-          {left > 0 ? `다시 보내기 (${left}초)` : "코드 다시 보내기"}
-        </button>
-      </div>
-    </form>
+    <div className="flex flex-col gap-3">
+      <button type="button" onClick={() => go("kakao")} disabled={!configured || !!busy}
+        className="press inline-flex h-14 w-full items-center justify-center gap-2 rounded-btn bg-[#FEE500] px-5 text-[16px] font-bold text-black/85 disabled:cursor-not-allowed disabled:opacity-60">
+        <KakaoMark />{busy === "kakao" ? "카카오로 가는 중" : "카카오로 계속하기"}
+      </button>
+      <Button full type="button" variant="secondary" onClick={() => go("google")} disabled={!configured || !!busy}>
+        <GoogleMark />{busy === "google" ? "구글로 가는 중" : "구글로 계속하기"}
+      </Button>
+      {error && <p role="alert" className="text-tiny font-semibold text-point-text">{error}</p>}
+    </div>
   );
 }

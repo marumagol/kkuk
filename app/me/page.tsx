@@ -46,7 +46,7 @@ export default async function Me() {
         {v.kind === "guest" ? (
           <section className="flex flex-col gap-3 rounded-card bg-surface p-5">
             <h2 className="text-title font-bold text-ink">로그인하고 여행을 저장해 보세요</h2>
-            <p className="text-sub text-ink-sub">이메일로 받은 6자리 코드로 로그인해요. 비밀번호는 없어요</p>
+            <p className="text-sub text-ink-sub">카카오나 구글 계정으로 로그인해요. 비밀번호는 없어요</p>
             <Link href="/login?next=/me" className="press inline-flex h-14 items-center justify-center gap-2 rounded-btn bg-btn text-[16px] font-bold text-on-btn">
               로그인 <Icon name="arrow" size={20} />
             </Link>

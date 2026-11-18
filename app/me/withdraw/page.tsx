@@ -36,7 +36,7 @@ export default async function Withdraw() {
           <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sub text-ink marker:text-ink-sub">
             <li>내가 만든 여행 <b className="font-bold">{ids.length}개</b>가 일정, 장소와 함께 바로 삭제돼요</li>
             <li>지운 여행은 되살릴 수 없어요</li>
-            <li>같은 이메일로 다시 가입하면 새 계정으로 시작해요</li>
+            <li>같은 계정으로 다시 가입하면 새 계정으로 시작해요</li>
           </ul>
         </section>
         {shared > 0 ? (

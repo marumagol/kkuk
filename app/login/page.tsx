@@ -1,4 +1,4 @@
-/* S02 로그인 + S03 코드 입력. 구글 로그인 + 이메일 로그인 코드 (구글은 2026-11-16 추가) */
+/* S02 로그인. 카카오, 구글 로그인만 (2026-11-18 이메일 코드 로그인 뺌) */
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseEnv } from "@/lib/supabase/env";
@@ -23,10 +23,10 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           <Link href={next} className="press inline-flex h-11 items-center px-1 text-sub font-semibold text-ink-sub underline underline-offset-4">둘러보기</Link>
         </div>
         <h1 className="mt-8 text-title-xl font-extrabold text-ink">KKuK 시작해요</h1>
-        <p className="mt-2 text-sub text-ink-sub">구글 계정으로 바로 시작하거나, 메일로 받은 6자리 코드로 로그인해요. 비밀번호는 없어요</p>
+        <p className="mt-2 text-sub text-ink-sub">카카오나 구글 계정으로 바로 시작해요. 비밀번호는 없어요</p>
 
         <div className="mt-8">
-          <LoginForm next={next} configured={configured} googleFailed={sp.error === "google"} />
+          <LoginForm next={next} configured={configured} failed={sp.error === "kakao" || sp.error === "google" ? sp.error : sp.error ? "any" : undefined} />
         </div>
         <p className="mt-4 text-tiny text-ink-sub">
           시작하면 <Link href="/terms" className="font-semibold underline underline-offset-2">이용약관</Link>과{" "}
