@@ -6,7 +6,8 @@ import { createPortal } from "react-dom";
 import { SwipeRow } from "@/components/swipe-row";
 import { Toast } from "@/components/toast";
 import { Button, Field, Icon } from "@/components/kit";
-import { addPrepItem, addPrepDefaults, updatePrepItem, reorderPrep, removePrepItems } from "@/app/actions";
+import { addPrepItem, addPrepDefaults, updatePrepItem, reorderPrep, removePrepItems, getBooking } from "@/app/actions";
+import type { BookingView } from "@/lib/trips";
 import { SelectToggle, PickBox, BulkBar } from "@/components/bulk-select";
 import { AlertDialog } from "@/components/gate";
 import { safeCall } from "@/lib/safe-call";
@@ -218,8 +219,13 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
 function Row({ it, view, canEdit, busy, run, onDelete }: { it: PrepItem; view: PrepView; canEdit: boolean; busy: boolean; run: RunFn; onDelete: () => void }) {
   // 예약은 [수정] 을 누르면 예약 화면(예약번호, 메모, 첨부 파일)으로 (2026-11-16 마루님 "목록에 뿌리지 말고 수정에서")
   // 0.89.3 : 예약은 누르면 가운데 미리보기 창, 거기서 [수정] 으로 예약 화면 (마루님 "일정 카드와 같은 방식")
-  const [peek, setPeek] = useState(false);
-  const openEdit = () => (it.kind === "reservation" ? setPeek(true) : setEdit(true));
+  const [peek, setPeek] = useState<{ data: BookingView | null } | null>(null);
+  const loading = useRef<Promise<BookingView | null> | null>(null);
+  const load = () => (loading.current ??= getBooking(view.tripId, it.id).catch(() => null)); // 누르기 시작할 때 미리 읽기
+  const openEdit = () => {
+    if (it.kind !== "reservation") return setEdit(true);
+    load().then((data) => { loading.current = null; setPeek({ data }); });
+  };
   const who = view.people.find((p) => p.userId === it.assignee);
   const name = who?.name;
   const [edit, setEdit] = useState(false);
@@ -251,7 +257,7 @@ function Row({ it, view, canEdit, busy, run, onDelete }: { it: PrepItem; view: P
       </button>
       <div className="min-w-0 flex-1">
         {canEdit || it.kind === "reservation" ? (
-          <button type="button" onClick={openEdit} disabled={busy} aria-label={it.kind === "reservation" ? `${it.title} 보기` : `${it.title} 수정`}
+          <button type="button" onClick={openEdit} onPointerDown={() => { if (it.kind === "reservation") void load(); }} disabled={busy} aria-label={it.kind === "reservation" ? `${it.title} 보기` : `${it.title} 수정`}
             className={"block w-full truncate text-left text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.kind === "reservation" && it.important && <span className="mr-1 inline-block -translate-y-px align-middle text-point"><Icon name="star" size={15} className="fill-current" /><span className="sr-only">중요</span></span>}{it.title}</button>
         ) : <p className={"truncate text-body " + (it.done ? "text-ink-sub line-through" : "text-ink")}>{it.title}</p>}
         {it.kind === "reservation" ? (
@@ -267,7 +273,7 @@ function Row({ it, view, canEdit, busy, run, onDelete }: { it: PrepItem; view: P
       {who?.avatar ? <img src={who.avatar} alt="" title={`담당 ${name}`} width={32} height={32} className="size-8 flex-none rounded-full object-cover" />
         : name && <span title={`담당 ${name}`} className="flex size-8 flex-none items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-text">{[...name][0]}</span>}
       {canEdit && <RowMenu it={it} view={view} busy={busy} run={run} onDelete={onDelete} />}
-      {peek && <BookingPreview tripId={view.tripId} id={it.id} title={it.title} due={it.due} who={name} canEdit={canEdit} onClose={() => setPeek(false)} />}
+      {peek && <BookingPreview tripId={view.tripId} id={it.id} title={it.title} due={it.due} who={name} canEdit={canEdit} data={peek.data} onClose={() => setPeek(null)} />}
     </div>
   );
 }

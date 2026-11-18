@@ -3,30 +3,26 @@
   예약 미리보기 창 (0.89.3, 마루님 "준비>예약도 일정 카드와 같은 방식") : 화면 가운데 창
   - 이름, 날짜, 담당, 예약번호(복사), 메모, 첨부. 적어 둔 게 없는 칸은 아예 안 보인다 (안내 문구도 없음). 맨 아래 [수정] 은 고칠 수 있는 사람에게만 (예약 화면으로)
   - 휴대폰 뒤로가기는 창만 닫는다
+  - 0.89.5 : 정보를 다 읽은 뒤에 창을 연다 (읽는 동안 빈 자리가 잠깐 보이지 않게). 읽기는 prep-panel 에서 누르는 순간 시작
 */
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/kit";
-import { getBooking } from "@/app/actions";
 import { useBackClose } from "@/lib/use-back-close";
 import { md } from "@/lib/mock";
 import type { BookingView } from "@/lib/trips";
 
-export function BookingPreview({ tripId, id, title, due, who, canEdit, onClose }: {
-  tripId: string; id: string; title: string; due: string | null; who?: string; canEdit: boolean; onClose: () => void;
+export function BookingPreview({ tripId, id, title, due, who, canEdit, data: v, onClose }: {
+  tripId: string; id: string; title: string; due: string | null; who?: string; canEdit: boolean; data: BookingView | null; onClose: () => void;
 }) {
-  const [b, setB] = useState<BookingView | null | "loading">("loading");
   const [copied, setCopied] = useState(false);
   useBackClose(onClose);
   useEffect(() => {
-    let live = true;
-    getBooking(tripId, id).then((r) => live && setB(r)).catch(() => live && setB(null));
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", esc);
-    return () => { live = false; window.removeEventListener("keydown", esc); };
-  }, [tripId, id, onClose]);
-  const v = b !== "loading" ? b : null;
+    return () => window.removeEventListener("keydown", esc);
+  }, [onClose]);
   const copy = async (s: string) => { try { await navigator.clipboard.writeText(s); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* 복사 못 하는 브라우저 */ } };
   const rows = [
     ...((v?.due ?? due) ? [{ label: "날짜", value: md((v?.due ?? due)!) }] : []),
@@ -61,7 +57,6 @@ export function BookingPreview({ tripId, id, title, due, who, canEdit, onClose }
               ))}
             </dl>
           )}
-          {b === "loading" && <div className="mt-4 h-16 animate-pulse rounded-field bg-bg" />}
           {v?.note && <p className="mt-4 whitespace-pre-line break-words text-body text-ink">{v.note}</p>}
           {!!v?.files.length && (
             <div className="mt-4 flex flex-wrap gap-2">
@@ -74,7 +69,7 @@ export function BookingPreview({ tripId, id, title, due, who, canEdit, onClose }
               ))}
             </div>
           )}
-          {b === null && <p className="mt-4 text-sub text-ink-sub">예약 정보를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요</p>}
+          {!v && <p className="mt-4 text-sub text-ink-sub">예약 정보를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요</p>}
         </div>
         {canEdit && (
           <Link href={`/trips/${tripId}/bookings/${id}`} replace
