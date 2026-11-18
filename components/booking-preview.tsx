@@ -1,7 +1,7 @@
 "use client";
 /*
   예약 미리보기 창 (0.89.3, 마루님 "준비>예약도 일정 카드와 같은 방식") : 화면 가운데 창
-  - 이름, 날짜, 담당, 예약번호(복사), 메모, 첨부. 맨 아래 [수정] 은 고칠 수 있는 사람에게만 (예약 화면으로)
+  - 이름, 날짜, 담당, 예약번호(복사), 메모, 첨부. 적어 둔 게 없는 칸은 아예 안 보인다 (안내 문구도 없음). 맨 아래 [수정] 은 고칠 수 있는 사람에게만 (예약 화면으로)
   - 휴대폰 뒤로가기는 창만 닫는다
 */
 import Link from "next/link";
@@ -73,11 +73,6 @@ export function BookingPreview({ tripId, id, title, due, who, canEdit, onClose }
                 </a>
               ))}
             </div>
-          )}
-          {v && !v.code && !v.note && !v.files.length && (
-            <p className="mt-4 rounded-field bg-bg px-4 py-4 text-sub text-ink-sub">
-              {canEdit ? "아직 적어 둔 정보가 없어요. 수정에서 예약번호, 메모, 첨부 파일을 넣을 수 있어요" : "아직 적어 둔 정보가 없어요"}
-            </p>
           )}
           {b === null && <p className="mt-4 text-sub text-ink-sub">예약 정보를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요</p>}
         </div>
