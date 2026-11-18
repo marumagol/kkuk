@@ -492,7 +492,7 @@ export const loadPublicShare = cache(async (token: string): Promise<PublicShare 
 });
 
 /* ───────── 앱 안 알림 (4단계 8, migration 0016) ───────── */
-export type Notice = { id: number; tripId: string; tripTitle: string; kind: "joined" | "items" | "journal" | "stamp" | "comment" | "reply"; actor: string; refId: string | null; detail: string | null; count: number; at: string; read: boolean };
+export type Notice = { id: number; tripId: string; tripTitle: string; kind: "joined" | "items" | "journal" | "stamp" | "comment" | "reply" | "quota"; actor: string; refId: string | null; detail: string | null; count: number; at: string; read: boolean };
 const PREVIEW_NOTICES: Notice[] = [
   { id: 1, tripId: "", tripTitle: "삿포로 겨울 여행", kind: "items", actor: "민지", refId: null, detail: "오타루 운하", count: 3, at: new Date(Date.now() - 20 * 60e3).toISOString(), read: false },
   { id: 2, tripId: "", tripTitle: "삿포로 겨울 여행", kind: "joined", actor: "준호", refId: null, detail: null, count: 1, at: new Date(Date.now() - 26 * 3600e3).toISOString(), read: true },
@@ -511,8 +511,8 @@ export const loadNotices = cache(async (v: Viewer): Promise<Notice[]> => {
   const sb = (await createClient())!;
   const { data, error } = await sb.from("notifications").select("id, trip_id, kind, actor_name, ref_id, detail, count, created_at, read_at, trips(title)").order("created_at", { ascending: false }).limit(50);
   if (error) return [];
-  type R = { id: number; trip_id: string; kind: Notice["kind"]; actor_name: string; ref_id: string | null; detail: string | null; count: number; created_at: string; read_at: string | null; trips: { title: string } | null };
-  return ((data ?? []) as unknown as R[]).map((r) => ({ id: r.id, tripId: r.trip_id, tripTitle: r.trips?.title ?? "여행", kind: r.kind, actor: r.actor_name, refId: r.ref_id, detail: r.detail, count: r.count, at: r.created_at, read: !!r.read_at }));
+  type R = { id: number; trip_id: string | null; kind: Notice["kind"]; actor_name: string; ref_id: string | null; detail: string | null; count: number; created_at: string; read_at: string | null; trips: { title: string } | null };
+  return ((data ?? []) as unknown as R[]).map((r) => ({ id: r.id, tripId: r.trip_id ?? "", tripTitle: r.trips?.title ?? (r.kind === "quota" ? "운영 알림" : "여행"), kind: r.kind, actor: r.actor_name, refId: r.ref_id, detail: r.detail, count: r.count, at: r.created_at, read: !!r.read_at }));
 });
 
 /* 최근 삭제한 여행 (5단계 3번) : 내가 주인이고 30일 안에 지운 여행. 되살리기는 restore_trip (0019) */

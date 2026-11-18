@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-18 11:45", version: "0.91.4", items: ["운영 알림을 받을 수 있게 알림 화면을 준비했어요"] },
   { at: "2026-11-18 11:30", version: "0.91.3", items: ["장소 검색이 글자를 다 친 뒤에 찾아서 더 가볍게 동작해요"] },
   { at: "2026-11-18 11:00", version: "0.91.2", items: ["로그인 안내 문구를 짧게 다듬었어요"] },
   { at: "2026-11-18 10:55", version: "0.91.1", items: ["처음 로그인하면 \"까만 고양이\"처럼 이름을 하나 골라 드려요. 그대로 쓰거나 바꿀 수 있어요"] },

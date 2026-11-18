@@ -18,6 +18,7 @@ function textOf(n: Notice) {
     case "comment": return n.count > 1 ? `${n.actor}님이 내 일기에 댓글을 ${n.count}개 남겼어요${n.detail ? ` : ${n.detail}` : ""}` : `${n.actor}님이 내 일기에 댓글을 남겼어요${n.detail ? ` : ${n.detail}` : ""}`;
     case "reply": return n.count > 1 ? `${n.actor}님이 내 댓글에 답글을 ${n.count}개 남겼어요${n.detail ? ` : ${n.detail}` : ""}` : `${n.actor}님이 내 댓글에 답글을 남겼어요${n.detail ? ` : ${n.detail}` : ""}`;
     case "stamp": return `${n.actor}님 덕분에 ${n.detail ?? "도시"} 도장을 받았어요`;
+    case "quota": return n.detail ?? "구글 지도 하루 상한 알림"; // 0048 운영자에게만 (상한 80%, 다 참)
   }
 }
 function hrefOf(n: Notice) {
