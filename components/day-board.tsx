@@ -839,9 +839,10 @@ function ItemPreview({ it, warn, editHref, onClose, onPhoto }: { it: Item; warn?
   const empty = !rows.length && !text && !it.photos?.length && !warn;
   const map = !isMemo && canMap(it);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-scrim sm:items-center sm:px-8" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim px-5 sm:px-8" onClick={onClose}>
+      {/* 0.89.3 : 아래 시트 → 화면 가운데 창 (마루님 "시선이 밑으로 가서 불편") */}
       <div role="dialog" aria-modal="true" aria-label={isMemo ? "메모" : it.title} onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[85dvh] w-full max-w-[560px] flex-col rounded-t-[28px] bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 shadow-float sm:max-w-[420px] sm:rounded-card">
+        className="modal-pop flex max-h-[80dvh] w-full max-w-[420px] flex-col rounded-card bg-surface px-5 pb-5 pt-5 shadow-float">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             {isMemo ? <span className="text-sub font-bold text-ink-sub">메모</span> : <CategoryChip category={it.category} />}

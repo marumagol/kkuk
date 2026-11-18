@@ -388,3 +388,7 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 @keyframes hold-shake-hard { 0%, 100% { translate: 0 0; } 25% { translate: -2px .5px; } 75% { translate: 2px -.5px; } }
 .hold-tense { animation: hold-press 800ms ease-in both, hold-shake 90ms 250ms linear infinite, hold-shake-hard 60ms 560ms linear infinite; }
 @media (prefers-reduced-motion: reduce) { .hold-tense { animation: none; scale: .97; } }
+/* 가운데 창이 살짝 커지며 나타남 (일정 카드 미리보기, 0.89.3) */
+@keyframes modal-pop { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: none; } }
+.modal-pop { animation: modal-pop 220ms cubic-bezier(.2, .8, .2, 1) both; }
+@media (prefers-reduced-motion: reduce) { .modal-pop { animation: none; } }
