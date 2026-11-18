@@ -55,7 +55,7 @@ export default async function Invite({ params }: { params: Promise<{ token: stri
             ) : (
               <>
                 <Link href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`} className="press inline-flex h-14 items-center justify-center rounded-btn bg-btn text-[16px] font-bold text-on-btn">로그인하고 참여하기</Link>
-                <p className="text-tiny text-ink-sub">카카오나 구글 계정으로 로그인해요. 비밀번호는 없어요</p>
+                <p className="text-tiny text-ink-sub">카카오나 구글 계정으로 로그인해요</p>
               </>
             )}
           </section>
