@@ -1,12 +1,13 @@
 "use client";
-/* 도장 받기 (3단계 2) : 여행 중인 여행에서만 보인다. 위치는 저장하지 않고 DB 함수에 한 번 보내 확인만 한다
+/* 도장 받기 (3단계 2) : 여행 중인 여행에서만 보인다
+   0.90.0 : 위치는 휴대폰 안에서만 쓴다 (기획/17). 여행 도시 좌표·반경을 받아 여기서 거리를 재고, 도시 안이면 도시 이름만 서버에 보낸다
    0.87.1 : 게이지가 다 차면 대기 문구 없이 바로 등장 연출(stamp-reveal)이 뜨고, 서버 답이 오면 도장이 찍힌다
    0.86.1 : 버튼을 0.8초 꾹 누르면 게이지가 차고 도장이 찍힌다. 짧게 떼면 안내만. 키보드(Enter, Space)는 바로 받는다 */
 import { useRef, useState, useTransition } from "react";
 import { HoldButton } from "@/components/hold-button";
 import { StampReveal } from "@/components/stamp-reveal";
 import { Icon, StampFace } from "@/components/kit";
-import { claimStamp, type ClaimResult } from "@/app/actions";
+import { claimStampCity, loadStampTargets, type ClaimResult, type StampTarget } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 
 type State = { kind: "idle" } | { kind: "denied" } | { kind: "error"; text: string } | { kind: "done"; r: Extract<ClaimResult, { ok: true }> };
@@ -22,11 +23,28 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
   const pos = useRef<GeolocationPosition | "fail" | null>(null);
   const waiting = useRef(false);
 
+  const targets = useRef<Promise<{ targets: StampTarget[] } | { error: string }> | null>(null);
+
+  /* 휴대폰 안에서 가장 가까운 여행 도시를 고른다 (반경 대비 거리). 좌표는 이 함수 밖으로 나가지 않는다 */
+  const pick = (list: StampTarget[], p: GeolocationPosition): { city: StampTarget } | { error: string } => {
+    if (!list.length) return { error: "이 여행의 도시는 아직 도장이 없어요. 목록에 있는 도시만 도장을 받을 수 있어요" };
+    if (p.coords.accuracy > list[0].maxAccuracy) return { error: "위치가 정확하지 않아요. 밖에서 잠시 뒤 다시 눌러 주세요" };
+    const near = list.map((c) => ({ c, d: km(p.coords.latitude, p.coords.longitude, c.lat, c.lng) })).sort((a, b) => a.d / a.c.radiusKm - b.d / b.c.radiusKm)[0];
+    if (near.d > near.c.radiusKm) return { error: "여행 도시에서 멀리 있어요. 도시 안에서 다시 눌러 주세요" };
+    return { city: near.c };
+  };
+
   const claim = (p: GeolocationPosition) => start(async () => {
     /* 0.89.6 : 여행지 느린 인터넷에서 답이 안 오면 연출 화면이 멈춰 있지 않게 20초에서 끊는다. 서버 오류도 안내로 */
     const late = new Promise<{ error: string }>((ok) => setTimeout(() => ok({ error: "응답이 늦어요. 인터넷이 잘 되는 곳에서 다시 꾹 눌러 주세요" }), 20000));
-    const r = await Promise.race([safeCall(() => claimStamp(tripId, p.coords.latitude, p.coords.longitude, p.coords.accuracy)), late])
-      .catch(() => ({ error: "도장을 받지 못했어요. 잠시 뒤 다시 꾹 눌러 주세요" }));
+    const run = async (): Promise<ClaimResult | { error: string }> => {
+      const t = await safeCall(() => targets.current ?? loadStampTargets(tripId));
+      if ("error" in t) return t;
+      const got = pick(t.targets, p);
+      if ("error" in got) return got;
+      return safeCall(() => claimStampCity(tripId, got.city.name, got.city.country));
+    };
+    const r = await Promise.race([run(), late]).catch(() => ({ error: "도장을 받지 못했어요. 잠시 뒤 다시 꾹 눌러 주세요" }));
     if (!("ok" in r) || !r.ok) { setReveal(false); return setState({ kind: "error", text: r.error }); }
     setState({ kind: "done", r });
   });
@@ -47,6 +65,7 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
     setHint(false);
     if (!("geolocation" in navigator)) { setState({ kind: "error", text: "이 기기에서는 위치를 읽을 수 없어요. 위치 기능이 있는 휴대폰에서 다시 열어 주세요" }); return false; }
     pos.current = null; waiting.current = false;
+    targets.current = loadStampTargets(tripId).catch(() => ({ error: "도장 정보를 읽지 못했어요. 잠시 뒤 다시 눌러 주세요" }));
     navigator.geolocation.getCurrentPosition(
       (p) => { pos.current = p; if (waiting.current) finish(); },
       (e) => {
@@ -97,6 +116,14 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
       <p role="status" className={"text-center text-sub " + (msg && state.kind !== "done" ? "text-ink" : "text-ink-sub")}>
         {msg ?? "여행 도시에 도착했다면 도장을 꾹 눌러 주세요"}
       </p>
+      {state.kind !== "done" && <p className="-mt-1 text-center text-tiny text-ink-sub">위치는 휴대폰 안에서만 확인하고 서버로 보내거나 저장하지 않아요</p>}
     </section>
   );
+}
+
+/* 두 점 사이 거리(km), 구면 근사 */
+function km(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const r = Math.PI / 180, dLat = (lat2 - lat1) * r, dLng = (lng2 - lng1) * r;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLng / 2) ** 2;
+  return 12742 * Math.asin(Math.min(1, Math.sqrt(a)));
 }

@@ -674,14 +674,29 @@ const STAMP_ERRORS: Record<string, string> = {
   no_city: "이 여행의 도시는 아직 도장이 없어요. 목록에 있는 도시만 도장을 받을 수 있어요",
   too_far: "여행 도시에서 멀리 있어요. 도시 안에서 다시 눌러 주세요",
 };
-export async function claimStamp(tripId: string, lat: number, lng: number, accuracy: number): Promise<ClaimResult> {
-  if (!isUuid(tripId) || ![lat, lng, accuracy].every((n) => typeof n === "number" && Number.isFinite(n)))
-    return { ok: false, code: "bad_location", error: STAMP_ERRORS.bad_location };
+
+/*
+  0.90.0 도장 위치는 휴대폰 안에서만 판단 (기획/17 위치정보법 검토) : 좌표는 서버로 보내지 않는다
+  loadStampTargets 로 여행 도시 좌표·반경을 받고, 휴대폰이 도시 안이라고 판단하면 claimStampCity 로 도시 이름만 보낸다
+*/
+export type StampTarget = { name: string; country: string; lat: number; lng: number; radiusKm: number; maxAccuracy: number };
+export async function loadStampTargets(tripId: string): Promise<{ targets: StampTarget[] } | { error: string }> {
+  if (!isUuid(tripId)) return { error: STAMP_ERRORS.not_member };
+  const sb = await createClient();
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
+  const { data, error } = await sb.rpc("trip_stamp_targets", { p_trip: tripId });
+  if (error) return { error: error.message.includes("not_member") ? STAMP_ERRORS.not_member : "도장 정보를 읽지 못했어요. 잠시 뒤 다시 눌러 주세요" };
+  const rows = (data ?? []) as { name: string; country_code: string; lat: number; lng: number; radius_km: number; max_accuracy_m: number }[];
+  return { targets: rows.map((r) => ({ name: r.name, country: r.country_code, lat: r.lat, lng: r.lng, radiusKm: r.radius_km, maxAccuracy: r.max_accuracy_m })) };
+}
+export async function claimStampCity(tripId: string, city: string, country: string): Promise<ClaimResult> {
+  if (!isUuid(tripId) || typeof city !== "string" || typeof country !== "string" || city.length > 80 || country.length > 5)
+    return { ok: false, code: "no_city", error: STAMP_ERRORS.no_city };
   const sb = await createClient();
   if (!sb) return { ok: false, code: "server", error: "아직 로그인 서버가 연결되지 않았어요" };
   const { data: auth } = await sb.auth.getUser();
   if (!auth.user) redirect(`/login?next=/trips/${tripId}`);
-  const { data, error } = await sb.rpc("claim_stamp", { p_trip: tripId, p_lat: lat, p_lng: lng, p_accuracy: accuracy });
+  const { data, error } = await sb.rpc("claim_stamp_city", { p_trip: tripId, p_name: city, p_country: country });
   if (error) {
     const code = Object.keys(STAMP_ERRORS).find((k) => error.message.includes(k)) ?? "server";
     return { ok: false, code, error: STAMP_ERRORS[code] ?? "도장을 받지 못했어요. 잠시 뒤 다시 눌러 주세요" };
