@@ -32,25 +32,44 @@ export function PushToggle() {
     })().catch(() => setState("unsupported"));
   }, []);
 
+  /* 0.91.5 : 어느 단계에서 막혔는지 알려 준다 (마루님 "알림 토글이 작동 안 해"). 서비스 워커 준비는 8초까지만 기다린다 */
   const turnOn = async () => {
     setBusy(true); setError("");
+    let step = "server";
     try {
       const env = supabaseEnv();
       const sb = createClient();
       if (!env || !sb) throw new Error("no_server");
-      if ((await Notification.requestPermission()) !== "granted") { setState(Notification.permission === "denied" ? "denied" : "off"); return; }
+      step = "permission";
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        setState(perm === "denied" ? "denied" : "off");
+        if (perm !== "denied") setError("알림 허용 창이 닫혔어요. 다시 눌러 [허용]을 골라 주세요. 창이 안 뜨면 주소창 왼쪽 자물쇠 > 알림을 허용으로 바꿔 주세요");
+        return;
+      }
+      step = "worker";
       const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register("/sw.js"));
-      await navigator.serviceWorker.ready;
+      await Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error("sw_timeout")), 8000))]);
+      step = "key";
       const res = await fetch(`${env.url}/functions/v1/push`);
       const { publicKey } = await res.json();
       if (!publicKey) throw new Error("no_key");
+      step = "subscribe";
       const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(publicKey) }));
       const j = sub.toJSON();
+      step = "save";
       const { error: e } = await sb.rpc("save_push_subscription", { p_endpoint: j.endpoint, p_p256dh: j.keys?.p256dh, p_auth: j.keys?.auth });
       if (e) throw e;
       setState("on");
-    } catch {
-      setError("알림을 켜지 못했어요. 잠시 뒤 다시 시도해 주세요");
+    } catch (e) {
+      console.error("[push] 켜기 실패", step, e);
+      const why: Record<string, string> = {
+        worker: "앱 준비가 덜 됐어요. 화면을 새로고침한 뒤 다시 켜 주세요",
+        key: "알림 서버에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 켜 주세요",
+        subscribe: "이 브라우저는 알림 등록을 막고 있어요. 크롬이나 사파리(홈 화면에 추가한 앱)에서 켜 주세요",
+        save: "알림 등록을 저장하지 못했어요. 다시 로그인한 뒤 켜 주세요",
+      };
+      setError(why[step] ?? "알림을 켜지 못했어요. 잠시 뒤 다시 시도해 주세요");
     } finally { setBusy(false); }
   };
 
