@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/kit";
+import { MedalSpin } from "@/components/medal-spin";
 import { stampColor } from "@/lib/stamp-art";
 
 const CHARGE_MS = 1200;
@@ -37,13 +38,13 @@ export function StampReveal({ city: cityIn, country, title, sub, onClose }: { ci
   useEffect(() => {
     if (!city) return;
     const t = setTimeout(() => navigator.vibrate?.([0, 30, 40, 90]), 560); // 찍히는 순간에 맞춘 진동
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") close.current(); };
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") close.current(); }; // 키보드 사용자는 Esc 로도 닫힘. 화면 바깥을 눌러서는 닫히지 않는다 (0.92.6)
     window.addEventListener("keydown", k);
     return () => { clearTimeout(t); window.removeEventListener("keydown", k); };
   }, [city]);
 
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label={city ? `${city} 도장` : "도장"} onClick={city ? onClose : undefined}
+    <div role="dialog" aria-modal="true" aria-label={city ? `${city} 도장` : "도장"} 
       className="sr-backdrop fixed inset-0 z-50 flex flex-col items-center justify-center px-6">
       <div className="sr-shake relative flex size-[260px] items-center justify-center" style={{ ["--sr-color" as string]: color }}>
         {!city ? <>
@@ -60,9 +61,22 @@ export function StampReveal({ city: cityIn, country, title, sub, onClose }: { ci
           <span key={i} aria-hidden className="sr-bit absolute rounded-full"
             style={{ width: b.s, height: b.s, ["--x" as string]: `${b.x}px`, ["--y" as string]: `${b.y}px`, animationDelay: `${560 + b.delay * 1.5}ms` }} />
         ))}
-        <div className="sr-stamp relative overflow-hidden rounded-full">
-          <StampFace name={city} country={country} size={200} />
-          <span aria-hidden className="sr-sheen absolute inset-0" />
+        {/* 0.92.6 : 금 메달로 찍히고, 찍힌 뒤 한 바퀴 돌아요. 손가락으로 돌려 볼 수도 있어요 */}
+        <div className="sr-stamp relative">
+          <MedalSpin size={200} spinAfter={1500}
+            front={
+              <div className="flex size-full items-center justify-center rounded-full bg-gradient-to-b from-[#FFD9A8] via-[#F2B36B] to-[#C9853D] p-[7px]">
+                <div className="flex size-full items-center justify-center rounded-full bg-[#FFF8EE]"><StampFace name={city} country={country} size={154} /></div>
+              </div>
+            }
+            back={
+              <div className="flex size-full items-center justify-center rounded-full bg-gradient-to-b from-[#F2B36B] via-[#D99A52] to-[#A86A2C] p-[7px]">
+                <div className="flex size-full flex-col items-center justify-center rounded-full border-2 border-dashed border-[#FFE6C4]/70 bg-gradient-to-br from-[#E8A95E] to-[#B97934] text-[#FFF3E0] [text-shadow:0_1px_0_rgb(0_0_0/0.25)]">
+                  <span className="text-[11px] font-bold tracking-[0.3em] opacity-80">KKUK</span>
+                  <span className="mt-1 max-w-[140px] truncate text-[22px] font-extrabold">{city}</span>
+                </div>
+              </div>
+            } />
         </div>
         </>}
       </div>

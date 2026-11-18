@@ -9,7 +9,8 @@
 */
 import { useEffect, useRef, type ReactNode } from "react";
 
-export function MedalSpin({ front, back, size }: { front: ReactNode; back: ReactNode; size: number }) {
+/* spinAfter : 나타난 뒤 이 시간(ms)이 지나면 스스로 한 바퀴 돌고 앞면으로 멈춘다 (도장 받는 창, 0.92.6) */
+export function MedalSpin({ front, back, size, spinAfter }: { front: ReactNode; back: ReactNode; size: number; spinAfter?: number }) {
   const el = useRef<HTMLDivElement>(null);
   const shine = useRef<HTMLSpanElement>(null);
   const shade = useRef<HTMLSpanElement>(null);
@@ -52,6 +53,7 @@ export function MedalSpin({ front, back, size }: { front: ReactNode; back: React
     const start = () => { if (!st.raf) st.raf = requestAnimationFrame(tick); };
     const node = el.current?.parentElement;
     if (!node || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const auto = spinAfter != null ? setTimeout(() => { if (!st.drag) { st.vy = 22; start(); } }, spinAfter) : undefined;
     const down = (e: PointerEvent) => {
       st.drag = true; st.lx = e.clientX; st.ly = e.clientY; st.lt = performance.now(); st.vx = st.vy = 0;
       node.setPointerCapture(e.pointerId); start();
@@ -72,9 +74,9 @@ export function MedalSpin({ front, back, size }: { front: ReactNode; back: React
     return () => {
       node.removeEventListener("pointerdown", down); node.removeEventListener("pointermove", move);
       node.removeEventListener("pointerup", up); node.removeEventListener("pointercancel", up);
-      cancelAnimationFrame(st.raf);
+      cancelAnimationFrame(st.raf); clearTimeout(auto);
     };
-  }, []);
+  }, [spinAfter]);
 
   const T = 14; // 메달 두께(px)
   const face = "absolute inset-0 overflow-hidden rounded-full [backface-visibility:hidden] [-webkit-backface-visibility:hidden]";
