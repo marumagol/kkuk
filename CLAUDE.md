@@ -30,7 +30,7 @@
 | 함께하는 사람, 초대 | `/trips/[id]/members`, `/invite/[token]` | `members-panel.tsx`, `join-button.tsx` |
 | 일정 공유 | `/trips/[id]/share`, 공개 `/s/[token]` | `day-share.tsx` |
 | 여행 지도 | `/trips/[id]/map` | `trip-map.tsx` |
-| 도장 | `/stamps` | `stamp-cards.tsx`, `stamp-claim.tsx`, `hold-button.tsx`, `stamp-reveal.tsx`, `medal-spin.tsx`, `stamp-tester.tsx`, `lib/stamp-art.ts` |
+| 도장 | `/stamps` | `stamp-cards.tsx`, `stamp-claim.tsx`, `hold-button.tsx`, `stamp-reveal.tsx`, `holo-card.tsx`, `lib/city-lore.ts`, `stamp-tester.tsx`, `lib/stamp-art.ts` |
 | 설정 | `/me`, `/me/name`, `/me/trash`, `/me/updates`, `/me/withdraw` | `avatar-editor.tsx`, `avatar-cropper.tsx`, `theme-picker.tsx`, `push-toggle.tsx`, `restore-button.tsx`, `withdraw-form.tsx`, `update-seen.tsx` |
 | 로그인, 처음 이름 | `/login`, `/auth/callback`, `/welcome` | `app/login/`, `name-form.tsx`, `lib/random-name.ts`, `lib/viewer.ts` |
 | 알림 | `/notifications` | `read-all.tsx`, `clear-read.tsx` |

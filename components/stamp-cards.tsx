@@ -2,13 +2,13 @@
 /*
   도장 탭 카드 (2026-11-17 마루님)
   - 아직 열지 않은 도장 : 누르면 여행으로 넘어가지 않고 받는 방법을 알려 주는 창
-  - 모은 도장 : 누르면 도장을 메달처럼 크게 보여 주는 창 (빛 + 찍히는 움직임). 주소 ?c=도시번호 로 바로 열 수도 있다
+  - 모은 도장 : 누르면 홀로그램 카드로 크게 보여 주는 창 (0.94.0, 예전 메달). 주소 ?c=도시번호 로 바로 열 수도 있다
 */
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Stamp, StampFace } from "@/components/kit";
-import { MedalSpin } from "@/components/medal-spin";
+import { Stamp } from "@/components/kit";
+import { HoloCard } from "@/components/holo-card";
 import { AlertDialog } from "@/components/gate";
 import { flagWideOf, countryOf } from "@/lib/countries";
 import { md } from "@/lib/mock";
@@ -34,7 +34,7 @@ export function SealedButton({ x, tone, label, children }: { x: StampCard; tone:
   );
 }
 
-/* 모은 도장 칸 : 누르면 메달 창 */
+/* 모은 도장 칸 : 누르면 카드 창 */
 export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: boolean; startOpen?: boolean }) {
   const [open, setOpen] = useState(!!startOpen);
   const close = () => {
@@ -68,27 +68,10 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장`} onClick={(e) => e.stopPropagation()}
         className="relative flex w-full max-w-[340px] flex-col items-center overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-8 text-center text-on-deep shadow-float">
-        {/* 메달 : 뒤로 퍼지는 빛 + 리본 + 찍히는 도장 */}
-        <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-60px] size-[360px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgb(255_90_54/0.45)_0%,rgb(255_90_54/0.12)_40%,transparent_68%)]" />
+        {/* 홀로그램 카드 (0.94.0) : 뒤로 퍼지는 빛 + 끌어서 돌려 보는 카드 */}
+        <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-70px] size-[380px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgb(255_90_54/0.42)_0%,rgb(255_90_54/0.1)_40%,transparent_68%)]" />
         <div className="relative flex flex-col items-center">
-          <MedalSpin size={176}
-            front={
-              <div className="flex size-full items-center justify-center rounded-full bg-gradient-to-b from-[#FFD9A8] via-[#F2B36B] to-[#C9853D] p-[6px]">
-                <div className="flex size-full items-center justify-center rounded-full bg-[#FFF8EE]">
-                  <div className="stamp-hit"><StampFace name={x.name} country={x.country} size={136} /></div>
-                </div>
-              </div>
-            }
-            back={
-              <div className="flex size-full items-center justify-center rounded-full bg-gradient-to-b from-[#F2B36B] via-[#D99A52] to-[#A86A2C] p-[6px]">
-                <div className="flex size-full flex-col items-center justify-center rounded-full border-2 border-dashed border-[#FFE6C4]/70 bg-gradient-to-br from-[#E8A95E] to-[#B97934] text-[#FFF3E0] [text-shadow:0_1px_0_rgb(0_0_0/0.25)]">
-                  <span className="text-[11px] font-bold tracking-[0.3em] opacity-80">KKUK</span>
-                  <span className="mt-1 max-w-[120px] truncate text-[20px] font-extrabold">{x.name}</span>
-                  {x.firstDate && <span className="mt-0.5 text-[11px] font-semibold opacity-90">{dot(x.firstDate)}</span>}
-                  <span className="mt-1 text-[11px] font-semibold opacity-80">{x.visits}번 방문</span>
-                </div>
-              </div>
-            } />
+          <HoloCard name={x.name} country={x.country} no={x.cityId} date={dot(x.firstDate)} visits={x.visits} />
           <span className="relative -mt-3 rounded-full bg-point px-3 py-1 text-tiny font-extrabold text-white shadow-[0_4px_10px_rgb(0_0_0/0.25)]">
             {x.visits > 1 ? `${x.visits}번 방문` : "첫 방문"}
           </span>

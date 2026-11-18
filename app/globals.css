@@ -419,3 +419,43 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 @keyframes sp-shake { 20% { transform: translate(-5px, 3px); } 40% { transform: translate(4px, -3px); } 60% { transform: translate(-2px, 2px); } 80% { transform: translate(1px, -1px); } }
 @keyframes sp-shake2 { 25% { transform: translate(3px, -2px); } 50% { transform: translate(-3px, 2px); } 75% { transform: translate(1px, 0); } }
 @media (prefers-reduced-motion: reduce) { .sp-book, .sp-cover, .sp-city, .sp-entry, .sp-shake { animation-duration: 1ms; animation-delay: 0ms; } }
+
+/* 홀로그램 도장 카드 (0.94.0) : 도장 탭에서 모은 도장을 눌렀을 때. 빛 층 위치는 --px --py --lx --ly --fa --so 를 components/holo-card.tsx 가 돌리는 각도에 맞춰 넣는다 */
+.hc-persp { position: relative; perspective: 900px; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.hc-persp:active { cursor: grabbing; }
+.hc-enter { transform-style: preserve-3d; animation: hc-enter .9s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes hc-enter { 0% { transform: translateY(30px) scale(.7) rotateY(-200deg); opacity: 0; } 50% { opacity: 1; } 100% { transform: none; } }
+.hc-card { position: relative; width: 186px; height: 260px; transform-style: preserve-3d; }
+.hc-side { position: absolute; inset: 0; border-radius: 16px; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 18px 34px rgb(0 0 0 / .4); }
+.hc-front { padding: 7px; background: conic-gradient(from var(--fa, 0deg), #F7D58B, #FFF4C9, #D9A441, #FFE9A8, #C8902E, #FFF4C9, #F7D58B); }
+.hc-inner { position: relative; height: 100%; border-radius: 10px; overflow: hidden; background: linear-gradient(180deg, #FFF9EE, #F5E6CC); display: flex; flex-direction: column; text-align: left; }
+.hc-name { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 7px 9px 5px; font-size: 14px; font-weight: 800; color: #3A2A18; }
+.hc-name small { flex: none; font-size: 9px; font-weight: 800; letter-spacing: .12em; color: #B4441F; }
+.hc-win { position: relative; margin: 0 8px; height: 128px; flex: none; border-radius: 6px; overflow: hidden; border: 2px solid #E2B867; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 50%, #FFF3DC 0, #FFE0B5 38%, #F7C58E 72%, #E9A866 100%); box-shadow: inset 0 0 18px rgb(160 90 20 / .35); }
+.hc-win > .hc-art { position: relative; filter: drop-shadow(0 4px 6px rgb(0 0 0 / .25)); }
+.hc-halo { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%,transparent 0 38%,rgba(255,255,255,.55) 39%,transparent 41%,transparent 50%,rgba(255,255,255,.35) 51%,transparent 53%,transparent 63%,rgba(255,255,255,.22) 64%,transparent 66%),radial-gradient(1.6px 1.6px at 14% 22%,#fff 50%,transparent),radial-gradient(1.2px 1.2px at 82% 18%,#fff 50%,transparent),radial-gradient(2px 2px at 88% 70%,#fff 50%,transparent),radial-gradient(1.4px 1.4px at 10% 76%,#fff 50%,transparent),radial-gradient(1.2px 1.2px at 30% 88%,#fff 50%,transparent),radial-gradient(1.6px 1.6px at 70% 90%,#fff 50%,transparent),radial-gradient(1.2px 1.2px at 22% 50%,#fff 50%,transparent),radial-gradient(1.4px 1.4px at 78% 44%,#fff 50%,transparent); animation: hc-halo 3.2s ease-in-out infinite; }
+@keyframes hc-halo { 0%, 100% { transform: scale(.96); opacity: .75; } 50% { transform: scale(1.04); opacity: 1; } }
+.hc-nick { margin: 6px 8px 0; padding: 4px 6px; border-radius: 4px; background: linear-gradient(90deg, #E9C27A, #F7DEA6, #E9C27A); font-size: 9px; font-weight: 700; color: #5A3B12; text-align: center; letter-spacing: .04em; }
+.hc-desc { flex: 1; padding: 6px 9px 0; font-size: 9px; line-height: 1.5; font-weight: 600; color: #7A5A30; word-break: keep-all; }
+.hc-foot { display: flex; justify-content: space-between; align-items: center; padding: 0 9px 7px; font-size: 8px; font-weight: 800; letter-spacing: .15em; color: #B98A4E; }
+.hc-holo { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: color-dodge; opacity: .3;
+  background: repeating-linear-gradient(115deg, #ff6b6b 0%, #ffd36e 5%, #8cff9a 10%, #6ee7ff 15%, #b48cff 20%, #ff6b6b 25%);
+  background-size: 400% 400%; background-position: var(--px, 50%) var(--py, 50%);
+  -webkit-mask-image: linear-gradient(115deg, transparent 10%, #000 45%, #000 55%, transparent 90%); mask-image: linear-gradient(115deg, transparent 10%, #000 45%, #000 55%, transparent 90%);
+  -webkit-mask-size: 250% 250%; mask-size: 250% 250%; -webkit-mask-position: var(--px, 50%) var(--py, 50%); mask-position: var(--px, 50%) var(--py, 50%); }
+.hc-glitter { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: overlay; opacity: .5;
+  background-image: repeating-linear-gradient(45deg, rgb(255 255 255 / 0) 0 3px, rgb(255 255 255 / .18) 3px 4px), repeating-linear-gradient(-45deg, rgb(255 255 255 / 0) 0 3px, rgb(255 255 255 / .18) 3px 4px);
+  background-position: var(--px, 50%) var(--py, 50%); }
+.hc-stars { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: var(--so, .4);
+  background-image: radial-gradient(circle, #fff 0 1px, transparent 1.6px), radial-gradient(circle, #fff 0 .8px, transparent 1.3px);
+  background-size: 23px 29px, 17px 13px; background-position: var(--px, 50%) var(--py, 50%), calc(100% - var(--px, 50%)) var(--py, 50%); }
+.hc-shine { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; background: radial-gradient(circle at var(--lx, 50%) var(--ly, 30%), rgb(255 255 255 / .6), transparent 38%); }
+.hc-sweep { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / .9) 50%, transparent 65%); transform: translateX(-130%); animation: hc-sweep .9s .85s ease-in-out both; }
+@keyframes hc-sweep { to { transform: translateX(130%); } }
+.hc-back { transform: rotateY(180deg); background: linear-gradient(160deg, #E8A95E, #B97934); border: 5px solid #F2C894; color: #FFF3E0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-shadow: 0 1px 0 rgb(0 0 0 / .25); }
+.hc-back > * { position: relative; }
+.hc-back > .hc-wm { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2240%22%3E%3Ctext%20x%3D%220%22%20y%3D%2216%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2210%22%20letter-spacing%3D%222%22%20fill%3D%22%23FFF3E0%22%20fill-opacity%3D%22.13%22%20transform%3D%22rotate%28-24%2032%2020%29%22%3EKKUK%3C/text%3E%3Ctext%20x%3D%2232%22%20y%3D%2236%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2210%22%20letter-spacing%3D%222%22%20fill%3D%22%23FFF3E0%22%20fill-opacity%3D%22.13%22%20transform%3D%22rotate%28-24%2032%2020%29%22%3EKKUK%3C/text%3E%3C/svg%3E"); background-size: 64px 40px; }
+.hc-back > .hc-emb { position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; margin: -75px 0 0 -75px; opacity: .16; }
+.hc-back > .hc-ring { position: absolute; inset: 9px; border: 2px dashed rgb(255 230 196 / .6); border-radius: 10px; }
+@media (prefers-reduced-motion: reduce) { .hc-enter, .hc-halo, .hc-sweep { animation: none; } .hc-sweep { display: none; } }
