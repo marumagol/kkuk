@@ -352,7 +352,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
           <Link href="/stamps" className="press mt-3 flex min-h-14 items-center gap-3 rounded-card bg-surface px-4 py-3">
             <span className="flex size-9 flex-none items-center justify-center rounded-full bg-point-soft text-point-text"><Icon name="stamp" size={20} /></span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sub font-bold text-ink">모은 도장 {count}개{countries ? `, 나라 ${countries}곳` : ""}</span>
+              <span className="block text-sub font-bold text-ink">도장 카드 {count}장{countries ? `, 나라 ${countries}곳` : ""}</span>
               <span className="block text-tiny text-ink-sub">{goal ? `${goal.label}까지 ${goal.need - goalValue(goal, count, countries)}${goal.of === "stamp" ? "개" : "곳"} 남았어요` : "모든 목표를 이뤘어요"}</span>
             </span>
             <Icon name="right" size={18} className="text-ink-sub" />

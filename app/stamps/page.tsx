@@ -91,7 +91,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
         {tester && <StampTester />}
         {/* 수집 현황 */}
         <section aria-label="수집 현황" className="relative overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-5 text-on-deep">
-          <p className="text-tiny font-semibold text-on-deep-sub">모은 도장</p>
+          <p className="text-tiny font-semibold text-on-deep-sub">모은 도장 카드</p>
           <p className="mt-1 flex items-end gap-1.5">
             <span className="text-[44px] font-extrabold leading-none tracking-tight">{count}</span>
             <span className="pb-1 text-body font-bold">개</span>
@@ -153,7 +153,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
           </section>
         ) : (
           <section aria-labelledby="earned" className="flex flex-col gap-5">
-            <h2 id="earned" className="text-body font-bold text-ink">모은 도장</h2>
+            <h2 id="earned" className="text-body font-bold text-ink">도장 카드</h2>
             {groups.map(([code, list]) => (
               <div key={code} className="flex flex-col gap-3">
                 <h3 className="flex items-center gap-1.5 text-sub font-bold text-ink">
