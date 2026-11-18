@@ -171,8 +171,8 @@ function List({ title, kind, view, canEdit, busy, run, onSwipe }: {
               )) : items.map((it) => (
                 <li key={it.id} ref={(el) => { if (el) rowEls.current.set(it.id, el); else rowEls.current.delete(it.id); }}
                   className={dragId === it.id ? "relative z-10 scale-[1.02] bg-surface shadow-float" : ""}>
+                  {/* 밀어서 삭제는 뺐어요 (0.93.1 마루님). 삭제는 ⋮ 메뉴나 여러 개 고르기로. 꾹 눌러 순서 바꾸기는 그대로 */}
                   <SwipeRow rounded="" bg="bg-surface" disabled={!canEdit || busy || !!dragId}
-                    onDelete={canEdit ? () => onSwipe(it) : undefined}
                     onLongPress={canEdit && items.length > 1 ? () => setDragId(it.id) : undefined}>
                     <Row it={it} view={view} canEdit={canEdit} busy={busy} run={run} onDelete={() => onSwipe(it)} />
                   </SwipeRow>
