@@ -161,7 +161,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
                   {countryOf(code)?.name ?? code}
                   <span className="font-semibold text-ink-sub">{list.length}</span>
                 </h3>
-                <div className="grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-4">
+                <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
                   {list.map((x) => (
                     <EarnedStamp key={`${x.country}:${x.name}`} x={x} isNew={!!x.firstDate && x.firstDate >= newSince} startOpen={picked === x} />
                   ))}

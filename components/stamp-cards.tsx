@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Stamp } from "@/components/kit";
+import { StampFace } from "@/components/kit";
 import { HoloCard } from "@/components/holo-card";
 import { AlertDialog } from "@/components/gate";
 import { flagWideOf, countryOf } from "@/lib/countries";
@@ -43,10 +43,18 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
   };
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 도장, ${x.visits}번 방문`} className="press relative flex justify-center">
-        <Stamp fluid name={x.name} country={x.country} date={dot(x.firstDate)} tilt={tiltOf(x.name)} />
-        {isNew && <span className="absolute right-1 top-0 rounded-full bg-point px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">NEW</span>}
-        {x.visits > 1 && <span className="absolute left-1 top-0 rounded-full bg-deep px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-on-deep">×{x.visits}</span>}
+      {/* 작은 홀로그램 카드 (0.94.1) : 금박 테두리 + 도시 이름 + 도장 + 받은 날. 누르면 큰 카드 */}
+      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 도장, ${x.visits}번 방문`} className="press relative block w-full">
+        <span className="mc">
+          <span className="mc-in">
+            <span className="mc-name">{x.name}</span>
+            <span className="mc-win"><StampFace name={x.name} country={x.country} size={64} /></span>
+            <span className="mc-foot"><span>KKUK</span><span>{dot(x.firstDate)}</span></span>
+          </span>
+          <span aria-hidden className="mc-holo" />
+          <span aria-hidden className="mc-sweep" style={{ animationDelay: `${(tiltOf(x.name) + 8) * 0.3}s` }} />
+        </span>
+        {isNew && <span className="absolute -right-1 -top-1.5 z-[1] rounded-full bg-point px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">NEW</span>}
       </button>
       {open && <StampMedal x={x} onClose={close} />}
     </>

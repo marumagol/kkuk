@@ -486,3 +486,16 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .gb-spark { position: absolute; left: 50%; top: 110px; width: 6px; height: 6px; border-radius: 50%; animation: gb-spark 1s .35s ease-out both; }
 @keyframes gb-spark { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .gb-foil, .gb-shine, .gb-land, .gb-spark { animation: none; } .gb-spark { display: none; } .gb-land { transform: scale(1.8); } }
+
+/* 모은 도장 작은 카드 (0.94.1) : components/stamp-cards.tsx EarnedStamp. 큰 카드(hc-*)와 같은 재료 */
+.mc { position: relative; display: block; aspect-ratio: 5 / 7; border-radius: 12px; padding: 4px; overflow: hidden; background: conic-gradient(from 210deg, #F7D58B, #FFF4C9, #D9A441, #FFE9A8, #C8902E, #FFF4C9, #F7D58B); box-shadow: 0 6px 14px rgb(120 70 20 / .18); }
+.mc-in { display: flex; height: 100%; flex-direction: column; overflow: hidden; border-radius: 8px; background: linear-gradient(180deg, #FFF9EE, #F5E6CC); text-align: left; }
+.mc-name { padding: 5px 6px 3px; font-size: 11px; font-weight: 800; color: #3A2A18; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-win { position: relative; flex: 1; margin: 0 5px; border-radius: 5px; border: 1.5px solid #E2B867; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #FFF3DC 0, #FFE0B5 45%, #F2BC84 100%); }
+.mc-win > svg { width: 74%; height: auto; filter: drop-shadow(0 2px 3px rgb(0 0 0 / .2)); }
+.mc-foot { display: flex; justify-content: space-between; padding: 3px 6px 5px; font-size: 8.5px; font-weight: 800; color: #B98A4E; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.mc-holo { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: color-dodge; opacity: .22; background: repeating-linear-gradient(115deg, #ff6b6b 0%, #ffd36e 5%, #8cff9a 10%, #6ee7ff 15%, #b48cff 20%, #ff6b6b 25%); background-size: 300% 300%; animation: mc-holo 6s linear infinite; }
+@keyframes mc-holo { to { background-position: 300% 0; } }
+.mc-sweep { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 38%, rgb(255 255 255 / .85) 50%, transparent 62%); transform: translateX(-130%); animation: mc-sweep 4.5s ease-in-out infinite; }
+@keyframes mc-sweep { 0%, 70% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
+@media (prefers-reduced-motion: reduce) { .mc-holo, .mc-sweep { animation: none; } .mc-sweep { display: none; } }
