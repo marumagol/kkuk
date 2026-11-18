@@ -392,3 +392,30 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 @keyframes modal-pop { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: none; } }
 .modal-pop { animation: modal-pop 220ms cubic-bezier(.2, .8, .2, 1) both; }
 @media (prefers-reduced-motion: reduce) { .modal-pop { animation: none; } }
+
+/* 도장 받는 창 : 여권 연출 (components/stamp-reveal.tsx, 0.93.0 마루님 B안) */
+.sp-book { position: relative; width: 270px; height: 360px; perspective: 1100px; animation: sp-in 500ms cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes sp-in { from { opacity: 0; transform: translateY(40px) scale(.92); } to { opacity: 1; transform: none; } }
+.sp-page { position: absolute; inset: 0; overflow: hidden; border-radius: 6px 14px 14px 6px;
+  background: repeating-radial-gradient(circle at 30% 40%, rgb(120 150 170 / .08) 0 2px, transparent 2px 9px), linear-gradient(160deg, #F3F0E4, #E7EADF);
+  box-shadow: 0 26px 50px rgb(0 0 0 / .45), inset 10px 0 18px -10px rgb(0 0 0 / .25); }
+.sp-hd { position: absolute; left: 16px; right: 16px; top: 14px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; letter-spacing: .25em; color: #8FA0A8; }
+.sp-no { position: absolute; right: 14px; top: 50%; writing-mode: vertical-rl; font-size: 10px; font-weight: 700; letter-spacing: .3em; color: #B5C0C4; }
+.sp-lines { position: absolute; left: 16px; right: 16px; bottom: 16px; font: 600 10px/1.7 ui-monospace, Menlo, monospace; letter-spacing: .12em; color: #9AA7AD; word-break: break-all; }
+.sp-cover { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border-radius: 6px 14px 14px 6px; transform-origin: 0 50%;
+  background: linear-gradient(160deg, #2E4A6B, #1E3350); color: #E8C77E; box-shadow: inset -8px 0 14px rgb(0 0 0 / .25);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden; animation: sp-open 800ms 350ms cubic-bezier(.6, 0, .2, 1) both; }
+.sp-em { display: flex; width: 64px; height: 64px; align-items: center; justify-content: center; border: 2px solid #E8C77E; border-radius: 50%; font-size: 22px; font-weight: 800; }
+.sp-ttl { font-size: 15px; font-weight: 800; letter-spacing: .35em; }
+@keyframes sp-open { to { transform: rotateY(-165deg); } }
+.sp-city { position: absolute; left: 28px; top: 44px; opacity: 0; filter: url(#sp-ink); --r: -8deg; animation: sp-slam 450ms 1200ms cubic-bezier(.2, .9, .3, 1.3) both; }
+.sp-entry { position: absolute; right: 20px; top: 176px; width: 150px; padding: 8px 10px; border: 3px solid #2F5FA8; border-radius: 10px; color: #2F5FA8; text-align: center; opacity: 0; filter: url(#sp-ink); --r: 9deg;
+  animation: sp-slam 400ms 1750ms cubic-bezier(.2, .9, .3, 1.3) both; }
+.sp-a { font-size: 13px; font-weight: 800; letter-spacing: .2em; }
+.sp-b { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 20px; font-weight: 800; }
+.sp-c { margin-top: 2px; padding-top: 3px; border-top: 2px solid #2F5FA8; font: 700 12px ui-monospace, Menlo, monospace; letter-spacing: .1em; }
+@keyframes sp-slam { 0% { opacity: 0; transform: scale(1.9) rotate(calc(var(--r) - 10deg)); } 55% { opacity: 1; transform: scale(.94) rotate(var(--r)); } 100% { opacity: 1; transform: scale(1) rotate(var(--r)); } }
+.sp-shake { animation: sp-shake 300ms 1400ms ease-out both, sp-shake2 260ms 1920ms ease-out; }
+@keyframes sp-shake { 20% { transform: translate(-5px, 3px); } 40% { transform: translate(4px, -3px); } 60% { transform: translate(-2px, 2px); } 80% { transform: translate(1px, -1px); } }
+@keyframes sp-shake2 { 25% { transform: translate(3px, -2px); } 50% { transform: translate(-3px, 2px); } 75% { transform: translate(1px, 0); } }
+@media (prefers-reduced-motion: reduce) { .sp-book, .sp-cover, .sp-city, .sp-entry, .sp-shake { animation-duration: 1ms; animation-delay: 0ms; } }
