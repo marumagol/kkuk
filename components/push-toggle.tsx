@@ -26,10 +26,13 @@ export function PushToggle() {
       const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone;
       if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return setState(ios && !standalone ? "ios-home" : "unsupported");
       if (Notification.permission === "denied") return setState("denied");
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = await reg?.pushManager.getSubscription();
+      /* 0.91.8 : 삼성 인터넷 등에서 서비스 워커 확인이 끝나지 않아 토글이 안 보이던 문제. 3초 안에 답이 없으면 꺼진 상태로 보여 준다 */
+      const sub = await Promise.race([
+        navigator.serviceWorker.getRegistration().then((reg) => reg?.pushManager.getSubscription() ?? null),
+        new Promise<null>((ok) => setTimeout(() => ok(null), 3000)),
+      ]);
       setState(sub && Notification.permission === "granted" ? "on" : "off");
-    })().catch(() => setState("unsupported"));
+    })().catch(() => setState("off"));
   }, []);
 
   /* 0.91.5 : 어느 단계에서 막혔는지 알려 준다 (마루님 "알림 토글이 작동 안 해"). 서비스 워커 준비는 8초까지만 기다린다 */
@@ -50,8 +53,10 @@ export function PushToggle() {
         return;
       }
       step = "worker";
-      const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register("/sw.js"));
-      await Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error("sw_timeout")), 8000))]);
+      const reg = await Promise.race([
+        navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready),
+        new Promise<never>((_, no) => setTimeout(() => no(new Error("sw_timeout")), 8000)),
+      ]);
       step = "key";
       const res = await fetch(`${env.url}/functions/v1/push`);
       const { publicKey } = await res.json();

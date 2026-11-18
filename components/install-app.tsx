@@ -12,6 +12,7 @@ type State = "loading" | "installed" | "ready" | "ios" | "manual";
 
 export function InstallApp() {
   const [state, setState] = useState<State>("loading");
+  const [help, setHelp] = useState(false); // 0.91.8 : 설치 창을 못 띄우는 브라우저는 누르면 방법을 펼쳐 보여 준다
   useEffect(() => {
     const standalone = matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone;
     if (standalone) return setState("installed");
@@ -34,20 +35,42 @@ export function InstallApp() {
     setState(r?.outcome === "accepted" ? "installed" : "manual");
   };
   if (state === "loading") return null;
+  const samsung = typeof navigator !== "undefined" && /SamsungBrowser/i.test(navigator.userAgent);
   return (
+    <div>
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
         <h3 className="text-body font-bold text-ink">앱으로 설치</h3>
         <p className="mt-0.5 text-tiny text-ink-sub">
           {state === "installed" ? "지금 설치한 앱으로 쓰고 있어요"
             : state === "ready" ? "홈 화면에 KKuK 아이콘이 생기고, 주소창 없이 앱처럼 열려요"
-            : state === "ios" ? "Safari 아래 공유 버튼을 누르고 [홈 화면에 추가]를 골라 주세요"
-            : "브라우저 메뉴(⋮)에서 [앱 설치] 또는 [홈 화면에 추가]를 골라 주세요"}
+            : "홈 화면에 KKuK 아이콘을 만들어 앱처럼 열어요"}
         </p>
       </div>
       {state === "ready" && (
         <button type="button" onClick={install} className="press h-9 flex-none rounded-full bg-btn px-4 text-sub font-bold text-on-btn">앱 설치</button>
       )}
+      {(state === "manual" || state === "ios") && (
+        <button type="button" onClick={() => setHelp((h) => !h)} aria-expanded={help} className="press h-9 flex-none rounded-full bg-btn px-4 text-sub font-bold text-on-btn">설치 방법</button>
+      )}
+    </div>
+    {help && (
+      <ol className="mt-3 flex list-decimal flex-col gap-1 rounded-field bg-bg py-3 pl-8 pr-4 text-tiny text-ink">
+        {state === "ios" ? <>
+          <li>Safari 아래 가운데 공유 버튼을 눌러요</li>
+          <li>[홈 화면에 추가]를 골라요</li>
+          <li>홈 화면의 KKuK 아이콘으로 열어요</li>
+        </> : samsung ? <>
+          <li>아래 메뉴(≡)를 눌러요</li>
+          <li>[현재 페이지 추가] &gt; [홈 화면]을 골라요</li>
+          <li>홈 화면의 KKuK 아이콘으로 열어요</li>
+        </> : <>
+          <li>주소창 오른쪽 메뉴(⋮)를 눌러요</li>
+          <li>[앱 설치] 또는 [홈 화면에 추가]를 골라요</li>
+          <li>홈 화면의 KKuK 아이콘으로 열어요</li>
+        </>}
+      </ol>
+    )}
     </div>
   );
 }
