@@ -9,7 +9,6 @@ import { cookies } from "next/headers";
 import { AvatarEditor } from "@/components/avatar-editor";
 import { ThemePicker, type Theme } from "@/components/theme-picker";
 import { PushToggle } from "@/components/push-toggle";
-import { InstallApp } from "@/components/install-app";
 import { NewUpdateDot } from "@/components/update-seen";
 
 export const metadata = { title: "설정" };
@@ -74,7 +73,6 @@ export default async function Me() {
               <ThemePicker initial={theme} />
             </div>
             {v.kind === "user" && <div className="border-t border-line py-4"><PushToggle /></div>}
-            <div className="border-t border-line py-4"><InstallApp /></div>
           </section>
         </Group>
 
