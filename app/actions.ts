@@ -847,3 +847,11 @@ export async function readAllNotices(): Promise<void> {
   await sb.rpc("mark_notifications_read");
   revalidatePath("/");
 }
+
+/* 예약 미리보기 창 (준비 탭, 0.89.3) : 예약번호, 메모, 첨부 파일 주소를 읽기만 한다 */
+export async function getBooking(tripId: string, id: string) {
+  if (!isUuid(tripId) || !isUuid(id)) return null;
+  const { getViewer } = await import("@/lib/viewer");
+  const { loadBooking } = await import("@/lib/trips");
+  return loadBooking(await getViewer(), tripId, id);
+}
