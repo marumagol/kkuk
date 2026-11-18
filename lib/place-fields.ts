@@ -118,7 +118,7 @@ export function cleanDetails(category: string, raw: unknown): Details | null {
 
 /*
   미리보기 창에 보일 맞춤 칸 전체 (2026-11-17 마루님 "일정 카드도 모달로 미리보기"). 목록 한 줄에서 줄인 것을 칸 이름과 함께 모두.
-  출발/도착 시간은 창 위 시간 줄에 있으니 뺀다. 예약번호, 편명 같은 번호는 복사 버튼
+  출발/도착 시간은 창 위 시간 줄에 있으니 뺀다. 예약번호, 전화번호는 복사 버튼 (편명·열차는 복사 안 함, 0.89.3)
 */
 export type DetailRow = { label: string; value: string; copy?: boolean };
 export function detailRows(category: string, d?: Details | null): DetailRow[] {
@@ -131,7 +131,7 @@ export function detailRows(category: string, d?: Details | null): DetailRow[] {
     if (MOVE_TIME_KEYS.includes(f.key)) continue;
     const v = d[f.key]?.trim();
     if (!v) continue;
-    rows.push({ label: f.label, value: f.unit && !v.endsWith(f.unit) ? `${v}${f.unit}` : v, copy: f.key === "booking" || f.key === "code" || f.key === "phone" });
+    rows.push({ label: f.label, value: f.unit && !v.endsWith(f.unit) ? `${v}${f.unit}` : v, copy: f.key === "booking" || f.key === "phone" });
   }
   return rows;
 }
