@@ -28,6 +28,8 @@ export const metadata: Metadata = {
   title: { default: BRAND, template: `%s | ${BRAND}` },
   description: "가고 싶은 장소를 모아 계획하고, 기록하고, 모으는 앱",
   appleWebApp: { capable: true, title: "KKuK", statusBarStyle: "default" },
+  /* 0.89.6 : 앱 주소를 메신저에 붙였을 때 보이는 카드 */
+  openGraph: { siteName: BRAND, title: BRAND, description: "가고 싶은 장소를 모아 계획하고, 기록하고, 모으는 앱", locale: "ko_KR", type: "website", images: [{ url: "/icon-512.png", width: 512, height: 512 }] },
 };
 
 export const viewport: Viewport = {

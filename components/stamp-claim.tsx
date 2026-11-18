@@ -23,7 +23,10 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
   const waiting = useRef(false);
 
   const claim = (p: GeolocationPosition) => start(async () => {
-    const r = await safeCall(() => claimStamp(tripId, p.coords.latitude, p.coords.longitude, p.coords.accuracy));
+    /* 0.89.6 : 여행지 느린 인터넷에서 답이 안 오면 연출 화면이 멈춰 있지 않게 20초에서 끊는다. 서버 오류도 안내로 */
+    const late = new Promise<{ error: string }>((ok) => setTimeout(() => ok({ error: "응답이 늦어요. 인터넷이 잘 되는 곳에서 다시 꾹 눌러 주세요" }), 20000));
+    const r = await Promise.race([safeCall(() => claimStamp(tripId, p.coords.latitude, p.coords.longitude, p.coords.accuracy)), late])
+      .catch(() => ({ error: "도장을 받지 못했어요. 잠시 뒤 다시 꾹 눌러 주세요" }));
     if (!("ok" in r) || !r.ok) { setReveal(false); return setState({ kind: "error", text: r.error }); }
     setState({ kind: "done", r });
   });

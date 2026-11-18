@@ -58,7 +58,7 @@ export function HoldButton({ onStart, onComplete, onShort, disabled, label, hold
     const R = ring / 2 - 4, C = 2 * Math.PI * R;
     return (
       <button type="button" disabled={disabled} {...handlers}
-        className={"group relative flex-none select-none rounded-full [-webkit-touch-callout:none] [touch-action:manipulation] disabled:opacity-60 " + className}
+        className={"group relative flex-none select-none rounded-full [-webkit-touch-callout:none] [touch-action:none] disabled:opacity-60 " + className}
         style={{ width: ring, height: ring }}>
         <svg aria-hidden width={ring} height={ring} className="absolute inset-0 -rotate-90">
           <circle cx={ring / 2} cy={ring / 2} r={R} fill="none" stroke="var(--color-line)" strokeWidth={3} />

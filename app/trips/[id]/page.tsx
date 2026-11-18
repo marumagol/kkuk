@@ -34,7 +34,8 @@ function BackLink() {
 export default async function TripDetail({ params, searchParams }: Props) {
   const viewer = await getViewer();
   const loggedIn = isIn(viewer);
-  const r = await loadTrip(viewer, (await params).id);
+  const tripId = (await params).id;
+  const r = await loadTrip(viewer, tripId);
   const trip = "trip" in r ? r.trip : undefined;
 
   if (!trip) {
@@ -45,8 +46,8 @@ export default async function TripDetail({ params, searchParams }: Props) {
         <div className="px-5 pt-6">
           <div role="alert" className="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-8 text-center">
             <h1 className="text-title font-bold text-ink">{removed ? "삭제된 여행이에요" : "볼 수 없는 여행이에요"}</h1>
-            <p className="text-sub text-ink-sub">{removed ? "호스트가 이 여행을 삭제했어요. 호스트는 30일 안에 설정 > 최근 삭제한 여행에서 되살릴 수 있어요" : loggedIn ? "지워졌거나 함께하는 사람에서 빠진 여행일 수 있어요" : "로그인하면 내 여행을 볼 수 있어요"}</p>
-            <Link href={loggedIn ? "/trips" : "/login"} className="press inline-flex h-11 items-center rounded-btn border border-line-strong bg-surface px-4 text-sub font-bold text-ink">
+            <p className="text-sub text-ink-sub">{removed ? "호스트가 이 여행을 삭제했어요. 호스트는 30일 안에 설정 > 최근 삭제한 여행에서 되살릴 수 있어요" : loggedIn ? "삭제됐거나 함께하는 사람에서 빠진 여행일 수 있어요" : "로그인하면 내 여행을 볼 수 있어요"}</p>
+            <Link href={loggedIn ? "/trips" : `/login?next=${encodeURIComponent(`/trips/${tripId}`)}`} className="press inline-flex h-11 items-center rounded-btn border border-line-strong bg-surface px-4 text-sub font-bold text-ink">
               {loggedIn ? "여행 목록으로" : "로그인"}
             </Link>
           </div>
@@ -82,7 +83,7 @@ export default async function TripDetail({ params, searchParams }: Props) {
       {viewer.kind === "preview" && <MockNote />}
       {viewer.kind === "user" && <TripTabs tripId={trip.id} active="일정" />}
       {viewer.kind === "user" && <LiveRefresh tripId={trip.id} />}
-      {viewer.kind === "user" && ongoing && <StampClaim tripId={trip.id} city={trip.cities[0]} />}
+      {viewer.kind === "user" && ongoing && <StampClaim tripId={trip.id} city={trip.cities.length === 1 ? trip.cities[0] : undefined} />}
 
       <DayBoard tripId={trip.id} start={trip.start} days={trip.days.slice(0, len)} undated={trip.undated}
         editable={editable} canAdd={canEdit} user={viewer.kind === "user"} initialDay={sp.day === "all" ? 0 : day}
