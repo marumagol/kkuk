@@ -849,7 +849,11 @@ function ItemPreview({ it, warn, editHref, onClose, onPhoto }: { it: Item; warn?
             {when && <span className="text-sub text-ink-sub tabular-nums">{when}</span>}
             {badge && <span className="inline-flex h-6 items-center rounded-full border border-accent-text/30 px-2 text-[12px] font-bold text-accent-text">{badge}</span>}
           </div>
-          <button type="button" onClick={onClose} aria-label="닫기" autoFocus className="press -mr-2 flex size-10 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="x" size={20} /></button>
+          <div className="flex flex-none items-center gap-1">
+            {/* 0.92.4 마루님 "수정이 너무 강조" : 수정은 머리 줄 오른쪽 작은 버튼으로 */}
+            {editHref && <Link href={editHref} replace /* 창 기록 자리를 수정 화면으로 바꿔, 수정에서 뒤로 한 번이면 일정으로 */ className="press -mr-1 inline-flex h-8 flex-none items-center gap-1 rounded-full bg-surface-soft px-3 text-tiny font-bold text-ink-sub"><Icon name="pencil" size={15} />수정</Link>}
+            <button type="button" onClick={onClose} aria-label="닫기" autoFocus className="press -mr-2 flex size-10 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="x" size={20} /></button>
+          </div>
         </div>
         <div className="mt-2 min-h-0 overflow-y-auto">
           {!isMemo && <h2 className="text-title font-extrabold leading-snug text-ink">{it.title}</h2>}
@@ -886,20 +890,11 @@ function ItemPreview({ it, warn, editHref, onClose, onPhoto }: { it: Item; warn?
             </p>
           )}
         </div>
-        {(map || editHref) && (
-          <div className="mt-5 flex flex-none gap-2">
-            {map && (
-              <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer"
-                className="press flex h-12 flex-1 items-center justify-center gap-1.5 rounded-btn border border-line-strong bg-surface text-body font-bold text-ink">
-                <Icon name="pin" size={18} className="text-point" />길찾기
-              </a>
-            )}
-            {editHref && (
-              <Link href={editHref} replace /* 창 기록 자리를 수정 화면으로 바꿔, 수정에서 뒤로 한 번이면 일정으로 */ className="press flex h-12 flex-1 items-center justify-center gap-1.5 rounded-btn bg-btn text-body font-bold text-on-btn">
-                <Icon name="pencil" size={18} />수정
-              </Link>
-            )}
-          </div>
+        {map && (
+          <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer"
+            className="press mt-5 flex h-11 flex-none items-center justify-center gap-1.5 rounded-btn border border-line-strong bg-surface text-sub font-bold text-ink">
+            <Icon name="pin" size={17} className="text-point" />길찾기
+          </a>
         )}
       </div>
     </div>

@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-18 15:00", version: "0.92.4", items: ["일정·예약 미리보기 창의 수정 버튼을 위쪽 작은 버튼으로 옮겨 덜 눈에 띄게 했어요"] },
   { at: "2026-11-18 14:50", version: "0.92.3", items: ["설정의 휴대폰 알림 이름을 알림으로 바꿨어요"] },
   { at: "2026-11-18 14:47", version: "0.92.2", items: ["예전 일기 기능의 남은 알림 설정을 정리했어요"] },
   { at: "2026-11-18 14:45", version: "0.92.1", items: ["설정 탭 아이콘 크기와 굵기를 다른 탭과 맞췄어요"] },

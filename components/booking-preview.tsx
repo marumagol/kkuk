@@ -36,7 +36,10 @@ export function BookingPreview({ tripId, id, title, due, who, canEdit, data: v, 
         className="modal-pop flex max-h-[80dvh] w-full max-w-[420px] flex-col rounded-card bg-surface px-5 pb-5 pt-5 shadow-float">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sub font-bold text-ink-sub">예약</span>
-          <button type="button" onClick={onClose} aria-label="닫기" autoFocus className="press -mr-2 flex size-10 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="x" size={20} /></button>
+          <div className="flex flex-none items-center gap-1">
+            {canEdit && <Link href={`/trips/${tripId}/bookings/${id}`} replace className="press -mr-1 inline-flex h-8 flex-none items-center gap-1 rounded-full bg-surface-soft px-3 text-tiny font-bold text-ink-sub"><Icon name="pencil" size={15} />수정</Link>}
+            <button type="button" onClick={onClose} aria-label="닫기" autoFocus className="press -mr-2 flex size-10 flex-none items-center justify-center rounded-full text-ink-sub"><Icon name="x" size={20} /></button>
+          </div>
         </div>
         <div className="mt-1 min-h-0 overflow-y-auto">
           <h2 className="text-title font-extrabold leading-snug text-ink">{v?.title ?? title}</h2>
@@ -72,12 +75,6 @@ export function BookingPreview({ tripId, id, title, due, who, canEdit, data: v, 
           )}
           {!v && <p className="mt-4 text-sub text-ink-sub">예약 정보를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요</p>}
         </div>
-        {canEdit && (
-          <Link href={`/trips/${tripId}/bookings/${id}`} replace
-            className="press mt-5 flex h-12 flex-none items-center justify-center gap-1.5 rounded-btn bg-btn text-body font-bold text-on-btn">
-            <Icon name="pencil" size={18} />수정
-          </Link>
-        )}
       </div>
     </div>,
     document.body,
