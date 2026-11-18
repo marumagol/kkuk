@@ -35,7 +35,7 @@ export function PlaceSuggest({ query, kind, bias, onPick, onFallback, disabled, 
         if (Array.isArray(r)) { setList(r); setNotice(r.length ? "" : "none"); }
         else { setList([]); setNotice("limited" in r ? "limited" : r.failed === "off" ? "off" : "error"); }
       } catch { if (alive) { setList([]); setNotice(typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "error"); } }
-    }, 300);
+    }, 450); // 0.91.3 : 타자 칠 때마다 묻지 않게 조금 더 기다린다 (구글 호출 줄이기)
     return () => { alive = false; clearTimeout(t); };
   }, [query, kind, bias, disabled]);
 
@@ -60,7 +60,7 @@ export function PlaceSuggest({ query, kind, bias, onPick, onFallback, disabled, 
     const fallback = (n: Notice) => { skip.current = s.main; onFallback?.({ name: s.main, sub: s.sub }); setNotice(n); };
     try {
       const d = await pickPlace(s.id, session.current);
-      if ("id" in d) { skip.current = d.name || s.main; setNotice(""); onPick(d); }
+      if ("id" in d) { const name = d.name || s.main; skip.current = name; setNotice(""); onPick({ ...d, name }); }
       else fallback("limited" in d ? "pick-limited" : "pick-error");
     } catch {
       fallback(typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "pick-error");

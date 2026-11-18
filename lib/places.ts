@@ -35,11 +35,13 @@ export async function autocomplete(input: string, session: string, kind: "place"
   }).slice(0, 6);
 }
 
+/* 0.91.3 : 이름(displayName)은 묻지 않는다. 이름 칸이 Pro 등급이라 세션 전체가 비싼 등급(월 무료 1,000)으로 잡혔다.
+   이름은 검색 목록의 이름을 쓴다 (place-search 가 채움). 빼면 Essentials (월 무료 10,000) */
 export async function details(id: string, session?: string): Promise<PlaceDetail | null> {
   if (!placesEnabled() || !/^[A-Za-z0-9_-]{10,255}$/.test(id)) return null;
   const q = new URLSearchParams({ languageCode: "ko", ...(session ? { sessionToken: session } : {}) });
   const res = await fetch(`https://places.googleapis.com/v1/places/${id}?${q}`, {
-    headers: { "X-Goog-Api-Key": KEY(), "X-Goog-FieldMask": "id,displayName,formattedAddress,location,addressComponents,types,primaryType" }, cache: "no-store",
+    headers: { "X-Goog-Api-Key": KEY(), "X-Goog-FieldMask": "id,formattedAddress,location,addressComponents,types,primaryType" }, cache: "no-store",
   }).catch((e) => { console.error("[places] details 연결 실패", String(e).slice(0, 200)); return null; });
   if (!res?.ok) {
     if (res) console.error("[places] details", res.status, (await res.text().catch(() => "")).slice(0, 400));
