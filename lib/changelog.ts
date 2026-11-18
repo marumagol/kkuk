@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-18 14:47", version: "0.92.2", items: ["예전 일기 기능의 남은 알림 설정을 정리했어요"] },
   { at: "2026-11-18 14:45", version: "0.92.1", items: ["설정 탭 아이콘 크기와 굵기를 다른 탭과 맞췄어요"] },
   { at: "2026-11-18 14:35", version: "0.92.0", items: ["아래 메뉴에 설정을 다시 넣었어요"] },
   { at: "2026-11-18 14:30", version: "0.91.9", items: ["설정에서 앱으로 설치 항목을 뺐어요"] },

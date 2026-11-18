@@ -492,7 +492,7 @@ export const loadPublicShare = cache(async (token: string): Promise<PublicShare 
 });
 
 /* ───────── 앱 안 알림 (4단계 8, migration 0016) ───────── */
-export type Notice = { id: number; tripId: string; tripTitle: string; kind: "joined" | "items" | "journal" | "stamp" | "comment" | "reply" | "quota"; actor: string; refId: string | null; detail: string | null; count: number; at: string; read: boolean };
+export type Notice = { id: number; tripId: string; tripTitle: string; kind: "joined" | "items" | "stamp" | "quota"; actor: string; refId: string | null; detail: string | null; count: number; at: string; read: boolean };
 const PREVIEW_NOTICES: Notice[] = [
   { id: 1, tripId: "", tripTitle: "삿포로 겨울 여행", kind: "items", actor: "민지", refId: null, detail: "오타루 운하", count: 3, at: new Date(Date.now() - 20 * 60e3).toISOString(), read: false },
   { id: 2, tripId: "", tripTitle: "삿포로 겨울 여행", kind: "joined", actor: "준호", refId: null, detail: null, count: 1, at: new Date(Date.now() - 26 * 3600e3).toISOString(), read: true },
@@ -501,8 +501,7 @@ export const loadUnreadCount = cache(async (v: Viewer): Promise<number> => {
   if (v.kind === "preview") return 1;
   if (v.kind !== "user") return 0;
   const sb = (await createClient())!;
-  const { count, error } = await sb.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null)
-    .not("kind", "in", "(journal,comment,reply)"); // 일기 알림은 2026-11-17 일기 삭제로 안 셈
+  const { count, error } = await sb.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null);
   return error ? 0 : count ?? 0; // 0016 적용 전에는 표가 없어 0
 });
 export const loadNotices = cache(async (v: Viewer): Promise<Notice[]> => {
@@ -567,7 +566,7 @@ export async function coordsRefiller(v: Viewer, tripId: string): Promise<(() => 
   };
 }
 
-/* 여행 한 권 (5단계 6번) : 이 여행에서 받은 내 도장 (일기는 2026-11-17 삭제) */
+/* 여행 한 권 (5단계 6번) : 이 여행에서 받은 내 도장 */
 export type TripBook = { stamps: { name: string; country: string; date: string }[] };
 export const loadTripBook = cache(async (v: Viewer, tripId: string): Promise<TripBook> => {
   if (v.kind !== "user") return { stamps: [] };

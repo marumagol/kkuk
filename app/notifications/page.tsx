@@ -1,4 +1,4 @@
-/* 알림 (4단계 8) : 함께하는 사람 참여, 장소 고침, 함께 받은 도장. 열면 모두 읽음. 일기/댓글/답글 알림은 2026-11-17 일기 삭제로 안 보여 준다 */
+/* 알림 (4단계 8) : 함께하는 사람 참여, 장소 고침, 함께 받은 도장. 열면 모두 읽음. */
 import Link from "next/link";
 import { EmptyState, Icon } from "@/components/kit";
 import { AppShell, MockNote } from "@/components/screen";
@@ -8,15 +8,11 @@ import { getViewer } from "@/lib/viewer";
 import { loadNotices, type Notice } from "@/lib/trips";
 
 export const metadata = { title: "알림" };
-const DIARY_KINDS: string[] = ["journal", "comment", "reply"];
 
 function textOf(n: Notice) {
   switch (n.kind) {
     case "joined": return `${n.actor}님이 여행에 함께하기 시작했어요`;
     case "items": return n.count > 1 ? `${n.actor}님이 장소를 ${n.count}번 고쳤어요${n.detail ? ` (${n.detail} 등)` : ""}` : `${n.actor}님이 장소를 고쳤어요${n.detail ? ` (${n.detail})` : ""}`;
-    case "journal": return `${n.actor}님이 일기를 남겼어요${n.detail ? ` : ${n.detail}` : ""}`;
-    case "comment": return n.count > 1 ? `${n.actor}님이 내 일기에 댓글을 ${n.count}개 남겼어요${n.detail ? ` : ${n.detail}` : ""}` : `${n.actor}님이 내 일기에 댓글을 남겼어요${n.detail ? ` : ${n.detail}` : ""}`;
-    case "reply": return n.count > 1 ? `${n.actor}님이 내 댓글에 답글을 ${n.count}개 남겼어요${n.detail ? ` : ${n.detail}` : ""}` : `${n.actor}님이 내 댓글에 답글을 남겼어요${n.detail ? ` : ${n.detail}` : ""}`;
     case "stamp": return `${n.actor}님 덕분에 ${n.detail ?? "도시"} 도장을 받았어요`;
     case "quota": return n.detail ?? "구글 지도 하루 상한 알림"; // 0048 운영자에게만 (상한 80%, 다 참)
   }
@@ -37,7 +33,7 @@ function ago(at: string) {
 
 export default async function Notifications() {
   const viewer = await getViewer();
-  const list = (await loadNotices(viewer)).filter((n) => !DIARY_KINDS.includes(n.kind));
+  const list = await loadNotices(viewer);
   const unread = list.some((n) => !n.read);
   return (
     <AppShell bottomGap={false}>

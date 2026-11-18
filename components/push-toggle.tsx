@@ -130,7 +130,7 @@ const KINDS: { label: string; kinds: string[] }[] = [
   { label: "함께하는 사람 참여", kinds: ["joined"] },
   { label: "장소 고침", kinds: ["items"] },
   { label: "도장", kinds: ["stamp"] },
-]; // 일기, 댓글, 답글은 2026-11-17 일기 기능 삭제로 뺌
+];
 function KindPrefs() {
   const [off, setOff] = useState<string[] | null>(null);
   const [failed, setFailed] = useState(false);
