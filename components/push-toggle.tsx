@@ -106,11 +106,11 @@ export function PushToggle() {
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-body font-bold text-ink">휴대폰 알림</p>
+          <p className="text-body font-bold text-ink">알림</p>
           <p className="text-tiny text-ink-sub">함께하는 사람이 들어오거나 장소를 고치면 알려 줘요</p>
         </div>
         {canToggle && (
-          <button type="button" role="switch" aria-checked={on} aria-label="휴대폰 알림" disabled={busy} onClick={on ? turnOff : turnOn}
+          <button type="button" role="switch" aria-checked={on} aria-label="알림" disabled={busy} onClick={on ? turnOff : turnOn}
             className="press flex h-11 w-16 flex-none items-center justify-center disabled:opacity-50">
             <span className={`relative h-8 w-14 rounded-full transition-colors ${on ? "bg-point" : "bg-line-strong"}`}>
               <span className={`absolute top-1 size-6 rounded-full bg-white transition-all ${on ? "left-7" : "left-1"}`} />
