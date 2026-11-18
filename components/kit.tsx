@@ -310,8 +310,8 @@ export function Sheet({ title, badge, children, footer, inline }: { title: strin
 }
 
 /* ---------- 도장 (마루님 "삿포로 도장" 기준, 디자인-가이드 2-1) ---------- */
-const BLOB_IN = blobPath(43, 43, 37.75);
-const BLOB_OUT = blobPath(43, 43, 42.5);
+export const BLOB_IN = blobPath(43, 43, 37.75);
+export const BLOB_OUT = blobPath(43, 43, 42.5);
 export function StampFace({ name, country, earned = true, size = 86 }: { name: string; country?: string | null; earned?: boolean; size?: number }) {
   const art = stampArt(country, name);
   const color = stampColor(country); // 나라별 도장 색 (마루님 피그마 "도장 (11.15)")

@@ -459,3 +459,30 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .hc-back > .hc-emb { position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; margin: -75px 0 0 -75px; opacity: .16; }
 .hc-back > .hc-ring { position: absolute; inset: 9px; border: 2px dashed rgb(255 230 196 / .6); border-radius: 10px; }
 @media (prefers-reduced-motion: reduce) { .hc-enter, .hc-halo, .hc-sweep { animation: none; } .hc-sweep { display: none; } }
+
+/* 목표 배지 (0.94.0) : components/goal-badges.tsx. 꾹 도장 모양 + 금속 테두리 + 크림 종이 */
+.gb-bronze { --gb-m1: #9A5A2A; --gb-m2: #E3A26A; --gb-m3: #FFE0BF; --gb-tc: #B0652D; }
+.gb-silver { --gb-m1: #8B95A1; --gb-m2: #DCE3EA; --gb-m3: #FFFFFF; --gb-tc: #6E7C8C; }
+.gb-gold { --gb-m1: #B07A16; --gb-m2: #F7D58B; --gb-m3: #FFF4C9; --gb-tc: #C0841A; }
+.gb-legend { --gb-m1: #D9A441; --gb-m2: #FFF4C9; --gb-m3: #F7D58B; --gb-tc: #FF5A36; }
+.gb-tc { color: var(--gb-tc); }
+.gb-tier { background: linear-gradient(90deg, var(--gb-m1), var(--gb-m2), var(--gb-m1)); }
+.gb { position: relative; width: 86px; height: 86px; flex: none; }
+.gb-rim, .gb-core, .gb-shine, .gb-foil { position: absolute; inset: 0; }
+.gb:has(.gb-rim) { filter: drop-shadow(0 4px 6px rgb(120 70 20 / .22)); }
+.gb-rim { background: conic-gradient(from 200deg, var(--gb-m1), var(--gb-m2), var(--gb-m3), var(--gb-m2), var(--gb-m1)); }
+.gb-core { transform: scale(.88); background: radial-gradient(circle at 40% 30%, #FFFDF6, #F5E6CC 75%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--gb-tc); }
+.gb-core::before { content: ""; position: absolute; inset: 16px; border-radius: 50%; border: 1.5px dashed var(--gb-tc); opacity: .35; }
+.gb-core b, .gb-q b { font-size: 17px; font-weight: 900; line-height: 1; margin-top: 1px; }
+.gb-q { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--color-ink-sub); }
+.gb-q b { font-size: 15px; }
+.gb-foil { mix-blend-mode: color-dodge; opacity: .35; background: repeating-linear-gradient(115deg, #ff6b6b 0%, #ffd36e 6%, #8cff9a 12%, #6ee7ff 18%, #b48cff 24%, #ff6b6b 30%); background-size: 300% 300%; animation: gb-foil 5s linear infinite; }
+@keyframes gb-foil { to { background-position: 300% 0; } }
+.gb-shine { background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / .8) 50%, transparent 65%); background-size: 300% 100%; animation: gb-shine 3.4s ease-in-out infinite; }
+@keyframes gb-shine { 0%, 55% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+.gb-rib { position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%); background: var(--color-point); color: #fff; font-size: 9px; font-weight: 900; padding: 2px 7px; border-radius: 999px; letter-spacing: .05em; white-space: nowrap; }
+.gb-land { animation: gb-land .7s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes gb-land { from { transform: scale(3.2) rotate(-12deg); opacity: 0; } to { transform: scale(1.8); } }
+.gb-spark { position: absolute; left: 50%; top: 110px; width: 6px; height: 6px; border-radius: 50%; animation: gb-spark 1s .35s ease-out both; }
+@keyframes gb-spark { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .gb-foil, .gb-shine, .gb-land, .gb-spark { animation: none; } .gb-spark { display: none; } .gb-land { transform: scale(1.8); } }

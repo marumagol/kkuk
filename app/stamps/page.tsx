@@ -7,7 +7,6 @@
   ?c=도시번호 로 도장 메달 창을 바로 연다 (3단계 4, 2026-11-17 메달 창으로)
 */
 import Link from "next/link";
-import { Icon } from "@/components/kit";
 import { SealedButton, EarnedStamp } from "@/components/stamp-cards";
 import { AppShell, MainTabs, MockNote } from "@/components/screen";
 import { GateCta } from "@/components/gate";
@@ -17,6 +16,7 @@ import { flagOf, countryOf } from "@/lib/countries";
 import { addDays, daysBetween, md, todayKST } from "@/lib/mock";
 import { GOALS, type Goal } from "@/lib/stamp-goals";
 import { StampTester } from "@/components/stamp-tester";
+import { GoalBadges } from "@/components/goal-badges";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "도장" };
@@ -135,20 +135,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
         {/* 목표 배지 */}
         <section aria-labelledby="goals" className="flex flex-col gap-3">
           <h2 id="goals" className="text-body font-bold text-ink">목표 배지 <span className="text-sub font-semibold text-ink-sub">{GOALS.filter((g) => value(g) >= g.need).length}/{GOALS.length}</span></h2>
-          <ul className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
-            {GOALS.map((g) => {
-              const done = value(g) >= g.need;
-              return (
-                <li key={g.key} className={`flex w-[84px] flex-none flex-col items-center gap-1.5 rounded-card px-2 py-3 text-center ${done ? "bg-point-soft" : "bg-surface"}`}>
-                  <span className={`flex size-11 items-center justify-center rounded-full ${done ? "bg-point text-white" : "border-2 border-dashed border-line-strong text-ink-sub"}`}>
-                    {done ? <Icon name={g.of === "stamp" ? "stamp" : "globe"} size={22} /> : <span className="text-body font-extrabold">?</span>}
-                  </span>
-                  <span className={`text-tiny font-bold ${done ? "text-point-text" : "text-ink"}`}>{g.label}</span>
-                  <span className="text-[11px] text-ink-sub">{done ? "달성" : `${value(g)}/${g.need}`}</span>
-                </li>
-              );
-            })}
-          </ul>
+          <GoalBadges stamps={count} countries={s.countryCount} />
         </section>
 
         {/* 모은 도장 */}
