@@ -41,7 +41,9 @@ export function PushToggle() {
       const sb = createClient();
       if (!env || !sb) throw new Error("no_server");
       step = "permission";
-      const perm = await Notification.requestPermission();
+      /* 0.91.6 : 삼성 인터넷 등에서 허용 창 없이 답이 안 오는 경우가 있어 10초 뒤 안내 */
+      const perm = await Promise.race([Notification.requestPermission(), new Promise<"stuck">((ok) => setTimeout(() => ok("stuck"), 10000))]);
+      if (perm === "stuck") { setError("알림 허용 창이 뜨지 않았어요. 삼성 인터넷은 메뉴 > 설정 > 사이트 및 다운로드 > 알림에서 이 사이트를 허용하거나, 크롬에서 열어 켜 주세요"); return; }
       if (perm !== "granted") {
         setState(perm === "denied" ? "denied" : "off");
         if (perm !== "denied") setError("알림 허용 창이 닫혔어요. 다시 눌러 [허용]을 골라 주세요. 창이 안 뜨면 주소창 왼쪽 자물쇠 > 알림을 허용으로 바꿔 주세요");
