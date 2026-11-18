@@ -89,7 +89,7 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
   return (
     <section className={(inset ? "mx-5 mt-4 " : "") + "flex flex-col gap-3 rounded-card bg-surface px-5 pb-5 pt-5"} aria-label="도장 받기">
       {reveal && (
-        <StampReveal city={state.kind === "done" ? state.r.city : null} country={state.kind === "done" ? state.r.country : null}
+        <StampReveal city={state.kind === "done" ? state.r.city : null} country={state.kind === "done" ? state.r.country : null} visits={state.kind === "done" ? state.r.visits : undefined}
           title={state.kind === "done" && state.r.status === "already" ? "이미 받은 도장" : "도장 꾹!"} sub={msg ?? ""} onClose={() => setReveal(false)} />
       )}
       {state.kind === "done" && (

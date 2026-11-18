@@ -10,6 +10,7 @@ import { StampFace } from "@/components/kit";
 import { MedalSpin } from "@/components/medal-spin";
 import { stampColor } from "@/lib/stamp-art";
 
+const today = () => { const d = new Date(); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`; };
 const CHARGE_MS = 1200;
 
 const BITS = Array.from({ length: 14 }, (_, i) => {
@@ -19,7 +20,7 @@ const BITS = Array.from({ length: 14 }, (_, i) => {
 });
 
 /* city 가 아직 없으면(서버 답을 기다리는 동안) 빛만 모이고, 오면 바로 찍힌다. 글자로 기다리라고 하지 않는다 */
-export function StampReveal({ city: cityIn, country, title, sub, onClose }: { city?: string | null; country?: string | null; title: string; sub: string; onClose: () => void }) {
+export function StampReveal({ city: cityIn, country, title, sub, visits, onClose }: { city?: string | null; country?: string | null; title: string; sub: string; visits?: number; onClose: () => void }) {
   /* 0.88.0 : 답이 바로 와도 1.2초(0.89.2)는 긴장 고조 연출을 보여 준 뒤 찍는다 */
   const [ready, setReady] = useState(false);
   useEffect(() => { const t = setTimeout(() => setReady(true), CHARGE_MS); return () => clearTimeout(t); }, []);
@@ -74,6 +75,9 @@ export function StampReveal({ city: cityIn, country, title, sub, onClose }: { ci
                 <div className="flex size-full flex-col items-center justify-center rounded-full border-2 border-dashed border-[#FFE6C4]/70 bg-gradient-to-br from-[#E8A95E] to-[#B97934] text-[#FFF3E0] [text-shadow:0_1px_0_rgb(0_0_0/0.25)]">
                   <span className="text-[11px] font-bold tracking-[0.3em] opacity-80">KKUK</span>
                   <span className="mt-1 max-w-[140px] truncate text-[22px] font-extrabold">{city}</span>
+                  {/* 뒷면은 도장 탭 메달과 같게 : KKUK, 도시, 받은 날, 방문 횟수 (0.92.7) */}
+                  <span className="mt-0.5 text-[12px] font-semibold opacity-90">{today()}</span>
+                  {visits != null && <span className="mt-1 text-[12px] font-semibold opacity-80">{visits}번 방문</span>}
                 </div>
               </div>
             } />
