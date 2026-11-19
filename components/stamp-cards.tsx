@@ -52,6 +52,7 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
             <span className="mc-foot"><span>KKUK</span><span>{dot(x.firstDate)}</span></span>
           </span>
           <span aria-hidden className="mc-holo" />
+          <span aria-hidden className="mc-stars" />
           <span aria-hidden className="mc-sweep" style={{ animationDelay: `${(tiltOf(x.name) + 8) * 0.3}s` }} />
         </span>
         {isNew && <span className="absolute -right-1 -top-1.5 z-[1] rounded-full bg-point px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">NEW</span>}
