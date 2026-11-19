@@ -317,7 +317,7 @@ export const BLOB_OUT = blobPath(43, 43, 42.5);
 const FINISH = {
   rare: { stops: ["#FFF0B8", "#F2C04E", "#C98A1E", "#FFE08A"], ring: "#D9A441", edge: "#FFF6D6", art: "#5A3B12" },
   epic: { stops: ["#1E1466", "#4A22A8", "#8B2F9E"], ring: "#4A22A8", edge: "#D9B8FF", art: "#FFFFFF" },
-  unique: { stops: ["#F2F7FF", "#F6D9F1", "#D6E6FF", "#FFF1D8"], ring: "#C9B6FF", edge: "#FFFFFF", art: "#2A1F5C" },
+  unique: { stops: ["#FFFFFF", "#BFE0FF", "#5E97DE", "#E4F3FF"], ring: "#5E97DE", edge: "#FFFFFF", art: "#16304F" },
 } as const;
 export function StampFace({ name, country, earned = true, size = 86, finish }: { name: string; country?: string | null; earned?: boolean; size?: number; finish?: "rare" | "epic" | "unique" }) {
   const art = stampArt(country, name);

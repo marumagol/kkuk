@@ -14,7 +14,7 @@ const GLOW: Record<Tier, string> = {
   1: "bg-[radial-gradient(circle,rgb(255_255_255/0.16)_0%,transparent_65%)]",
   2: "bg-[radial-gradient(circle,rgb(255_170_60/0.42)_0%,rgb(255_170_60/0.1)_40%,transparent_68%)]",
   3: "bg-[radial-gradient(circle,rgb(210_130_230/0.45)_0%,rgb(210_130_230/0.1)_40%,transparent_68%)]",
-  4: "bg-[radial-gradient(circle,rgb(150_110_255/0.6)_0%,rgb(150_110_255/0.15)_40%,transparent_68%)]",
+  4: "bg-[radial-gradient(circle,rgb(190_225_255/0.55)_0%,rgb(190_225_255/0.14)_40%,transparent_68%)]",
 };
 import { AlertDialog } from "@/components/gate";
 import { flagWideOf, countryOf } from "@/lib/countries";
@@ -58,7 +58,7 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
         <span className={`mc mc-t${top.tier}`}>
           <span className="mc-in">
             <span className="mc-name"><span>{x.name}</span><span className="mc-pips" aria-hidden>{TIERS.map((t) => <i key={t.tier} className={t.tier <= top.tier ? "on" : ""} />)}</span></span>
-            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} finish={top.tier === 4 ? "unique" : top.tier === 3 ? "epic" : top.tier === 2 ? "rare" : undefined} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier === 3 && <Twinkles o={10} />}</span>
+            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} finish={top.tier === 4 ? "unique" : top.tier === 3 ? "epic" : top.tier === 2 ? "rare" : undefined} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier >= 3 && <Twinkles o={10} />}</span>
             <span className="mc-foot"><span className="mc-pill">{tierName(top.tier)}</span><span>{dot(top.at)}</span></span>
           </span>
         </span>

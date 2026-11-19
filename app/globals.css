@@ -570,3 +570,32 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .hc-t4 .hc-back .hc-bk { color: #FFD36E; opacity: 1; }
 .hc-t4 .hc-back .hc-bd { color: #D8CFFF; }
 .hc-t4 .hc-back .hc-bpill { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; }
+/* 0.95.8 유니크 = 다이아몬드 (마루님) : 얼음빛 투명 바탕 + 깎은 면(삼각) 무늬 + 은·무지개 빛 테두리 + 크리스털 도장 */
+.hc-t4 .hc-front, .mc-t4 { background: conic-gradient(from var(--tier-a), #ffffff, #d9efff, #f7e9ff, #ffffff, #d6f7ff, #fff6dc, #e2ecff, #ffffff); }
+.hc-t4 .hc-inner, .mc-t4 .mc-in {
+  background:
+    linear-gradient(60deg, rgb(255 255 255 / .55) 25%, transparent 25% 75%, rgb(255 255 255 / .55) 75%) 0 0 / 26px 45px,
+    linear-gradient(-60deg, rgb(160 200 240 / .18) 25%, transparent 25% 75%, rgb(160 200 240 / .18) 75%) 0 0 / 26px 45px,
+    linear-gradient(170deg, #FBFEFF 0%, #E4F1FC 55%, #D3E6F8 100%); }
+.hc-t4 .hc-win, .mc-t4 .mc-win { border-color: #B9D6F2; background:
+    conic-gradient(from 0deg at 50% 50%, rgb(255 255 255 / .7), transparent 12%, rgb(255 255 255 / .5) 25%, transparent 37%, rgb(255 255 255 / .7) 50%, transparent 62%, rgb(255 255 255 / .5) 75%, transparent 87%, rgb(255 255 255 / .7)),
+    radial-gradient(circle, #FFFFFF 0, #E6F3FF 45%, #BFDAF5 100%); }
+.hc-t4 .hc-halo, .mc-t4 .hc-halo { filter: none; }
+.hc-t4 .hc-name, .mc-t4 .mc-name { color: #1C3557; } .hc-t4 .hc-name small { color: #4F7FB8; }
+.hc-t4 .hc-nick { background: linear-gradient(90deg, #E2F1FF, #FFFFFF, #E9E4FF, #FFFFFF, #E2F1FF); color: #1C3557; box-shadow: inset 0 0 0 1px #C6DCF2; } .hc-t4 .hc-desc { color: #3E5C80; }
+.hc-t4 .hc-foot, .mc-t4 .mc-foot { color: #6F8FB5; }
+.hc-t4 .hc-pill, .mc-t4 .mc-pill, .hc-t4 .hc-back .hc-bpill { background: linear-gradient(90deg, #FFFFFF, #D9EEFF, #F3E6FF, #FFFFFF); color: #1C3557; box-shadow: inset 0 0 0 1px #BFD6EE; }
+.mc-t4 .mc-stars { opacity: .9; }
+.hc-t4 .hc-holo, .mc-t4 .mc-holo { opacity: .35; }
+.hc-t4 .hc-back { background:
+    linear-gradient(60deg, rgb(255 255 255 / .5) 25%, transparent 25% 75%, rgb(255 255 255 / .5) 75%) 0 0 / 26px 45px padding-box,
+    linear-gradient(170deg, #F7FBFF 0%, #D6E8F8 100%) padding-box,
+    conic-gradient(from 200deg, #ffffff, #cfe8ff, #f2e3ff, #ffffff, #d2f6ff, #fff3d0, #ffffff) border-box; color: #1C3557; }
+.hc-t4 .hc-back > .hc-wm { opacity: .5; filter: invert(1) brightness(.4) sepia(1) hue-rotate(180deg); }
+.hc-t4 .hc-back > .hc-bstars { display: none; }
+.hc-t4 .hc-back > .hc-emb { color: #9EC3EE; opacity: .45; filter: none; }
+.hc-t4 .hc-back > .hc-ring { border: 1.5px solid rgb(150 190 235 / .7); }
+.hc-t4 .hc-back .hc-bk { color: #4F7FB8; }
+.hc-t4 .hc-back .hc-bd { color: #3E5C80; }
+.hc-t4 .tier-tw, .mc-t4 .tier-tw { color: #fff; text-shadow: 0 0 6px #8EC5FF, 0 0 2px #fff; font-size: 12px; }
+.hc-t4 .hc-front, .mc-t4 { background: conic-gradient(from var(--tier-a), #ffffff, #bfe3ff, #ffd6f5, #ffffff, #b9fff0, #fff1b8, #c9d8ff, #ffffff); }
