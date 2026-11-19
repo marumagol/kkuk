@@ -22,7 +22,7 @@ import { flagWideOf, countryOf } from "@/lib/countries";
 import { md } from "@/lib/mock";
 import type { StampCard } from "@/lib/trips";
 
-const dot = (d?: string) => (d ? d.slice(2).replaceAll("-", ".") : undefined);
+const dot = (d?: string) => (d ? d.slice(2, 10).replaceAll("-", ".") : undefined); // 시각이 붙은 값(2026-11-19T07:07:22)도 날짜만
 
 /* 봉인 도장을 눌렀을 때 안내 */
 export function SealedButton({ x, tone, label, children }: { x: StampCard; tone: "now" | "soon" | "past"; label: string; children: ReactNode }) {
@@ -103,7 +103,8 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
       <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장 카드`} onClick={(e) => e.stopPropagation()}
         className="relative flex w-full max-w-[340px] flex-col items-center overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-6 text-center text-on-deep shadow-float">
         <div aria-hidden className={`pointer-events-none absolute left-1/2 top-[-70px] size-[380px] -translate-x-1/2 rounded-full transition-[background] duration-300 ${GLOW[c.tier]}`} />
-        <div ref={track} onScroll={onScroll} className="relative -mx-5 flex w-[calc(100%+40px)] snap-x snap-mandatory gap-4 overflow-x-auto px-[calc(50%-93px)] pb-4 pt-2 [scrollbar-width:none]">
+        {/* 여백 % 는 바깥 상자(트랙보다 40px 좁음) 기준이라 카드 반폭 93 - 20 = 73 */}
+        <div ref={track} onScroll={onScroll} className="relative -mx-5 flex w-[calc(100%+40px)] snap-x snap-mandatory gap-4 overflow-x-auto px-[calc(50%-73px)] pb-4 pt-2 [scrollbar-width:none]">
           {cards.map((k, i) => (
             <div key={k.tier} className={`flex-none snap-center transition-[transform,opacity] duration-300 ${i === cur ? "" : "scale-90 opacity-50"}`}>
               <HoloCard name={x.name} country={x.country} tier={k.tier} date={dot(k.at)} visit={k.visit} visits={x.visits} />

@@ -507,7 +507,7 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 @media (prefers-reduced-motion: reduce) { .mc-holo { animation: none; } }
 
 /* ───── 도장 카드 등급 (0.95.0) : lib/card-tier.ts. 1 일반, 2 레어(기본 금박 모양 그대로), 3 에픽, 4 유니크 ───── */
-.hc-pill, .mc-pill { display: inline-flex; align-items: center; border-radius: 999px; font-weight: 900; letter-spacing: .04em; }
+.hc-pill, .mc-pill { display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; border-radius: 999px; font-weight: 900; letter-spacing: .04em; }
 .hc-pill { padding: 2px 7px; font-size: 9px; }
 .mc-pill { padding: 1px 5px; font-size: 8.5px; }
 .hc-t2 .hc-pill, .mc-t2 .mc-pill { background: linear-gradient(90deg, #E9C27A, #F7DEA6, #E9C27A); color: #5A3B12; }
