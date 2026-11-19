@@ -78,15 +78,18 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, onClose
               </div>
               <div className="sp-lines">{`P<KOR<<KKUK<<${cc}<<<<<<<<<<<<<<`}<br />{`${cc}${String(visits ?? 1).padStart(4, "0")}<<${ymd}<<<<<<<<<<`}</div>
             </div>
-            <div className="sp-cover" aria-hidden><span className="sp-em">꾹</span><span className="sp-ttl">PASSPORT</span></div>
+            <span className="sp-cast" aria-hidden />
+            {/* 표지 (0.94.3) : 바깥면과 안쪽면이 있는 한 장. 왼쪽 경첩을 따라 넘어가 펼쳐진 채로 남는다 */}
+            <div className="sp-cover" aria-hidden>
+              <div className="sp-face sp-out"><span className="sp-em">꾹</span><span className="sp-ttl">PASSPORT</span></div>
+              <div className="sp-face sp-in"><span className="sp-in-hd">KKUK PASSPORT</span><span className="sp-photo" /></div>
+            </div>
           </div>
         </div>
       )}
       {city && <>
       <p className="sr-text mt-7 text-center text-[24px] font-extrabold text-white" style={{ animationDelay: "2050ms" }}>{heading}</p>
       <p className="sr-text mt-1 text-center text-sub text-white/80" style={{ animationDelay: "2200ms" }}>{sub}</p>
-      {/* 받는 건 도장, 모으는 건 카드 (0.94.2 마루님 1안) */}
-      {title !== "이미 받은 도장" && <p className="sr-text mt-3 rounded-full bg-white/12 px-3 py-1 text-center text-tiny font-bold text-[#FFD9A8]" style={{ animationDelay: "2300ms" }}>도장 카드가 도장 탭에 모였어요</p>}
       <button type="button" onClick={onClose}
         className="sr-text press mt-7 h-12 rounded-btn bg-white px-10 text-sub font-bold text-[#111]" style={{ animationDelay: "2400ms" }}>확인</button>
       </>}

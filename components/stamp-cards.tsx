@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { StampFace } from "@/components/kit";
+import { Icon, StampFace } from "@/components/kit";
 import { HoloCard } from "@/components/holo-card";
 import { AlertDialog } from "@/components/gate";
 import { flagWideOf, countryOf } from "@/lib/countries";
@@ -90,17 +90,18 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
           {x.name}
         </h2>
         <p className="relative mt-1 text-sub text-on-deep-sub">{countryOf(x.country)?.name ?? ""}{x.firstDate ? `, ${dot(x.firstDate)} 처음 받음` : ""}</p>
+        {/* 다녀온 여행 (0.94.3) : 큰 줄 목록 대신 작은 알약 링크. 3개까지, 나머지는 "외 N개" */}
         {x.trips.length > 0 && (
-          <ul className="relative mt-4 flex w-full flex-col gap-1.5 text-left">
-            {x.trips.map((t) => (
-              <li key={t.id}>
-                <Link href={`/trips/${t.id}`} className="press flex min-h-11 items-center justify-between gap-2 rounded-field bg-deep-soft px-3 py-2 text-sub">
-                  <span className="truncate font-semibold">{t.title}</span>
-                  {t.verifiedBy && <span className="flex-none text-tiny text-on-deep-sub">{t.verifiedBy === "나" ? "내가 인증" : `${t.verifiedBy}님이 인증`}</span>}
-                </Link>
-              </li>
+          <div className="relative mt-3 flex flex-wrap justify-center gap-1.5">
+            {x.trips.slice(0, 3).map((t) => (
+              <Link key={t.id} href={`/trips/${t.id}`} className="press inline-flex min-h-8 max-w-[220px] items-center gap-1 rounded-full bg-deep-soft px-3 text-tiny font-semibold">
+                <Icon name="plane" size={13} className="flex-none opacity-70" />
+                <span className="truncate">{t.title}</span>
+                <Icon name="right" size={12} className="flex-none opacity-60" />
+              </Link>
             ))}
-          </ul>
+            {x.trips.length > 3 && <span className="inline-flex min-h-8 items-center px-1 text-tiny text-on-deep-sub">외 {x.trips.length - 3}개</span>}
+          </div>
         )}
         <button ref={closeRef} type="button" onClick={onClose} className="press relative mt-4 h-12 w-full rounded-btn bg-on-deep text-body font-bold text-deep">닫기</button>
       </div>

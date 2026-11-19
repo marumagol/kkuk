@@ -31,7 +31,6 @@ function Badge({ g, value, big }: { g: Goal; value: number; big?: boolean }) {
       <div className="gb-rim" style={{ clipPath: `path("${BLOB_OUT}")` }} />
       {g.tier === "legend" && <div className="gb-foil" style={{ clipPath: `path("${BLOB_OUT}")` }} />}
       <div className="gb-core" style={{ clipPath: `path("${BLOB_IN}")` }}>{icon}<b>{g.need}</b></div>
-      <div className="gb-shine" style={{ clipPath: `path("${BLOB_OUT}")` }} />
       {!big && <span className="gb-rib">달성</span>}
     </div>
   );
