@@ -1,7 +1,7 @@
 /*
   도장 카드 등급 (0.95.0, 2026-11-19 마루님) : 같은 도시를 여러 여행에서 받을수록 등급이 올라간다
   - 방문 1회 = 여행 하나에서 받은 도장 하나 (같은 여행에서 다시 받아도 그대로)
-  - 0.96.0 6단계 (마루님) : 일반 1회(나라색), 레어 2회(금), 에픽 3회(자수정), 로열 4회(에메랄드), 유니크 5회(다이아), 레전드 10회(흑요석과 루비, 마지막). 11회부터는 레전드 그대로, 상세 방문 횟수만 늘어난다
+  - 0.96.0 6단계 (마루님) : 일반 1회(나라색), 레어 2회(금), 에픽 3회(자수정), 로열 4회(에메랄드), 유니크 5회(푸른 오팔, 0.97.0), 레전드 10회(흑요석과 루비, 마지막). 11회부터는 레전드 그대로, 상세 방문 횟수만 늘어난다
   - 등급별 모양은 app/globals.css 의 hc-t1~6 (큰 카드), mc-t1~6 (목록 카드)
 */
 export type Tier = 1 | 2 | 3 | 4 | 5 | 6;
@@ -23,5 +23,11 @@ export function cardsOf(dates: string[]) {
   return TIERS.filter((t) => dates.length >= t.need).map((t) => ({ ...t, at: dates[t.need - 1], visit: t.need }));
 }
 
+/* 0.97.0 겨울 도시 로열 (마루님) : 겨울로 유명한 곳은 로열(4회) 카드가 에메랄드 대신 얼음 크리스털. 등급 이름은 그대로 "로열" */
+const WINTER = new Set(["JP:삿포로", "JP:오타루", "CN:하얼빈", "CA:밴프", "CA:퀘벡", "CH:체르마트", "CH:인터라켄", "AT:할슈타트"]);
+export const isWinter = (country: string | null | undefined, name: string) => WINTER.has(`${(country ?? "").toUpperCase()}:${name}`);
+/* 카드 모양 : 등급 번호(1~6), 겨울 로열은 "w". globals.css 의 hc-t{look} / mc-t{look} */
+export type Look = Tier | "w";
+export const lookOf = (t: Tier, country: string | null | undefined, name: string): Look => (t === 4 && isWinter(country, name) ? "w" : t);
 /* 등급별 도장 색 (components/kit.tsx StampFace finish) */
-export const finishOf = (t: Tier) => ([undefined, "rare", "epic", "royal", "diamond", "legend"] as const)[t - 1];
+export const finishOf = (l: Look) => (l === "w" ? "diamond" : ([undefined, "rare", "epic", "royal", "opal", "legend"] as const)[l - 1]);

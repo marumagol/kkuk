@@ -319,6 +319,7 @@ const FINISH = {
   epic: { stops: ["#1E1466", "#4A22A8", "#8B2F9E"], ring: "#4A22A8", edge: "#D9B8FF", art: "#FFFFFF" },
   royal: { stops: ["#063D30", "#0B6E52", "#17A37A"], ring: "#0B6E52", edge: "#C8F5E2", art: "#FFFFFF" },
   diamond: { stops: ["#FFFFFF", "#BFE0FF", "#5E97DE", "#E4F3FF"], ring: "#5E97DE", edge: "#FFFFFF", art: "#16304F" },
+  opal: { stops: ["#F2F7FF", "#F6D9F1", "#D6E6FF", "#FFF1D8"], ring: "#A9C8F0", edge: "#FFFFFF", art: "#0C1B3A" },
   legend: { stops: ["#FF6B84", "#D0153A", "#6E0A1E", "#F0405E"], ring: "#E6E8EC", edge: "#FFD0D9", art: "#FFFFFF" },
 } as const;
 export function StampFace({ name, country, earned = true, size = 86, finish }: { name: string; country?: string | null; earned?: boolean; size?: number; finish?: keyof typeof FINISH }) {

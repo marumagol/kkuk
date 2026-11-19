@@ -8,14 +8,15 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/kit";
 import { HoloCard, Twinkles } from "@/components/holo-card";
-import { TIERS, cardsOf, finishOf, tierName, visitLabel, type Tier } from "@/lib/card-tier";
+import { TIERS, cardsOf, finishOf, lookOf, tierName, visitLabel, type Look } from "@/lib/card-tier";
 
-const GLOW: Record<Tier, string> = {
+const GLOW: Record<Look, string> = {
   1: "bg-[radial-gradient(circle,rgb(255_255_255/0.16)_0%,transparent_65%)]",
   2: "bg-[radial-gradient(circle,rgb(255_170_60/0.42)_0%,rgb(255_170_60/0.1)_40%,transparent_68%)]",
   3: "bg-[radial-gradient(circle,rgb(210_130_230/0.45)_0%,rgb(210_130_230/0.1)_40%,transparent_68%)]",
   4: "bg-[radial-gradient(circle,rgb(60_200_150/0.42)_0%,rgb(60_200_150/0.1)_40%,transparent_68%)]",
-  5: "bg-[radial-gradient(circle,rgb(190_225_255/0.55)_0%,rgb(190_225_255/0.14)_40%,transparent_68%)]",
+  w: "bg-[radial-gradient(circle,rgb(190_225_255/0.55)_0%,rgb(190_225_255/0.14)_40%,transparent_68%)]",
+  5: "bg-[radial-gradient(circle,rgb(110_200_255/0.55)_0%,rgb(110_200_255/0.14)_40%,transparent_68%)]",
   6: "bg-[radial-gradient(circle,rgb(255_60_90/0.5)_0%,rgb(255_60_90/0.12)_40%,transparent_68%)]",
 };
 import { AlertDialog } from "@/components/gate";
@@ -57,10 +58,10 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 도장, ${tierName(top.tier)} 카드, ${x.visits}번 방문`} className="press relative block w-full">
-        <span className={`mc mc-t${top.tier}`}>
+        <span className={`mc mc-t${lookOf(top.tier, x.country, x.name)}`}>
           <span className="mc-in">
             <span className="mc-name"><span>{x.name}</span><span className="mc-pips" aria-hidden>{TIERS.map((t) => <i key={t.tier} className={t.tier <= top.tier ? "on" : ""} />)}</span></span>
-            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} finish={finishOf(top.tier)} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier >= 3 && <Twinkles o={10} />}</span>
+            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} finish={finishOf(lookOf(top.tier, x.country, x.name))} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier >= 3 && <Twinkles o={10} />}</span>
             <span className="mc-foot"><span className="mc-pill">{tierName(top.tier)}</span><span>{dot(top.at)}</span></span>
           </span>
         </span>
@@ -106,7 +107,7 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장 카드`} onClick={(e) => e.stopPropagation()}
         className="relative flex w-full max-w-[340px] flex-col items-center overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-6 text-center text-on-deep shadow-float">
-        <div aria-hidden className={`pointer-events-none absolute left-1/2 top-[-70px] size-[380px] -translate-x-1/2 rounded-full transition-[background] duration-300 ${GLOW[c.tier]}`} />
+        <div aria-hidden className={`pointer-events-none absolute left-1/2 top-[-70px] size-[380px] -translate-x-1/2 rounded-full transition-[background] duration-300 ${GLOW[lookOf(c.tier, x.country, x.name)]}`} />
         {/* 여백 % 는 바깥 상자(트랙보다 40px 좁음) 기준이라 카드 반폭 93 - 20 = 73 */}
         <div ref={track} onScroll={onScroll} className="relative -mx-5 flex w-[calc(100%+40px)] snap-x snap-mandatory -my-6 gap-4 overflow-x-auto px-[calc(50%-73px)] pb-10 pt-8 [scrollbar-width:none]">
           {cards.map((k, i) => (
