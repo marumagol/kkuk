@@ -97,6 +97,9 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
   };
   const c = cards[cur] ?? cards[0];
   const flag = flagWideOf(x.country);
+  /* 0.95.5 유니크(마지막 등급) 뒤로도 방문하면 카드는 그대로, 상세 줄의 방문 횟수와 날짜만 올라간다 (마루님) */
+  const last = c.tier === 4 && x.visits > c.visit;
+  const lastDate = x.dates?.at(-1) ?? c.at;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장 카드`} onClick={(e) => e.stopPropagation()}
@@ -126,7 +129,7 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
           {flag && <img src={flag} alt="" width={27} height={18} className="rounded-[3px]" />}
           {x.name}
         </h2>
-        <p className="relative mt-1 text-sub text-on-deep-sub">{countryOf(x.country)?.name ?? ""}{c.at ? ` · ${dot(c.at)} ${visitLabel(c.visit)}` : ""}</p>
+        <p className="relative mt-1 text-sub text-on-deep-sub">{countryOf(x.country)?.name ?? ""}{c.at ? ` · ${dot(last ? lastDate : c.at)} ${visitLabel(last ? x.visits : c.visit)}` : ""}</p>
         <button ref={closeRef} type="button" onClick={onClose} className="press relative mt-4 h-12 w-full rounded-btn bg-on-deep text-body font-bold text-deep">닫기</button>
       </div>
     </div>,
