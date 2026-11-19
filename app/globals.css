@@ -769,3 +769,20 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .hc-t6 .hc-glitter, .mc-t6 .mc-glitter { opacity: .55; }
 .hc-t6 .hc-win > .hc-halo, .mc-t6 .mc-win > .hc-halo { opacity: .5; }
 .hc-t6 .hc-win::before, .mc-t6 .mc-win::before { background: radial-gradient(circle, rgb(255 255 255 / .55) 0%, rgb(255 255 255 / .12) 45%, transparent 70%); }
+/* 0.97.3 레어 = 골드 (마루님 "좀 더 골드 느낌") : 금속 띠가 도는 금 테두리 + 샴페인 금 바탕에 가는 헤어라인 결 + 금 이중 안쪽 선 */
+.hc-t2 .hc-front, .mc-t2 { background: conic-gradient(from var(--fa, 0deg), #B8862B, #FFF1B8, #D9A441, #FFE08A, #9C6B1E, #FFF4CC, #C8902E, #FFE9A8, #B8862B); }
+.mc-t2 { background: conic-gradient(from var(--tier-a), #B8862B, #FFF1B8, #D9A441, #FFE08A, #9C6B1E, #FFF4CC, #C8902E, #FFE9A8, #B8862B); animation: tier-spin 10s linear infinite; }
+.hc-t2 .hc-inner, .mc-t2 .mc-in { background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0) 0 2px, rgb(255 255 255 / .22) 2px 3px),
+    linear-gradient(160deg, #FFF6D8 0%, #F6DE9C 38%, #EBC36A 70%, #F7E2A8 100%);
+  box-shadow: inset 0 0 0 1.5px #C8902E, inset 0 0 0 3px #FFF6D8, inset 0 0 0 4px rgb(200 144 46 / .55); }
+.hc-t2 .hc-win, .mc-t2 .mc-win { border-color: #B8862B; background: radial-gradient(circle, #FFF8DC 0, #F9E3A3 45%, #E6B95A 80%, #C8902E 100%); box-shadow: inset 0 0 14px rgb(156 107 30 / .35); }
+.hc-t2 .hc-name, .mc-t2 .mc-name { color: #4A3110; } .hc-t2 .hc-name small { color: #9C6B1E; }
+.hc-t2 .hc-nick { background: linear-gradient(90deg, #C8902E, #FFF1B8, #E6B95A, #FFF1B8, #C8902E); color: #4A3110; } .hc-t2 .hc-desc { color: #6B4A1A; }
+.hc-t2 .hc-foot, .mc-t2 .mc-foot { color: #8A5F1E; }
+.hc-t2 .hc-pill, .mc-t2 .mc-pill, .hc-t2 .hc-back .hc-bpill { background: linear-gradient(90deg, #B8862B, #FFE9A8, #D9A441); color: #3A2508; }
+.hc-t2 .hc-holo, .mc-t2 .mc-holo { background-image: repeating-linear-gradient(115deg, #FFE08A 0%, #FFF8DC 6%, #E6B95A 12%, #FFF1B8 18%, #FFE08A 25%); opacity: .3; }
+.hc-t2 .hc-back { background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0) 0 2px, rgb(255 255 255 / .18) 2px 3px), linear-gradient(160deg, #E6B95A, #B8862B 55%, #8A5F1E); border-color: #FFE08A; }
+.hc-t2 .hc-back > .hc-ring { border: 1.5px solid rgb(255 241 184 / .75); }
+@media (prefers-reduced-motion: reduce) { .mc-t2 { animation: none; } }
+.hc-t2 .hc-win, .mc-t2 .mc-win { background: radial-gradient(circle, #FFFDF2 0, #FFF4D2 45%, #F4D488 85%, #D9A441 100%); }

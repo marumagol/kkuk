@@ -315,7 +315,7 @@ export const BLOB_OUT = blobPath(43, 43, 42.5);
 /* 0.95.7 rare = 금박 + 갈색 그림 (마루님). 0.95.6 finish : 도장 카드 등급별 도장 색 (마루님 "에픽, 유니크답게, 모으고 싶게")
    epic = 짙은 자수정 그라데이션 + 흰 그림, unique = 오팔 진주(흰빛에 분홍·하늘) + 남색 그림. 카드 바탕(연보라/밤하늘)과 대비되게 */
 const FINISH = {
-  rare: { stops: ["#FFF0B8", "#F2C04E", "#C98A1E", "#FFE08A"], ring: "#D9A441", edge: "#FFF6D6", art: "#5A3B12" },
+  rare: { stops: ["#F6D27A", "#C8902E", "#7A4F14", "#E6B95A"], ring: "#8A5F1E", edge: "#FFF1B8", art: "#FFF8E1" },
   epic: { stops: ["#1E1466", "#4A22A8", "#8B2F9E"], ring: "#4A22A8", edge: "#D9B8FF", art: "#FFFFFF" },
   royal: { stops: ["#063D30", "#0B6E52", "#17A37A"], ring: "#0B6E52", edge: "#C8F5E2", art: "#FFFFFF" },
   diamond: { stops: ["#FFFFFF", "#BFE0FF", "#5E97DE", "#E4F3FF"], ring: "#5E97DE", edge: "#FFFFFF", art: "#16304F" },
