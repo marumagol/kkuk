@@ -14,7 +14,6 @@ const GLOW: Record<Look, string> = {
   1: "bg-[radial-gradient(circle,rgb(255_255_255/0.16)_0%,transparent_65%)]",
   2: "bg-[radial-gradient(circle,rgb(255_170_60/0.42)_0%,rgb(255_170_60/0.1)_40%,transparent_68%)]",
   3: "bg-[radial-gradient(circle,rgb(210_130_230/0.45)_0%,rgb(210_130_230/0.1)_40%,transparent_68%)]",
-  4: "bg-[radial-gradient(circle,rgb(60_200_150/0.42)_0%,rgb(60_200_150/0.1)_40%,transparent_68%)]",
   w: "bg-[radial-gradient(circle,rgb(190_225_255/0.55)_0%,rgb(190_225_255/0.14)_40%,transparent_68%)]",
   5: "bg-[radial-gradient(circle,rgb(110_200_255/0.55)_0%,rgb(110_200_255/0.14)_40%,transparent_68%)]",
   6: "bg-[radial-gradient(circle,rgb(255_180_230/0.45)_0%,rgb(160_210_255/0.18)_40%,transparent_68%)]",
