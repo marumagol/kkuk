@@ -122,7 +122,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
         {s.missing.length > 0 && (
           <section aria-labelledby="sealed" className="flex flex-col gap-3">
             <div>
-              <h2 id="sealed" className="text-body font-bold text-ink">아직 열지 않은 도장 <span className="text-point">{s.missing.length}</span></h2>
+              <h2 id="sealed" className="text-body font-bold text-ink">곧 열릴 도장 <span className="text-point">{s.missing.length}</span></h2>
               <p className="mt-0.5 text-tiny text-ink-sub">어떤 도장일지는 그 도시에 가야 알 수 있어요</p>
             </div>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
