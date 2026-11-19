@@ -431,8 +431,7 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 @media (prefers-reduced-motion: reduce) { .sp-book, .sp-cover, .sp-cast, .sp-city, .sp-entry, .sp-shake { animation-duration: 1ms; animation-delay: 0ms; } }
 
 /* 홀로그램 도장 카드 (0.94.0) : 도장 탭에서 모은 도장을 눌렀을 때. 빛 층 위치는 --px --py --lx --ly --fa --so 를 components/holo-card.tsx 가 돌리는 각도에 맞춰 넣는다 */
-.hc-persp { position: relative; perspective: 900px; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
-.hc-persp:active { cursor: grabbing; }
+.hc-persp { position: relative; perspective: 900px; touch-action: pan-x pan-y; cursor: pointer; user-select: none; -webkit-user-select: none; }
 .hc-enter { transform-style: preserve-3d; animation: hc-enter .9s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes hc-enter { 0% { transform: translateY(30px) scale(.7) rotateY(-200deg); opacity: 0; } 50% { opacity: 1; } 100% { transform: none; } }
 .hc-card { position: relative; width: 186px; height: 260px; transform-style: preserve-3d; }
@@ -442,8 +441,8 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .hc-name { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 7px 9px 5px; font-size: 14px; font-weight: 800; color: #3A2A18; }
 .hc-name small { flex: none; font-size: 9px; font-weight: 800; letter-spacing: .12em; color: #B4441F; }
 .hc-win { position: relative; margin: 0 8px; height: 128px; flex: none; border-radius: 6px; overflow: hidden; border: 2px solid #E2B867; display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 50% 50%, #FFF3DC 0, #FFE0B5 38%, #F7C58E 72%, #E9A866 100%); box-shadow: inset 0 0 18px rgb(160 90 20 / .35); }
-.hc-win > .hc-art { position: relative; filter: drop-shadow(0 4px 6px rgb(0 0 0 / .25)); }
+  background: radial-gradient(circle at 50% 50%, #FFF3DC 0, #FFE0B5 38%, #F7C58E 72%, #E9A866 100%); box-shadow: inset 0 0 10px rgb(160 90 20 / .18); }
+.hc-win > .hc-art { position: relative; filter: drop-shadow(0 6px 8px rgb(0 0 0 / .28)); }
 .hc-halo { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%,transparent 0 38%,rgba(255,255,255,.55) 39%,transparent 41%,transparent 50%,rgba(255,255,255,.35) 51%,transparent 53%,transparent 63%,rgba(255,255,255,.22) 64%,transparent 66%),radial-gradient(1.6px 1.6px at 14% 22%,#fff 50%,transparent),radial-gradient(1.2px 1.2px at 82% 18%,#fff 50%,transparent),radial-gradient(2px 2px at 88% 70%,#fff 50%,transparent),radial-gradient(1.4px 1.4px at 10% 76%,#fff 50%,transparent),radial-gradient(1.2px 1.2px at 30% 88%,#fff 50%,transparent),radial-gradient(1.6px 1.6px at 70% 90%,#fff 50%,transparent),radial-gradient(1.2px 1.2px at 22% 50%,#fff 50%,transparent),radial-gradient(1.4px 1.4px at 78% 44%,#fff 50%,transparent); animation: hc-halo 3.2s ease-in-out infinite; }
 @keyframes hc-halo { 0%, 100% { transform: scale(.96); opacity: .75; } 50% { transform: scale(1.04); opacity: 1; } }
 .hc-nick { margin: 6px 8px 0; padding: 4px 6px; border-radius: 4px; background: linear-gradient(90deg, #E9C27A, #F7DEA6, #E9C27A); font-size: 9px; font-weight: 700; color: #5A3B12; text-align: center; letter-spacing: .04em; }
@@ -493,11 +492,11 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 @keyframes gb-spark { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .gb-foil, .gb-land, .gb-spark { animation: none; } .gb-spark { display: none; } .gb-land { transform: scale(1.8); } }
 
-/* 모은 도장 작은 카드 (0.94.1, 0.94.5 큰 카드처럼 그림 창에 둥근 빛과 숨 쉬는 링, 홀로그램이 도장 위까지) */ : components/stamp-cards.tsx EarnedStamp. 큰 카드(hc-*)와 같은 재료 */
+/* 모은 도장 작은 카드 (0.94.1) : components/stamp-cards.tsx EarnedStamp. 큰 카드(hc-*)와 같은 재료. 등급별 모양은 아래 mc-t1~4 */
 .mc { position: relative; display: block; aspect-ratio: 5 / 7; border-radius: 12px; padding: 4px; overflow: hidden; background: conic-gradient(from 210deg, #F7D58B, #FFF4C9, #D9A441, #FFE9A8, #C8902E, #FFF4C9, #F7D58B); box-shadow: 0 6px 14px rgb(120 70 20 / .18); }
 .mc-in { display: flex; height: 100%; flex-direction: column; overflow: hidden; border-radius: 8px; background: linear-gradient(180deg, #FFF9EE, #F5E6CC); text-align: left; }
 .mc-name { padding: 5px 6px 3px; font-size: 11px; font-weight: 800; color: #3A2A18; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mc-win { position: relative; flex: 1; margin: 0 4px; border-radius: 5px; border: 1.5px solid #E2B867; overflow: hidden; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 50%, #FFF3DC 0, #FFE0B5 38%, #F7C58E 72%, #E9A866 100%); box-shadow: inset 0 0 12px rgb(160 90 20 / .35); }
+.mc-win { position: relative; flex: 1; margin: 0 4px; border-radius: 5px; border: 1.5px solid #E2B867; overflow: hidden; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 50%, #FFF3DC 0, #FFE0B5 38%, #F7C58E 72%, #E9A866 100%); box-shadow: inset 0 0 8px rgb(160 90 20 / .16); }
 .mc-win > svg { position: relative; width: 96%; height: auto; filter: drop-shadow(0 2px 3px rgb(0 0 0 / .22)); }
 .mc-foot { display: flex; justify-content: space-between; padding: 3px 6px 5px; font-size: 8.5px; font-weight: 800; color: #B98A4E; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
 .mc-holo { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: color-dodge; opacity: .22; background: repeating-linear-gradient(115deg, #ff6b6b 0%, #ffd36e 5%, #8cff9a 10%, #6ee7ff 15%, #b48cff 20%, #ff6b6b 25%); background-size: 300% 300%; animation: mc-holo 16s linear infinite; }
@@ -506,3 +505,46 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .mc-win > .hc-halo { animation-duration: 6s; }
 @keyframes mc-holo { to { background-position: 300% 0; } }
 @media (prefers-reduced-motion: reduce) { .mc-holo { animation: none; } }
+
+/* ───── 도장 카드 등급 (0.95.0) : lib/card-tier.ts. 1 일반, 2 레어(기본 금박 모양 그대로), 3 에픽, 4 유니크 ───── */
+.hc-pill, .mc-pill { display: inline-flex; align-items: center; border-radius: 999px; font-weight: 900; letter-spacing: .04em; }
+.hc-pill { padding: 2px 7px; font-size: 9px; }
+.mc-pill { padding: 1px 5px; font-size: 8.5px; }
+.hc-t2 .hc-pill, .mc-t2 .mc-pill { background: linear-gradient(90deg, #E9C27A, #F7DEA6, #E9C27A); color: #5A3B12; }
+.mc-pips { display: inline-flex; gap: 2px; } .mc-pips i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .25; } .mc-pips i.on { opacity: 1; }
+.mc-name { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.mc-name > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+/* 일반 : 크림 종이 + 베이지 테두리, 빛 없음 */
+.hc-t1 .hc-front, .mc-t1 { background: linear-gradient(160deg, #ECE6DA, #D3CAB8); }
+.hc-t1 .hc-inner, .mc-t1 .mc-in { background: #FFFBF3; }
+.hc-t1 .hc-win, .mc-t1 .mc-win { border-color: #DCD2BF; background: radial-gradient(circle, #FFF8EC 0, #F6E9D2 70%, #EDDBBE 100%); box-shadow: none; }
+.hc-t1 :is(.hc-halo, .hc-holo, .hc-glitter, .hc-stars), .mc-t1 :is(.hc-halo, .mc-holo, .mc-glitter, .mc-stars) { display: none; }
+.hc-t1 .hc-name small { color: #8E8372; } .hc-t1 .hc-nick { background: #EFE8DA; color: #6B5F4C; } .hc-t1 .hc-desc { color: #7D725F; }
+.hc-t1 .hc-foot, .mc-t1 .mc-foot { color: #A89C88; } .mc-t1 .mc-name { color: #3A2E22; }
+.hc-t1 .hc-pill, .mc-t1 .mc-pill { background: #E8E1D4; color: #7D725F; }
+/* 에픽 : 빛이 흐르는 장밋빛 금속 테두리 + 안쪽 이중 테두리 + 그림 창 프리즘 빛 + 네 모서리 반짝이는 별 */
+.hc-t3 .hc-front, .mc-t3 { background: linear-gradient(115deg, #B9A3E8 0%, #F6D6F0 20%, #FFFFFF 28%, #E9B8D9 36%, #9C86D6 55%, #F6D6F0 75%, #FFFFFF 82%, #B9A3E8 100%); background-size: 250% 100%; animation: tier-sheen 4s ease-in-out infinite alternate; }
+@keyframes tier-sheen { from { background-position: 0 0; } to { background-position: 100% 0; } }
+.hc-t3 .hc-inner, .mc-t3 .mc-in { background: linear-gradient(180deg, #FFF9FC, #F1E6F5); box-shadow: inset 0 0 0 1.5px #D7BDF0, inset 0 0 0 3px #FFF9FC, inset 0 0 0 4px #E3CCF4; }
+.hc-t3 .hc-win, .mc-t3 .mc-win { border-color: #B48CE0; background: radial-gradient(circle, #FFF0F8 0, #F5D6EC 40%, #DDB9E8 75%, #B898DC 100%); box-shadow: none; }
+.hc-t3 .hc-win::after, .mc-t3 .mc-win::after { content: ""; position: absolute; inset: -20%; background: repeating-linear-gradient(115deg, transparent 0 14%, rgb(255 255 255 / .45) 16%, transparent 19%, transparent 30%); mix-blend-mode: soft-light; animation: tier-prism 9s linear infinite; }
+@keyframes tier-prism { to { transform: translateX(30%); } }
+.hc-t3 .hc-name, .mc-t3 .mc-name { color: #3A2448; } .hc-t3 .hc-name small { color: #8A4FB8; }
+.hc-t3 .hc-nick { background: linear-gradient(90deg, #C9A8E8, #F6D6F0, #C9A8E8); color: #3A2448; } .hc-t3 .hc-desc { color: #7A5A92; }
+.hc-t3 .hc-foot, .mc-t3 .mc-foot { color: #9A7FB8; }
+.hc-t3 .hc-pill, .mc-t3 .mc-pill { background: linear-gradient(90deg, #C9A8E8, #F6D6F0, #C9A8E8); color: #3A2448; }
+.tier-tw { position: absolute; z-index: 6; color: #B48CE0; font-size: 9px; line-height: 1; text-shadow: 0 0 4px #fff; animation: tier-tw 2.4s ease-in-out infinite; }
+@keyframes tier-tw { 0%, 100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+/* 유니크 (마지막 등급) : 밤하늘 카드 + 천천히 도는 무지개 테두리 + 카드 전체 별빛 */
+@property --tier-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.hc-t4 .hc-front, .mc-t4 { background: conic-gradient(from var(--tier-a), #ff9a9e, #fad0c4, #fbc2eb, #a18cd1, #84fab0, #8fd3f4, #ffd36e, #ff9a9e); animation: tier-spin 8s linear infinite; }
+@keyframes tier-spin { to { --tier-a: 360deg; } }
+.hc-t4 .hc-inner, .mc-t4 .mc-in { background: radial-gradient(1px 1px at 20% 30%, #fff 50%, transparent), radial-gradient(1px 1px at 70% 80%, #fff 50%, transparent), radial-gradient(1.2px 1.2px at 85% 20%, #fff 50%, transparent), linear-gradient(180deg, #2B2350, #1A1838); }
+.hc-t4 .hc-win, .mc-t4 .mc-win { border-color: #C9B6FF; background: radial-gradient(circle, #6E5BD8 0, #3E2F8F 55%, #231B57 100%); box-shadow: none; }
+.hc-t4 .hc-halo, .mc-t4 .hc-halo { filter: sepia(1) saturate(3) hue-rotate(5deg); }
+.hc-t4 .hc-name, .mc-t4 .mc-name { color: #fff; } .hc-t4 .hc-name small { color: #FFD36E; }
+.hc-t4 .hc-nick { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; } .hc-t4 .hc-desc { color: #D8CFFF; }
+.hc-t4 .hc-foot, .mc-t4 .mc-foot { color: #C9B6FF; }
+.hc-t4 .hc-pill, .mc-t4 .mc-pill { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; }
+.mc-t4 .mc-stars { opacity: .35; }
+@media (prefers-reduced-motion: reduce) { .hc-t3 .hc-front, .mc-t3, .hc-t4 .hc-front, .mc-t4, .tier-tw, .hc-t3 .hc-win::after, .mc-t3 .mc-win::after { animation: none; } }

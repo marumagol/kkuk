@@ -344,7 +344,7 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
 /* ───────── 도장 (3단계, migration 0012) ───────── */
 export type StampCard = {
   cityId: number | null; name: string; country: string; earned: boolean;
-  firstDate?: string; firstAt?: string /* 처음 받은 시각 (정렬용, 0.94.6) */; visits: number; trips: { id: string; title: string; verifiedBy: string | null }[];
+  firstDate?: string; firstAt?: string /* 처음 받은 시각 (정렬용, 0.94.6) */; dates?: string[] /* 받은 시각 전부, 오름차순 (카드 등급, 0.95.0) */; visits: number; trips: { id: string; title: string; verifiedBy: string | null }[];
   /* 아직 못 받은 도장 : 이 도시가 든 내 여행 중 가장 가까운 것 (여행 중 > 다가오는 > 지난) */
   next?: { tripId: string; title: string; start: string; end: string };
 };
@@ -352,10 +352,10 @@ export type StampsView = { earned: StampCard[]; missing: StampCard[]; cityCount:
 
 const PREVIEW_STAMPS: StampsView = {
   earned: [
-    { cityId: null, name: "후쿠오카", country: "JP", earned: true, firstDate: "2026-11-13", visits: 1, trips: [] },
-    { cityId: null, name: "타이베이", country: "TW", earned: true, firstDate: "2026-03-14", visits: 1, trips: [] },
+    { cityId: null, name: "후쿠오카", country: "JP", earned: true, firstDate: "2023-02-11", visits: 5, dates: ["2023-02-11", "2023-09-02", "2024-05-04", "2025-10-03", "2026-11-13"], trips: [] },
+    { cityId: null, name: "타이베이", country: "TW", earned: true, firstDate: "2024-03-14", visits: 3, dates: ["2024-03-14", "2025-06-20", "2026-03-14"], trips: [] },
     { cityId: null, name: "오사카", country: "JP", earned: true, firstDate: "2025-11-09", visits: 1, trips: [] },
-    { cityId: null, name: "교토", country: "JP", earned: true, firstDate: "2025-11-08", visits: 2, trips: [] },
+    { cityId: null, name: "교토", country: "JP", earned: true, firstDate: "2025-11-08", visits: 2, dates: ["2025-11-08", "2026-04-02"], trips: [] },
   ],
   missing: [
     { cityId: null, name: "삿포로", country: "JP", earned: false, visits: 0, trips: [], next: { tripId: "sapporo", title: "삿포로 겨울 여행", start: "2026-12-28", end: "2027-01-02" } },
@@ -393,8 +393,9 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
   const byCity = new Map<number, StampCard>();
   for (const g of gs) {
     if (!g.cities) continue;
-    const s = byCity.get(g.city_id) ?? { cityId: g.city_id, name: g.cities.name, country: g.cities.country_code, earned: true, firstDate: g.granted_at.slice(0, 10), firstAt: g.granted_at, visits: 0, trips: [] };
+    const s = byCity.get(g.city_id) ?? { cityId: g.city_id, name: g.cities.name, country: g.cities.country_code, earned: true, firstDate: g.granted_at.slice(0, 10), firstAt: g.granted_at, dates: [] as string[], visits: 0, trips: [] };
     s.visits += 1;
+    s.dates?.push(g.granted_at);
     s.trips.push({ id: g.trip_id, title: titleOf.get(g.trip_id) ?? "여행", verifiedBy: verifier.get(`${g.trip_id}:${g.city_id}`) ?? null });
     byCity.set(g.city_id, s);
   }

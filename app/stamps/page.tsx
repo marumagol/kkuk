@@ -78,7 +78,9 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
   if (viewer.kind === "user") { const sb = await createClient(); const { data } = sb ? await sb.rpc("am_stamp_tester") : { data: false }; tester = data === true; }
 
   /* 도장 카드 : 나라 묶음 없이 최근에 받은 순 (0.94.6 마루님) */
-  const recent = [...s.earned].sort((a, b) => (b.firstAt ?? b.firstDate ?? "").localeCompare(a.firstAt ?? a.firstDate ?? ""));
+  /* 0.95.0 : 마지막으로 받은 시각 기준 (등급이 오른 카드도 앞으로, 7일 안이면 NEW) */
+  const lastAt = (x: StampCard) => x.dates?.at(-1) ?? x.firstAt ?? x.firstDate ?? "";
+  const recent = [...s.earned].sort((a, b) => lastAt(b).localeCompare(lastAt(a)));
 
   return (
     <AppShell>
@@ -155,7 +157,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
             <h2 id="earned" className="text-body font-bold text-ink">도장 카드 <span className="text-sub font-semibold text-ink-sub">{count}</span></h2>
             <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
               {recent.map((x) => (
-                <EarnedStamp key={`${x.country}:${x.name}`} x={x} isNew={!!x.firstDate && x.firstDate >= newSince} startOpen={picked === x} />
+                <EarnedStamp key={`${x.country}:${x.name}`} x={x} isNew={!!lastAt(x) && lastAt(x).slice(0, 10) >= newSince} startOpen={picked === x} />
               ))}
             </div>
           </section>

@@ -2,13 +2,21 @@
 /*
   도장 탭 카드 (2026-11-17 마루님)
   - 아직 열지 않은 도장 : 누르면 여행으로 넘어가지 않고 받는 방법을 알려 주는 창
-  - 모은 도장 : 누르면 홀로그램 카드로 크게 보여 주는 창 (0.94.0, 예전 메달). 주소 ?c=도시번호 로 바로 열 수도 있다
+  - 모은 도장 : 가장 높은 등급 카드 한 장. 누르면 등급별 카드를 넘겨 보는 창 (0.95.0). 주소 ?c=도시번호 로 바로 열 수도 있다
 */
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Icon, StampFace } from "@/components/kit";
-import { HoloCard } from "@/components/holo-card";
+import { HoloCard, Twinkles } from "@/components/holo-card";
+import { TIERS, cardsOf, tierName, visitLabel, type Tier } from "@/lib/card-tier";
+
+const GLOW: Record<Tier, string> = {
+  1: "bg-[radial-gradient(circle,rgb(255_255_255/0.16)_0%,transparent_65%)]",
+  2: "bg-[radial-gradient(circle,rgb(255_170_60/0.42)_0%,rgb(255_170_60/0.1)_40%,transparent_68%)]",
+  3: "bg-[radial-gradient(circle,rgb(210_130_230/0.45)_0%,rgb(210_130_230/0.1)_40%,transparent_68%)]",
+  4: "bg-[radial-gradient(circle,rgb(150_110_255/0.6)_0%,rgb(150_110_255/0.15)_40%,transparent_68%)]",
+};
 import { AlertDialog } from "@/components/gate";
 import { flagWideOf, countryOf } from "@/lib/countries";
 import { md } from "@/lib/mock";
@@ -33,22 +41,26 @@ export function SealedButton({ x, tone, label, children }: { x: StampCard; tone:
   );
 }
 
-/* 모은 도장 칸 : 누르면 카드 창 */
+/* 카드들 : 받은 시각이 없으면(미리보기 등) 처음 받은 날 하나로 */
+const cardsFor = (x: StampCard) => cardsOf(x.dates?.length ? x.dates : Array.from({ length: x.visits }, () => x.firstAt ?? x.firstDate ?? ""));
+
+/* 모은 도장 칸 : 그 도시에서 모은 가장 높은 등급 카드 한 장 (0.95.0). 누르면 카드 창 */
 export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: boolean; startOpen?: boolean }) {
   const [open, setOpen] = useState(!!startOpen);
   const close = () => {
     setOpen(false);
     if (location.search.includes("c=")) history.replaceState(history.state, "", "/stamps"); // ?c= 로 열린 창을 닫으면 주소도 정리
   };
+  const cards = cardsFor(x);
+  const top = cards[cards.length - 1];
   return (
     <>
-      {/* 작은 홀로그램 카드 (0.94.1) : 금박 테두리 + 도시 이름 + 도장 + 받은 날. 누르면 큰 카드 */}
-      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 도장, ${x.visits}번 방문`} className="press relative block w-full">
-        <span className="mc">
+      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 도장, ${tierName(top.tier)} 카드, ${x.visits}번 방문`} className="press relative block w-full">
+        <span className={`mc mc-t${top.tier}`}>
           <span className="mc-in">
-            <span className="mc-name">{x.name}</span>
-            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" /></span>
-            <span className="mc-foot"><span>KKUK</span><span>{dot(x.firstDate)}</span></span>
+            <span className="mc-name"><span>{x.name}</span><span className="mc-pips" aria-hidden>{TIERS.map((t) => <i key={t.tier} className={t.tier <= top.tier ? "on" : ""} />)}</span></span>
+            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier === 3 && <Twinkles o={10} />}</span>
+            <span className="mc-foot"><span className="mc-pill">{tierName(top.tier)}</span><span>{dot(top.at)}</span></span>
           </span>
         </span>
         {isNew && <span className="absolute -right-1 -top-1.5 z-[1] rounded-full bg-point px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">NEW</span>}
@@ -58,8 +70,12 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
   );
 }
 
+/* 카드 창 : 모은 등급 카드를 옆으로 넘겨 본다. 처음엔 가장 높은 등급. 아래 등급 탭으로도 이동 (못 모은 등급은 보여 주지 않음) */
 function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const cards = cardsFor(x);
+  const [cur, setCur] = useState(cards.length - 1);
   useEffect(() => {
     const back = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
@@ -68,25 +84,52 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
     const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
     return () => { removeEventListener("keydown", esc); document.body.style.overflow = prev; back?.focus?.(); };
   }, [onClose]);
+  const center = (i: number, smooth: boolean) => {
+    const tr = track.current, el = tr?.children[i] as HTMLElement | undefined;
+    if (tr && el) tr.scrollTo({ left: el.offsetLeft - (tr.clientWidth - el.clientWidth) / 2, behavior: smooth ? "smooth" : "instant" });
+  };
+  useEffect(() => { center(cards.length - 1, false); }, [cards.length]);
+  const onScroll = () => {
+    const tr = track.current; if (!tr) return;
+    const mid = tr.scrollLeft + tr.clientWidth / 2;
+    let best = 0, bd = Infinity;
+    [...tr.children].forEach((k, i) => { const el = k as HTMLElement; const d = Math.abs(el.offsetLeft + el.clientWidth / 2 - mid); if (d < bd) { bd = d; best = i; } });
+    if (best !== cur) { setCur(best); navigator.vibrate?.(4); }
+  };
+  const c = cards[cur] ?? cards[0];
   const flag = flagWideOf(x.country);
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장`} onClick={(e) => e.stopPropagation()}
-        className="relative flex w-full max-w-[340px] flex-col items-center overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-8 text-center text-on-deep shadow-float">
-        {/* 홀로그램 카드 (0.94.0) : 뒤로 퍼지는 빛 + 끌어서 돌려 보는 카드 */}
-        <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-70px] size-[380px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgb(255_90_54/0.42)_0%,rgb(255_90_54/0.1)_40%,transparent_68%)]" />
-        <div className="relative flex flex-col items-center">
-          <HoloCard name={x.name} country={x.country} no={x.cityId} date={dot(x.firstDate)} visits={x.visits} />
-          <span className="relative -mt-3 rounded-full bg-point px-3 py-1 text-tiny font-extrabold text-white shadow-[0_4px_10px_rgb(0_0_0/0.25)]">
-            {x.visits > 1 ? `${x.visits}번 방문` : "첫 방문"}
-          </span>
+      <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장 카드`} onClick={(e) => e.stopPropagation()}
+        className="relative flex w-full max-w-[340px] flex-col items-center overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-6 text-center text-on-deep shadow-float">
+        <div aria-hidden className={`pointer-events-none absolute left-1/2 top-[-70px] size-[380px] -translate-x-1/2 rounded-full transition-[background] duration-300 ${GLOW[c.tier]}`} />
+        <div ref={track} onScroll={onScroll} className="relative -mx-5 flex w-[calc(100%+40px)] snap-x snap-mandatory gap-4 overflow-x-auto px-[calc(50%-93px)] pb-4 pt-2 [scrollbar-width:none]">
+          {cards.map((k, i) => (
+            <div key={k.tier} className={`flex-none snap-center transition-[transform,opacity] duration-300 ${i === cur ? "" : "scale-90 opacity-50"}`}>
+              <HoloCard name={x.name} country={x.country} tier={k.tier} date={dot(k.at)} visit={k.visit} visits={x.visits} />
+            </div>
+          ))}
         </div>
+        {/* 등급 탭 : 모은 카드만 (0.95.0, 못 모은 등급은 보이지 않음). 한 장뿐이면 탭 없음 */}
+        {cards.length > 1 && (
+          <div className="relative flex gap-1.5" role="tablist" aria-label="카드 등급">
+            {cards.map((k, i) => (
+              <button key={k.tier} type="button" role="tab" aria-selected={i === cur} onClick={() => center(i, true)}
+                className={`press inline-flex h-7 items-center rounded-full px-2.5 text-tiny font-extrabold ${i === cur ? "bg-on-deep text-deep" : "bg-deep-soft text-on-deep-sub"}`}>
+                {k.name}
+              </button>
+            ))}
+          </div>
+        )}
         <h2 className="relative mt-4 flex items-center justify-center gap-1.5 text-title-lg font-extrabold">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {flag && <img src={flag} alt="" width={27} height={18} className="rounded-[3px]" />}
           {x.name}
         </h2>
-        <p className="relative mt-1 text-sub text-on-deep-sub">{countryOf(x.country)?.name ?? ""}{x.firstDate ? `, ${dot(x.firstDate)} 처음 받음` : ""}</p>
+        <p className="relative mt-1 text-sub text-on-deep-sub">{countryOf(x.country)?.name ?? ""}{c.at ? ` · ${dot(c.at)} ${visitLabel(c.visit)}` : ""}</p>
+        <p className="relative mt-1.5 text-tiny text-on-deep-sub/80">
+          {cards.length > 1 ? "옆으로 넘겨 보고, 카드를 누르면 뒷면이 보여요" : "카드를 누르면 뒷면이 보여요"}
+        </p>
         {/* 다녀온 여행 (0.94.3) : 큰 줄 목록 대신 작은 알약 링크. 3개까지, 나머지는 "외 N개" */}
         {x.trips.length > 0 && (
           <div className="relative mt-3 flex flex-wrap justify-center gap-1.5">
