@@ -58,7 +58,7 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
         <span className={`mc mc-t${top.tier}`}>
           <span className="mc-in">
             <span className="mc-name"><span>{x.name}</span><span className="mc-pips" aria-hidden>{TIERS.map((t) => <i key={t.tier} className={t.tier <= top.tier ? "on" : ""} />)}</span></span>
-            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier === 3 && <Twinkles o={10} />}</span>
+            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} finish={top.tier === 4 ? "unique" : top.tier === 3 ? "epic" : undefined} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier === 3 && <Twinkles o={10} />}</span>
             <span className="mc-foot"><span className="mc-pill">{tierName(top.tier)}</span><span>{dot(top.at)}</span></span>
           </span>
         </span>

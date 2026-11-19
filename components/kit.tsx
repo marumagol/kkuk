@@ -4,7 +4,7 @@
   서버/클라이언트 어디서나 import 할 수 있게 상태(useState)는 넣지 않았다.
 */
 import { Linkify } from "@/components/linkify";
-import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes } from "react";
+import { useId, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes } from "react";
 import Link from "next/link";
 import { blobPath, stampArt, stampColor } from "@/lib/stamp-art";
 
@@ -312,18 +312,35 @@ export function Sheet({ title, badge, children, footer, inline }: { title: strin
 /* ---------- 도장 (마루님 "삿포로 도장" 기준, 디자인-가이드 2-1) ---------- */
 export const BLOB_IN = blobPath(43, 43, 37.75);
 export const BLOB_OUT = blobPath(43, 43, 42.5);
-export function StampFace({ name, country, earned = true, size = 86 }: { name: string; country?: string | null; earned?: boolean; size?: number }) {
+/* 0.95.6 finish : 도장 카드 등급별 도장 색 (마루님 "에픽, 유니크답게, 모으고 싶게")
+   epic = 짙은 자수정 그라데이션 + 흰 그림, unique = 오팔 진주(흰빛에 분홍·하늘) + 남색 그림. 카드 바탕(연보라/밤하늘)과 대비되게 */
+const FINISH = {
+  epic: { stops: ["#1E1466", "#4A22A8", "#8B2F9E"], ring: "#4A22A8", edge: "#D9B8FF", art: "#FFFFFF" },
+  unique: { stops: ["#F2F7FF", "#F6D9F1", "#D6E6FF", "#FFF1D8"], ring: "#C9B6FF", edge: "#FFFFFF", art: "#2A1F5C" },
+} as const;
+export function StampFace({ name, country, earned = true, size = 86, finish }: { name: string; country?: string | null; earned?: boolean; size?: number; finish?: "epic" | "unique" }) {
   const art = stampArt(country, name);
-  const color = stampColor(country); // 나라별 도장 색 (마루님 피그마 "도장 (11.15)")
+  const uid = useId().replace(/:/g, "");
+  const f = earned && finish ? FINISH[finish] : null;
+  const color = f ? `url(#sf${uid})` : stampColor(country); // 나라별 도장 색 (마루님 피그마 "도장 (11.15)")
   return (
     <svg viewBox="0 0 86 86" width={size} height={size} aria-hidden="true" className="block"
-      style={{ ["--stamp-hole" as string]: earned ? color : "var(--color-bg)" }}>
-      <path d={BLOB_OUT} fill="none" stroke={earned ? color : "var(--color-line-strong)"} strokeWidth={1} strokeDasharray="2 2" />
+      style={{ ["--stamp-hole" as string]: earned ? (f ? f.stops[1] : color) : "var(--color-bg)" }}>
+      {f && (
+        <defs>
+          <linearGradient id={`sf${uid}`} x1="0" y1="0" x2="1" y2="1">
+            {f.stops.map((c, i) => <stop key={i} offset={i / (f.stops.length - 1)} stopColor={c} />)}
+          </linearGradient>
+          <radialGradient id={`sh${uid}`} cx=".32" cy=".26" r=".5"><stop offset="0" stopColor="#fff" stopOpacity=".45" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+        </defs>
+      )}
+      <path d={BLOB_OUT} fill="none" stroke={earned ? (f ? f.ring : color) : "var(--color-line-strong)"} strokeWidth={f ? 1.4 : 1} strokeDasharray="2 2" />
       {earned && <path d={BLOB_IN} fill={color} />}
+      {f && <path d={BLOB_IN} fill={`url(#sh${uid})`} stroke={f.edge} strokeWidth={0.9} strokeOpacity={0.85} />}
       {art ? (
-        <g color={earned ? "#FFFFFF" : "var(--color-line-strong)"} opacity={earned ? 1 : 0.5} dangerouslySetInnerHTML={{ __html: art }} />
+        <g color={earned ? (f ? f.art : "#FFFFFF") : "var(--color-line-strong)"} opacity={earned ? 1 : 0.5} dangerouslySetInnerHTML={{ __html: art }} />
       ) : earned ? (
-        <text x="43" y="43" textAnchor="middle" dominantBaseline="central" fill="#FFFFFF" fontWeight={800}
+        <text x="43" y="43" textAnchor="middle" dominantBaseline="central" fill={f ? f.art : "#FFFFFF"} fontWeight={800}
           fontSize={name.length > 4 ? 10 : 12.5} transform="rotate(-6 43 43)">{name}</text>
       ) : null}
     </svg>
