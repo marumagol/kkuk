@@ -74,7 +74,7 @@ export function HoloCard({ name, country, no, date, visits }: { name: string; co
               <div className="hc-foot"><span>KKUK</span>{no != null && <span>No.{String(no).padStart(3, "0")}</span>}</div>
             </div>
             <span aria-hidden className="hc-holo" /><span aria-hidden className="hc-glitter" /><span aria-hidden className="hc-stars" />
-            <span aria-hidden className="hc-shine" /><span aria-hidden className="hc-sweep" />
+            <span aria-hidden className="hc-shine" />
           </div>
           <div className="hc-side hc-back">
             <span aria-hidden className="hc-wm" />

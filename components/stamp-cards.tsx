@@ -15,7 +15,6 @@ import { md } from "@/lib/mock";
 import type { StampCard } from "@/lib/trips";
 
 const dot = (d?: string) => (d ? d.slice(2).replaceAll("-", ".") : undefined);
-const tiltOf = (name: string) => ([...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 17) - 8;
 
 /* 봉인 도장을 눌렀을 때 안내 */
 export function SealedButton({ x, tone, label, children }: { x: StampCard; tone: "now" | "soon" | "past"; label: string; children: ReactNode }) {
