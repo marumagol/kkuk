@@ -4,10 +4,9 @@
   - 아직 열지 않은 도장 : 누르면 여행으로 넘어가지 않고 받는 방법을 알려 주는 창
   - 모은 도장 : 가장 높은 등급 카드 한 장. 누르면 등급별 카드를 넘겨 보는 창 (0.95.0). 주소 ?c=도시번호 로 바로 열 수도 있다
 */
-import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Icon, StampFace } from "@/components/kit";
+import { StampFace } from "@/components/kit";
 import { HoloCard, Twinkles } from "@/components/holo-card";
 import { TIERS, cardsOf, tierName, visitLabel, type Tier } from "@/lib/card-tier";
 
@@ -98,7 +97,6 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
   };
   const c = cards[cur] ?? cards[0];
   const flag = flagWideOf(x.country);
-  const trip = x.trips[c.visit - 1];
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장 카드`} onClick={(e) => e.stopPropagation()}
@@ -108,7 +106,7 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
         <div ref={track} onScroll={onScroll} className="relative -mx-5 flex w-[calc(100%+40px)] snap-x snap-mandatory -my-6 gap-4 overflow-x-auto px-[calc(50%-73px)] pb-10 pt-8 [scrollbar-width:none]">
           {cards.map((k, i) => (
             <div key={k.tier} onClick={i === cur ? undefined : () => center(i, true)} className={`flex-none snap-center transition-[transform,opacity] duration-300 ${i === cur ? "" : "scale-90 opacity-50"}`}>
-              <HoloCard name={x.name} country={x.country} tier={k.tier} date={dot(k.at)} visit={k.visit} visits={x.visits} active={i === cur} />
+              <HoloCard name={x.name} country={x.country} tier={k.tier} date={dot(k.at)} visit={k.visit} visits={x.visits} trip={x.trips[k.visit - 1]?.title} active={i === cur} />
             </div>
           ))}
         </div>
@@ -129,19 +127,6 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
           {x.name}
         </h2>
         <p className="relative mt-1 text-sub text-on-deep-sub">{countryOf(x.country)?.name ?? ""}{c.at ? ` · ${dot(c.at)} ${visitLabel(c.visit)}` : ""}</p>
-        <p className="relative mt-1.5 text-tiny text-on-deep-sub/80">
-          {cards.length > 1 ? "카드를 끌어 돌려 보고, 옆 카드를 넘겨 보세요" : "카드를 끌어 돌려 보고, 누르면 뒷면이 보여요"}
-        </p>
-        {/* 이 카드를 받은 여행 (0.95.3 마루님) : 넘긴 카드의 여행 하나만. 보이지 않는 여행(테스트 등)은 뺀다 */}
-        {trip?.title && (
-          <div className="relative mt-3 flex justify-center">
-            <Link href={`/trips/${trip.id}`} className="press inline-flex min-h-8 max-w-[220px] items-center gap-1 rounded-full bg-deep-soft px-3 text-tiny font-semibold">
-              <Icon name="plane" size={13} className="flex-none opacity-70" />
-              <span className="truncate">{trip.title}</span>
-              <Icon name="right" size={12} className="flex-none opacity-60" />
-            </Link>
-          </div>
-        )}
         <button ref={closeRef} type="button" onClick={onClose} className="press relative mt-4 h-12 w-full rounded-btn bg-on-deep text-body font-bold text-deep">닫기</button>
       </div>
     </div>,

@@ -22,7 +22,7 @@ const EMB_OUT = "M36.55 8.35Q43.00 0.50 49.45 8.35Q55.91 16.20 66.07 16.35Q76.23
 const EMB_IN = "M37.27 12.22Q43.00 5.25 48.73 12.22Q54.47 19.19 63.49 19.33Q72.51 19.46 70.64 28.29Q68.76 37.12 74.28 44.26Q79.80 51.40 71.73 55.44Q63.66 59.48 61.52 68.24Q59.38 77.01 51.19 73.22Q43.00 69.42 34.81 73.22Q26.62 77.01 24.48 68.24Q22.34 59.48 14.27 55.44Q6.20 51.40 11.72 44.26Q17.24 37.12 15.36 28.29Q13.49 19.46 22.51 19.33Q31.53 19.19 37.27 12.22Z";
 
 /* 0.95.0 : 등급(tier)별 모양, 넘겨 보기 안에서 쓰므로 끌어 돌리기 대신 "누르면 뒤집기". 쉬는 동안 살짝 흔들림은 그대로 */
-export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, active = true }: { name: string; country: string; tier?: Tier; date?: string; visit?: number; visits: number; active?: boolean }) {
+export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, trip, active = true }: { name: string; trip?: string; country: string; tier?: Tier; date?: string; visit?: number; visits: number; active?: boolean }) {
   const persp = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
   const front = useRef<HTMLDivElement>(null);
@@ -106,12 +106,16 @@ export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, act
           </div>
           <div className="hc-side hc-back">
             <span aria-hidden className="hc-wm" />
-            <svg aria-hidden className="hc-emb" viewBox="0 0 86 86"><path d={EMB_OUT} fill="none" stroke="#FFF3E0" strokeWidth="2" /><path d={EMB_IN} fill="#FFF3E0" /></svg>
+            {tier === 4 && <span aria-hidden className="hc-bstars" />}
+            {tier === 3 && <Twinkles />}
+            <svg aria-hidden className="hc-emb" viewBox="0 0 86 86"><path d={EMB_OUT} fill="none" stroke="currentColor" strokeWidth="2" /><path d={EMB_IN} fill="currentColor" /></svg>
             <span aria-hidden className="hc-ring" />
-            <span className="text-[10px] font-bold tracking-[0.3em] opacity-80">KKUK</span>
+            <span className="hc-bk text-[10px] font-bold tracking-[0.3em] opacity-80">KKUK</span>
             <span className="max-w-[150px] truncate text-[22px] font-extrabold">{name}</span>
-            {date && <span className="text-[11px] font-semibold tabular-nums opacity-90">{date}</span>}
-            <span className="mt-1 text-[11px] font-semibold opacity-85">{visitLabel(visit)} · {tierName(tier)}</span>
+            {date && <span className="hc-bd text-[11px] font-semibold tabular-nums opacity-90">{date}</span>}
+            <span className="mt-1 text-[11px] font-bold">{visitLabel(visit)}</span>
+            <span className="hc-bpill">{tierName(tier)}</span>
+            {trip && <span className="hc-btrip mt-1.5 max-w-[150px] truncate text-[10.5px] font-semibold opacity-85">✈ {trip}</span>}{/* 0.95.4 받은 여행은 뒷면에 (마루님) */}
           </div>
         </div>
       </div>
