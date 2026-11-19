@@ -396,7 +396,7 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
     const s = byCity.get(g.city_id) ?? { cityId: g.city_id, name: g.cities.name, country: g.cities.country_code, earned: true, firstDate: g.granted_at.slice(0, 10), firstAt: g.granted_at, dates: [] as string[], visits: 0, trips: [] };
     s.visits += 1;
     s.dates?.push(g.granted_at);
-    s.trips.push({ id: g.trip_id, title: titleOf.get(g.trip_id) ?? "여행", verifiedBy: verifier.get(`${g.trip_id}:${g.city_id}`) ?? null });
+    s.trips.push({ id: g.trip_id, title: titleOf.get(g.trip_id) ?? "", verifiedBy: verifier.get(`${g.trip_id}:${g.city_id}`) ?? null });
     byCity.set(g.city_id, s);
   }
   const earned = [...byCity.values()];

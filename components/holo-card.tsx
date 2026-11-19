@@ -112,7 +112,6 @@ export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, act
             <span className="max-w-[150px] truncate text-[22px] font-extrabold">{name}</span>
             {date && <span className="text-[11px] font-semibold tabular-nums opacity-90">{date}</span>}
             <span className="mt-1 text-[11px] font-semibold opacity-85">{visitLabel(visit)} · {tierName(tier)}</span>
-            {visit === 1 && visits > 1 && <span className="text-[10px] font-semibold opacity-70">지금까지 {visits}번 방문</span>}
           </div>
         </div>
       </div>

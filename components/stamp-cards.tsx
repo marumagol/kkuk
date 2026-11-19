@@ -98,6 +98,7 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
   };
   const c = cards[cur] ?? cards[0];
   const flag = flagWideOf(x.country);
+  const trip = x.trips[c.visit - 1];
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장 카드`} onClick={(e) => e.stopPropagation()}
@@ -131,17 +132,14 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
         <p className="relative mt-1.5 text-tiny text-on-deep-sub/80">
           {cards.length > 1 ? "카드를 끌어 돌려 보고, 옆 카드를 넘겨 보세요" : "카드를 끌어 돌려 보고, 누르면 뒷면이 보여요"}
         </p>
-        {/* 다녀온 여행 (0.94.3) : 큰 줄 목록 대신 작은 알약 링크. 3개까지, 나머지는 "외 N개" */}
-        {x.trips.length > 0 && (
-          <div className="relative mt-3 flex flex-wrap justify-center gap-1.5">
-            {x.trips.slice(0, 3).map((t) => (
-              <Link key={t.id} href={`/trips/${t.id}`} className="press inline-flex min-h-8 max-w-[220px] items-center gap-1 rounded-full bg-deep-soft px-3 text-tiny font-semibold">
-                <Icon name="plane" size={13} className="flex-none opacity-70" />
-                <span className="truncate">{t.title}</span>
-                <Icon name="right" size={12} className="flex-none opacity-60" />
-              </Link>
-            ))}
-            {x.trips.length > 3 && <span className="inline-flex min-h-8 items-center px-1 text-tiny text-on-deep-sub">외 {x.trips.length - 3}개</span>}
+        {/* 이 카드를 받은 여행 (0.95.3 마루님) : 넘긴 카드의 여행 하나만. 보이지 않는 여행(테스트 등)은 뺀다 */}
+        {trip?.title && (
+          <div className="relative mt-3 flex justify-center">
+            <Link href={`/trips/${trip.id}`} className="press inline-flex min-h-8 max-w-[220px] items-center gap-1 rounded-full bg-deep-soft px-3 text-tiny font-semibold">
+              <Icon name="plane" size={13} className="flex-none opacity-70" />
+              <span className="truncate">{trip.title}</span>
+              <Icon name="right" size={12} className="flex-none opacity-60" />
+            </Link>
           </div>
         )}
         <button ref={closeRef} type="button" onClick={onClose} className="press relative mt-4 h-12 w-full rounded-btn bg-on-deep text-body font-bold text-deep">닫기</button>
