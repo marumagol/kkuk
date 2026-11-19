@@ -396,14 +396,14 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 /* 도장 받는 창 : 여권 연출 (components/stamp-reveal.tsx, 0.93.0 마루님 B안) */
 .sp-book { position: relative; width: 270px; height: 360px; perspective: 1100px; animation: sp-in 500ms cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes sp-in { from { opacity: 0; transform: translateY(40px) scale(.92); } to { opacity: 1; transform: none; } }
-.sp-page { position: absolute; inset: 0; overflow: hidden; border-radius: 6px 14px 14px 6px;
+.sp-page { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: 6px 14px 14px 6px;
   background: repeating-radial-gradient(circle at 30% 40%, rgb(120 150 170 / .08) 0 2px, transparent 2px 9px), linear-gradient(160deg, #F3F0E4, #E7EADF);
   box-shadow: 0 26px 50px rgb(0 0 0 / .45), inset 10px 0 18px -10px rgb(0 0 0 / .25); }
 .sp-hd { position: absolute; left: 16px; right: 16px; top: 14px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; letter-spacing: .25em; color: #8FA0A8; }
 .sp-no { position: absolute; right: 14px; top: 50%; writing-mode: vertical-rl; font-size: 10px; font-weight: 700; letter-spacing: .3em; color: #B5C0C4; }
 .sp-lines { position: absolute; left: 16px; right: 16px; bottom: 16px; font: 600 10px/1.7 ui-monospace, Menlo, monospace; letter-spacing: .12em; color: #9AA7AD; word-break: break-all; }
 /* 표지 (0.94.3) : 사라지지 않고 안쪽면을 보이며 왼쪽으로 넘어가 펼쳐진다. 넘어가는 동안 속지에 그림자가 졌다가 걷힌다 */
-.sp-cover { position: absolute; inset: 0; z-index: 4; transform-origin: 0 50%; transform-style: preserve-3d; animation: sp-open 1000ms 350ms cubic-bezier(.45, 0, .2, 1) both; }
+.sp-cover { position: absolute; inset: 0; z-index: 4; transform-origin: 0 50%; transform-style: preserve-3d; animation: sp-open 1100ms 350ms cubic-bezier(.4, 0, .25, 1) both; }
 .sp-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .sp-out { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border-radius: 6px 14px 14px 6px;
   background: linear-gradient(160deg, #2E4A6B, #1E3350); color: #E8C77E; box-shadow: inset -8px 0 14px rgb(0 0 0 / .25), inset 6px 0 0 rgb(0 0 0 / .18); }
@@ -412,11 +412,12 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
   box-shadow: inset -12px 0 18px -10px rgb(0 0 0 / .3); }
 .sp-in-hd { position: absolute; right: 14px; top: 12px; font-size: 9px; font-weight: 700; letter-spacing: .25em; color: #8FA0A8; }
 .sp-photo { position: absolute; right: 18px; top: 40px; width: 64px; height: 80px; border-radius: 4px; background: linear-gradient(180deg, #D5DCD6, #C6CEC8); }
-.sp-cast { position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: 6px 14px 14px 6px; background: linear-gradient(90deg, rgb(0 0 0 / .35), rgb(0 0 0 / .05) 70%); opacity: 0; animation: sp-cast 1000ms 350ms ease-out both; }
-@keyframes sp-cast { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+.sp-cast { position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: 6px 14px 14px 6px; background: linear-gradient(90deg, rgb(0 0 0 / .35), rgb(0 0 0 / .05) 70%); opacity: 0; animation: sp-cast 1100ms 350ms ease-out both; }
+@keyframes sp-cast { 0% { opacity: 0; } 20% { opacity: 1; } 50%, 100% { opacity: 0; } }
 .sp-em { display: flex; width: 64px; height: 64px; align-items: center; justify-content: center; border: 2px solid #E8C77E; border-radius: 50%; font-size: 22px; font-weight: 800; }
 .sp-ttl { font-size: 15px; font-weight: 800; letter-spacing: .35em; }
-@keyframes sp-open { 0% { transform: rotateY(0); } 18% { transform: rotateY(-14deg); } 85% { transform: rotateY(-182deg); } 100% { transform: rotateY(-178deg); } }
+/* 0.94.4 : 펼친 뒤 멈추지 않고 속지 뒤로 완전히 접혀 넘어간다 (반쯤 넘어간 순간 속지 뒤로 내려가서 표지는 다시 안 보인다) */
+@keyframes sp-open { 0% { transform: rotateY(0); z-index: 4; } 14% { transform: rotateY(-14deg); z-index: 4; } 52% { transform: rotateY(-180deg); z-index: 4; } 53% { z-index: 1; } 100% { transform: rotateY(-358deg); z-index: 1; } }
 .sp-city { position: absolute; left: 28px; top: 44px; opacity: 0; filter: url(#sp-ink); --r: -8deg; animation: sp-slam 450ms 1200ms cubic-bezier(.2, .9, .3, 1.3) both; }
 .sp-entry { position: absolute; right: 20px; top: 176px; width: 150px; padding: 8px 10px; border: 3px solid #2F5FA8; border-radius: 10px; color: #2F5FA8; text-align: center; opacity: 0; filter: url(#sp-ink); --r: 9deg;
   animation: sp-slam 400ms 1750ms cubic-bezier(.2, .9, .3, 1.3) both; }
