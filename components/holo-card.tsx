@@ -10,7 +10,7 @@ import { useEffect, useRef } from "react";
 import { StampFace } from "@/components/kit";
 import { countryOf } from "@/lib/countries";
 import { cityLore } from "@/lib/city-lore";
-import { tierName, visitLabel, type Tier } from "@/lib/card-tier";
+import { finishOf, tierName, visitLabel, type Tier } from "@/lib/card-tier";
 
 /* 에픽 카드 그림 창 네 모서리에서 차례로 반짝이는 별 */
 export function Twinkles({ o = 18 }: { o?: number }) {
@@ -96,7 +96,7 @@ export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, tri
           <div ref={front} className="hc-side hc-front">
             <div className="hc-inner">
               <div className="hc-name"><span className="truncate">{name}</span><small>{country.slice(0, 2)}{cname ? ` · ${cname}` : ""}</small></div>
-              <div className="hc-win"><span aria-hidden className="hc-halo" /><span className="hc-art"><StampFace name={name} country={country} size={112} finish={tier === 4 ? "unique" : tier === 3 ? "epic" : tier === 2 ? "rare" : undefined} /></span>{tier >= 3 && <Twinkles />}</div>
+              <div className="hc-win"><span aria-hidden className="hc-halo" /><span className="hc-art"><StampFace name={name} country={country} size={112} finish={finishOf(tier)} /></span>{tier >= 3 && <Twinkles />}</div>
               <div className="hc-nick">{lore?.nick ?? `${cname || name} 도장`}</div>
               <div className="hc-desc">{lore?.desc ?? `${name}에 직접 가서 꾹 눌러 받은 도장이에요`}</div>
               <div className="hc-foot"><span className="hc-pill">{tierName(tier)}</span>{date && <span>{date}</span>}</div>
@@ -106,8 +106,8 @@ export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, tri
           </div>
           <div className="hc-side hc-back">
             <span aria-hidden className="hc-wm" />
-            {tier === 4 && <span aria-hidden className="hc-bstars" />}
-            {tier === 3 && <Twinkles />}
+            {tier === 6 && <span aria-hidden className="hc-bstars" />}
+            {tier >= 3 && <Twinkles />}
             <svg aria-hidden className="hc-emb" viewBox="0 0 86 86"><path d={EMB_OUT} fill="none" stroke="currentColor" strokeWidth="2" /><path d={EMB_IN} fill="currentColor" /></svg>
             <span aria-hidden className="hc-ring" />
             <span className="hc-bk text-[10px] font-bold tracking-[0.3em] opacity-80">KKUK</span>

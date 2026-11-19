@@ -352,7 +352,7 @@ export type StampsView = { earned: StampCard[]; missing: StampCard[]; cityCount:
 
 const PREVIEW_STAMPS: StampsView = {
   earned: [
-    { cityId: null, name: "후쿠오카", country: "JP", earned: true, firstDate: "2023-02-11", visits: 5, dates: ["2023-02-11", "2023-09-02", "2024-05-04", "2025-10-03", "2026-11-13"], trips: [] },
+    { cityId: null, name: "후쿠오카", country: "JP", earned: true, firstDate: "2021-03-02", visits: 10, dates: ["2021-03-02", "2021-08-14", "2022-01-20", "2022-06-11", "2023-02-11", "2023-09-02", "2024-05-04", "2025-03-09", "2025-10-03", "2026-11-13"], trips: [] },
     { cityId: null, name: "타이베이", country: "TW", earned: true, firstDate: "2024-03-14", visits: 3, dates: ["2024-03-14", "2025-06-20", "2026-03-14"], trips: [] },
     { cityId: null, name: "오사카", country: "JP", earned: true, firstDate: "2025-11-09", visits: 1, trips: [] },
     { cityId: null, name: "교토", country: "JP", earned: true, firstDate: "2025-11-08", visits: 2, dates: ["2025-11-08", "2026-04-02"], trips: [] },

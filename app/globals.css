@@ -537,17 +537,17 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 @keyframes tier-tw { 0%, 100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
 /* 유니크 (마지막 등급) : 밤하늘 카드 + 천천히 도는 무지개 테두리 + 카드 전체 별빛 */
 @property --tier-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-.hc-t4 .hc-front, .mc-t4 { background: conic-gradient(from var(--tier-a), #ff9a9e, #fad0c4, #fbc2eb, #a18cd1, #84fab0, #8fd3f4, #ffd36e, #ff9a9e); animation: tier-spin 8s linear infinite; }
+.hc-t5 .hc-front, .mc-t5 { background: conic-gradient(from var(--tier-a), #ff9a9e, #fad0c4, #fbc2eb, #a18cd1, #84fab0, #8fd3f4, #ffd36e, #ff9a9e); animation: tier-spin 8s linear infinite; }
 @keyframes tier-spin { to { --tier-a: 360deg; } }
-.hc-t4 .hc-inner, .mc-t4 .mc-in { background: radial-gradient(1px 1px at 20% 30%, #fff 50%, transparent), radial-gradient(1px 1px at 70% 80%, #fff 50%, transparent), radial-gradient(1.2px 1.2px at 85% 20%, #fff 50%, transparent), linear-gradient(180deg, #2B2350, #1A1838); }
-.hc-t4 .hc-win, .mc-t4 .mc-win { border-color: #C9B6FF; background: radial-gradient(circle, #6E5BD8 0, #3E2F8F 55%, #231B57 100%); box-shadow: none; }
-.hc-t4 .hc-halo, .mc-t4 .hc-halo { filter: sepia(1) saturate(3) hue-rotate(5deg); }
-.hc-t4 .hc-name, .mc-t4 .mc-name { color: #fff; } .hc-t4 .hc-name small { color: #FFD36E; }
-.hc-t4 .hc-nick { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; } .hc-t4 .hc-desc { color: #D8CFFF; }
-.hc-t4 .hc-foot, .mc-t4 .mc-foot { color: #C9B6FF; }
-.hc-t4 .hc-pill, .mc-t4 .mc-pill { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; }
-.mc-t4 .mc-stars { opacity: .35; }
-@media (prefers-reduced-motion: reduce) { .hc-t3 .hc-front, .mc-t3, .hc-t4 .hc-front, .mc-t4, .tier-tw, .hc-t3 .hc-win::after, .mc-t3 .mc-win::after { animation: none; } }
+.hc-t5 .hc-inner, .mc-t5 .mc-in { background: radial-gradient(1px 1px at 20% 30%, #fff 50%, transparent), radial-gradient(1px 1px at 70% 80%, #fff 50%, transparent), radial-gradient(1.2px 1.2px at 85% 20%, #fff 50%, transparent), linear-gradient(180deg, #2B2350, #1A1838); }
+.hc-t5 .hc-win, .mc-t5 .mc-win { border-color: #C9B6FF; background: radial-gradient(circle, #6E5BD8 0, #3E2F8F 55%, #231B57 100%); box-shadow: none; }
+.hc-t5 .hc-halo, .mc-t5 .hc-halo { filter: sepia(1) saturate(3) hue-rotate(5deg); }
+.hc-t5 .hc-name, .mc-t5 .mc-name { color: #fff; } .hc-t5 .hc-name small { color: #FFD36E; }
+.hc-t5 .hc-nick { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; } .hc-t5 .hc-desc { color: #D8CFFF; }
+.hc-t5 .hc-foot, .mc-t5 .mc-foot { color: #C9B6FF; }
+.hc-t5 .hc-pill, .mc-t5 .mc-pill { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; }
+.mc-t5 .mc-stars { opacity: .35; }
+@media (prefers-reduced-motion: reduce) { .hc-t3 .hc-front, .mc-t3, .hc-t5 .hc-front, .mc-t5, .tier-tw, .hc-t3 .hc-win::after, .mc-t3 .mc-win::after { animation: none; } }
 
 /* 0.95.4 뒷면도 등급별 (마루님) : 일반 크라프트 종이 / 레어 금빛(기본) / 에픽 보라 펄 + 이중 테두리 + 모서리 별 / 유니크 밤하늘 + 무지개 테두리 */
 .hc-back > .hc-emb { color: #FFF3E0; }
@@ -562,40 +562,103 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .hc-t3 .hc-back > .hc-ring { border: 1.5px solid rgb(255 240 255 / .7); box-shadow: inset 0 0 0 4px transparent, inset 0 0 0 5.5px rgb(255 240 255 / .4); }
 .hc-t3 .hc-back .hc-bpill { background: linear-gradient(90deg, #C9A8E8, #F6D6F0, #C9A8E8); color: #3A2448; }
 .hc-back > .tier-tw { position: absolute; color: #fff; font-size: 11px; }
-.hc-t4 .hc-back { background: radial-gradient(90% 60% at 50% 45%, #3B2F7A 0%, #16112E 70%) padding-box, conic-gradient(from 200deg, #a18cd1, #fbc2eb, #8fd3f4, #84fab0, #f6d365, #a18cd1) border-box; border-color: transparent; color: #fff; text-shadow: none; }
-.hc-t4 .hc-back > .hc-wm { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2240%22%3E%3Ctext%20x%3D%220%22%20y%3D%2216%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2210%22%20letter-spacing%3D%222%22%20fill%3D%22%23C9B6FF%22%20fill-opacity%3D%22.13%22%20transform%3D%22rotate%28-24%2032%2020%29%22%3EKKUK%3C/text%3E%3Ctext%20x%3D%2232%22%20y%3D%2236%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2210%22%20letter-spacing%3D%222%22%20fill%3D%22%23C9B6FF%22%20fill-opacity%3D%22.13%22%20transform%3D%22rotate%28-24%2032%2020%29%22%3EKKUK%3C/text%3E%3C/svg%3E"); }
-.hc-t4 .hc-back > .hc-bstars { position: absolute; inset: 0; opacity: .8; background-image: radial-gradient(1px 1px at 20% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 85% 60%, #fff, transparent), radial-gradient(1px 1px at 35% 80%, #fff, transparent), radial-gradient(1px 1px at 60% 75%, #fff, transparent), radial-gradient(1.5px 1.5px at 12% 55%, #fff, transparent), radial-gradient(1px 1px at 50% 12%, #fff, transparent); }
-.hc-t4 .hc-back > .hc-emb { color: #E9E0FF; opacity: .35; filter: drop-shadow(0 0 10px #c9b6ff); }
-.hc-t4 .hc-back > .hc-ring { border: 1.5px solid rgb(200 182 255 / .55); }
-.hc-t4 .hc-back .hc-bk { color: #FFD36E; opacity: 1; }
-.hc-t4 .hc-back .hc-bd { color: #D8CFFF; }
-.hc-t4 .hc-back .hc-bpill { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; }
+.hc-t5 .hc-back { background: radial-gradient(90% 60% at 50% 45%, #3B2F7A 0%, #16112E 70%) padding-box, conic-gradient(from 200deg, #a18cd1, #fbc2eb, #8fd3f4, #84fab0, #f6d365, #a18cd1) border-box; border-color: transparent; color: #fff; text-shadow: none; }
+.hc-t5 .hc-back > .hc-wm { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2240%22%3E%3Ctext%20x%3D%220%22%20y%3D%2216%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2210%22%20letter-spacing%3D%222%22%20fill%3D%22%23C9B6FF%22%20fill-opacity%3D%22.13%22%20transform%3D%22rotate%28-24%2032%2020%29%22%3EKKUK%3C/text%3E%3Ctext%20x%3D%2232%22%20y%3D%2236%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2210%22%20letter-spacing%3D%222%22%20fill%3D%22%23C9B6FF%22%20fill-opacity%3D%22.13%22%20transform%3D%22rotate%28-24%2032%2020%29%22%3EKKUK%3C/text%3E%3C/svg%3E"); }
+.hc-t5 .hc-back > .hc-bstars { position: absolute; inset: 0; opacity: .8; background-image: radial-gradient(1px 1px at 20% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 85% 60%, #fff, transparent), radial-gradient(1px 1px at 35% 80%, #fff, transparent), radial-gradient(1px 1px at 60% 75%, #fff, transparent), radial-gradient(1.5px 1.5px at 12% 55%, #fff, transparent), radial-gradient(1px 1px at 50% 12%, #fff, transparent); }
+.hc-t5 .hc-back > .hc-emb { color: #E9E0FF; opacity: .35; filter: drop-shadow(0 0 10px #c9b6ff); }
+.hc-t5 .hc-back > .hc-ring { border: 1.5px solid rgb(200 182 255 / .55); }
+.hc-t5 .hc-back .hc-bk { color: #FFD36E; opacity: 1; }
+.hc-t5 .hc-back .hc-bd { color: #D8CFFF; }
+.hc-t5 .hc-back .hc-bpill { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; }
 /* 0.95.8 유니크 = 다이아몬드 (마루님) : 얼음빛 투명 바탕 + 깎은 면(삼각) 무늬 + 은·무지개 빛 테두리 + 크리스털 도장 */
-.hc-t4 .hc-front, .mc-t4 { background: conic-gradient(from var(--tier-a), #ffffff, #d9efff, #f7e9ff, #ffffff, #d6f7ff, #fff6dc, #e2ecff, #ffffff); }
-.hc-t4 .hc-inner, .mc-t4 .mc-in {
+.hc-t5 .hc-front, .mc-t5 { background: conic-gradient(from var(--tier-a), #ffffff, #d9efff, #f7e9ff, #ffffff, #d6f7ff, #fff6dc, #e2ecff, #ffffff); }
+.hc-t5 .hc-inner, .mc-t5 .mc-in {
   background:
     linear-gradient(60deg, rgb(255 255 255 / .55) 25%, transparent 25% 75%, rgb(255 255 255 / .55) 75%) 0 0 / 26px 45px,
     linear-gradient(-60deg, rgb(160 200 240 / .18) 25%, transparent 25% 75%, rgb(160 200 240 / .18) 75%) 0 0 / 26px 45px,
     linear-gradient(170deg, #FBFEFF 0%, #E4F1FC 55%, #D3E6F8 100%); }
-.hc-t4 .hc-win, .mc-t4 .mc-win { border-color: #B9D6F2; background:
+.hc-t5 .hc-win, .mc-t5 .mc-win { border-color: #B9D6F2; background:
     conic-gradient(from 0deg at 50% 50%, rgb(255 255 255 / .7), transparent 12%, rgb(255 255 255 / .5) 25%, transparent 37%, rgb(255 255 255 / .7) 50%, transparent 62%, rgb(255 255 255 / .5) 75%, transparent 87%, rgb(255 255 255 / .7)),
     radial-gradient(circle, #FFFFFF 0, #E6F3FF 45%, #BFDAF5 100%); }
-.hc-t4 .hc-halo, .mc-t4 .hc-halo { filter: none; }
-.hc-t4 .hc-name, .mc-t4 .mc-name { color: #1C3557; } .hc-t4 .hc-name small { color: #4F7FB8; }
-.hc-t4 .hc-nick { background: linear-gradient(90deg, #E2F1FF, #FFFFFF, #E9E4FF, #FFFFFF, #E2F1FF); color: #1C3557; box-shadow: inset 0 0 0 1px #C6DCF2; } .hc-t4 .hc-desc { color: #3E5C80; }
-.hc-t4 .hc-foot, .mc-t4 .mc-foot { color: #6F8FB5; }
-.hc-t4 .hc-pill, .mc-t4 .mc-pill, .hc-t4 .hc-back .hc-bpill { background: linear-gradient(90deg, #FFFFFF, #D9EEFF, #F3E6FF, #FFFFFF); color: #1C3557; box-shadow: inset 0 0 0 1px #BFD6EE; }
-.mc-t4 .mc-stars { opacity: .9; }
-.hc-t4 .hc-holo, .mc-t4 .mc-holo { opacity: .35; }
-.hc-t4 .hc-back { background:
+.hc-t5 .hc-halo, .mc-t5 .hc-halo { filter: none; }
+.hc-t5 .hc-name, .mc-t5 .mc-name { color: #1C3557; } .hc-t5 .hc-name small { color: #4F7FB8; }
+.hc-t5 .hc-nick { background: linear-gradient(90deg, #E2F1FF, #FFFFFF, #E9E4FF, #FFFFFF, #E2F1FF); color: #1C3557; box-shadow: inset 0 0 0 1px #C6DCF2; } .hc-t5 .hc-desc { color: #3E5C80; }
+.hc-t5 .hc-foot, .mc-t5 .mc-foot { color: #6F8FB5; }
+.hc-t5 .hc-pill, .mc-t5 .mc-pill, .hc-t5 .hc-back .hc-bpill { background: linear-gradient(90deg, #FFFFFF, #D9EEFF, #F3E6FF, #FFFFFF); color: #1C3557; box-shadow: inset 0 0 0 1px #BFD6EE; }
+.mc-t5 .mc-stars { opacity: .9; }
+.hc-t5 .hc-holo, .mc-t5 .mc-holo { opacity: .35; }
+.hc-t5 .hc-back { background:
     linear-gradient(60deg, rgb(255 255 255 / .5) 25%, transparent 25% 75%, rgb(255 255 255 / .5) 75%) 0 0 / 26px 45px padding-box,
     linear-gradient(170deg, #F7FBFF 0%, #D6E8F8 100%) padding-box,
     conic-gradient(from 200deg, #ffffff, #cfe8ff, #f2e3ff, #ffffff, #d2f6ff, #fff3d0, #ffffff) border-box; color: #1C3557; }
-.hc-t4 .hc-back > .hc-wm { opacity: .5; filter: invert(1) brightness(.4) sepia(1) hue-rotate(180deg); }
-.hc-t4 .hc-back > .hc-bstars { display: none; }
-.hc-t4 .hc-back > .hc-emb { color: #9EC3EE; opacity: .45; filter: none; }
-.hc-t4 .hc-back > .hc-ring { border: 1.5px solid rgb(150 190 235 / .7); }
-.hc-t4 .hc-back .hc-bk { color: #4F7FB8; }
-.hc-t4 .hc-back .hc-bd { color: #3E5C80; }
-.hc-t4 .tier-tw, .mc-t4 .tier-tw { color: #fff; text-shadow: 0 0 6px #8EC5FF, 0 0 2px #fff; font-size: 12px; }
-.hc-t4 .hc-front, .mc-t4 { background: conic-gradient(from var(--tier-a), #ffffff, #bfe3ff, #ffd6f5, #ffffff, #b9fff0, #fff1b8, #c9d8ff, #ffffff); }
+.hc-t5 .hc-back > .hc-wm { opacity: .5; filter: invert(1) brightness(.4) sepia(1) hue-rotate(180deg); }
+.hc-t5 .hc-back > .hc-bstars { display: none; }
+.hc-t5 .hc-back > .hc-emb { color: #9EC3EE; opacity: .45; filter: none; }
+.hc-t5 .hc-back > .hc-ring { border: 1.5px solid rgb(150 190 235 / .7); }
+.hc-t5 .hc-back .hc-bk { color: #4F7FB8; }
+.hc-t5 .hc-back .hc-bd { color: #3E5C80; }
+.hc-t5 .tier-tw, .mc-t5 .tier-tw { color: #fff; text-shadow: 0 0 6px #8EC5FF, 0 0 2px #fff; font-size: 12px; }
+.hc-t5 .hc-front, .mc-t5 { background: conic-gradient(from var(--tier-a), #ffffff, #bfe3ff, #ffd6f5, #ffffff, #b9fff0, #fff1b8, #c9d8ff, #ffffff); }
+
+/* 0.96.0 로열(4회) = 에메랄드 : 에픽(자수정)과 같은 짜임에 초록 보석빛 */
+.hc-t4 .hc-front, .mc-t4 { background: linear-gradient(115deg, #8FD9BE 0%, #D6F5E8 20%, #FFFFFF 28%, #B8EBD5 36%, #5FC4A0 55%, #D6F5E8 75%, #FFFFFF 82%, #8FD9BE 100%); background-size: 250% 100%; animation: tier-sheen 4s ease-in-out infinite alternate; }
+.hc-t4 .hc-inner, .mc-t4 .mc-in { background: linear-gradient(180deg, #F7FFFB, #E3F4EC); box-shadow: inset 0 0 0 1.5px #9ADDC2, inset 0 0 0 3px #F7FFFB, inset 0 0 0 4px #C4EBDA; }
+.hc-t4 .hc-win, .mc-t4 .mc-win { border-color: #3FAE88; background: radial-gradient(circle, #F0FFF8 0, #D2F2E4 40%, #A9E2CB 75%, #6CC6A4 100%); box-shadow: none; }
+.hc-t4 .hc-win::after, .mc-t4 .mc-win::after { content: ""; position: absolute; inset: -20%; background: repeating-linear-gradient(115deg, transparent 0 14%, rgb(255 255 255 / .45) 16%, transparent 19%, transparent 30%); mix-blend-mode: soft-light; animation: tier-prism 9s linear infinite; }
+.hc-t4 .hc-name, .mc-t4 .mc-name { color: #123D30; } .hc-t4 .hc-name small { color: #1E8A66; }
+.hc-t4 .hc-nick { background: linear-gradient(90deg, #9FE0C6, #D6F5E8, #9FE0C6); color: #123D30; } .hc-t4 .hc-desc { color: #3F6E5E; }
+.hc-t4 .hc-foot, .mc-t4 .mc-foot { color: #4E9A80; }
+.hc-t4 .hc-pill, .mc-t4 .mc-pill { background: linear-gradient(90deg, #9FE0C6, #D6F5E8, #9FE0C6); color: #123D30; }
+.hc-t4 .hc-back { background: radial-gradient(120% 80% at 30% 15%, #BDF2DD 0%, transparent 55%), linear-gradient(160deg, #1E9E76, #0D5E48); border-color: #A6E6CE; color: #F2FFF9; text-shadow: 0 1px 0 rgb(5 40 30 / .35); }
+.hc-t4 .hc-back > .hc-emb { color: #F2FFF9; opacity: .22; }
+.hc-t4 .hc-back > .hc-ring { border: 1.5px solid rgb(235 255 248 / .7); box-shadow: inset 0 0 0 4px transparent, inset 0 0 0 5.5px rgb(235 255 248 / .4); }
+.hc-t4 .hc-back .hc-bpill { background: linear-gradient(90deg, #9FE0C6, #D6F5E8, #9FE0C6); color: #123D30; }
+.hc-t4 .tier-tw, .mc-t4 .tier-tw { color: #3FAE88; }
+@media (prefers-reduced-motion: reduce) { .hc-t4 .hc-front, .mc-t4, .hc-t4 .hc-win::after, .mc-t4 .mc-win::after { animation: none; } }
+/* 0.96.0 레전드(10회) = 원래 유니크 (밤하늘 + 무지개 테두리 + 오팔 진주 도장) */
+.hc-t6 .hc-front, .mc-t6 { background: conic-gradient(from var(--tier-a), #ff9a9e, #fad0c4, #fbc2eb, #a18cd1, #84fab0, #8fd3f4, #ffd36e, #ff9a9e); animation: tier-spin 8s linear infinite; }
+.hc-t6 .hc-inner, .mc-t6 .mc-in { background: radial-gradient(1px 1px at 20% 30%, #fff 50%, transparent), radial-gradient(1px 1px at 70% 80%, #fff 50%, transparent), radial-gradient(1.2px 1.2px at 85% 20%, #fff 50%, transparent), linear-gradient(180deg, #2B2350, #1A1838); }
+.hc-t6 .hc-win, .mc-t6 .mc-win { border-color: #C9B6FF; background: radial-gradient(circle, #6E5BD8 0, #3E2F8F 55%, #231B57 100%); box-shadow: none; }
+.hc-t6 .hc-halo, .mc-t6 .hc-halo { filter: sepia(1) saturate(3) hue-rotate(5deg); }
+.hc-t6 .hc-name, .mc-t6 .mc-name { color: #fff; } .hc-t6 .hc-name small { color: #FFD36E; }
+.hc-t6 .hc-nick { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; } .hc-t6 .hc-desc { color: #D8CFFF; }
+.hc-t6 .hc-foot, .mc-t6 .mc-foot { color: #C9B6FF; }
+.hc-t6 .hc-pill, .mc-t6 .mc-pill { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; }
+.mc-t6 .mc-stars { opacity: .35; }
+.hc-t6 .hc-back { background: radial-gradient(90% 60% at 50% 45%, #3B2F7A 0%, #16112E 70%) padding-box, conic-gradient(from 200deg, #a18cd1, #fbc2eb, #8fd3f4, #84fab0, #f6d365, #a18cd1) border-box; border-color: transparent; color: #fff; text-shadow: none; }
+.hc-t6 .hc-back > .hc-wm { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2240%22%3E%3Ctext%20x%3D%220%22%20y%3D%2216%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2210%22%20letter-spacing%3D%222%22%20fill%3D%22%23C9B6FF%22%20fill-opacity%3D%22.13%22%20transform%3D%22rotate%28-24%2032%2020%29%22%3EKKUK%3C/text%3E%3Ctext%20x%3D%2232%22%20y%3D%2236%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2210%22%20letter-spacing%3D%222%22%20fill%3D%22%23C9B6FF%22%20fill-opacity%3D%22.13%22%20transform%3D%22rotate%28-24%2032%2020%29%22%3EKKUK%3C/text%3E%3C/svg%3E"); }
+.hc-t6 .hc-back > .hc-bstars { position: absolute; inset: 0; opacity: .8; background-image: radial-gradient(1px 1px at 20% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 85% 60%, #fff, transparent), radial-gradient(1px 1px at 35% 80%, #fff, transparent), radial-gradient(1px 1px at 60% 75%, #fff, transparent), radial-gradient(1.5px 1.5px at 12% 55%, #fff, transparent), radial-gradient(1px 1px at 50% 12%, #fff, transparent); }
+.hc-t6 .hc-back > .hc-emb { color: #E9E0FF; opacity: .35; filter: drop-shadow(0 0 10px #c9b6ff); }
+.hc-t6 .hc-back > .hc-ring { border: 1.5px solid rgb(200 182 255 / .55); }
+.hc-t6 .hc-back .hc-bk { color: #FFD36E; opacity: 1; }
+.hc-t6 .hc-back .hc-bd { color: #D8CFFF; }
+.hc-t6 .hc-back .hc-bpill { background: linear-gradient(90deg, #a18cd1, #fbc2eb, #8fd3f4); color: #231B57; }
+@media (prefers-reduced-motion: reduce) { .hc-t6 .hc-front, .mc-t6 { animation: none; } }
+/* 0.96.0 유니크 테두리 : 무지개 대신 맑은 사파이어 블루 그라데이션 (마루님 "푸른색, 세련되게") */
+.hc-t5 .hc-front, .mc-t5 { background: conic-gradient(from var(--tier-a), #F2F9FF, #A9D2FF, #4C8EEA, #1F5FC8, #7DB6FF, #E6F3FF, #5E9BEF, #F2F9FF); }
+.hc-t5 .hc-back { background:
+    linear-gradient(60deg, rgb(255 255 255 / .5) 25%, transparent 25% 75%, rgb(255 255 255 / .5) 75%) 0 0 / 26px 45px padding-box,
+    linear-gradient(170deg, #F7FBFF 0%, #D6E8F8 100%) padding-box,
+    conic-gradient(from 200deg, #F2F9FF, #A9D2FF, #4C8EEA, #1F5FC8, #A9D2FF, #F2F9FF) border-box; }
+.hc-t5 .hc-pill, .mc-t5 .mc-pill, .hc-t5 .hc-back .hc-bpill { background: linear-gradient(90deg, #DCEBFF, #FFFFFF, #CFE3FF); }
+/* 0.96.0 레전드 = 흑요석과 루비, 플래티넘 (마루님 "더 레전드스럽게", 금빛 빼기) : 검은 보석 바탕 + 은빛·루비 테두리 + 루비 도장에 흰 그림 */
+.hc-t6 .hc-front, .mc-t6 { background: conic-gradient(from var(--tier-a), #F4F5F8, #B9BEC8, #FF3B5C, #7A0A22, #E6E8EC, #FFFFFF, #9AA0AA, #E0244A, #F4F5F8); }
+.hc-t6 .hc-inner, .mc-t6 .mc-in { background:
+    radial-gradient(1px 1px at 18% 24%, #fff 50%, transparent), radial-gradient(1.2px 1.2px at 78% 70%, #FFC2CD 50%, transparent), radial-gradient(1px 1px at 86% 16%, #fff 50%, transparent), radial-gradient(1px 1px at 30% 84%, #fff 50%, transparent),
+    radial-gradient(110% 60% at 50% 100%, rgb(200 16 46 / .35) 0%, transparent 60%), linear-gradient(180deg, #1B1C22, #0B0B0F);
+  box-shadow: inset 0 0 0 1.5px #D9DCE3, inset 0 0 0 3px #111216, inset 0 0 0 4px rgb(217 220 227 / .45); }
+.hc-t6 .hc-win, .mc-t6 .mc-win { border-color: #D9DCE3; background: radial-gradient(circle, #3A1A24 0, #1E0F15 55%, #0B0B0F 100%); box-shadow: inset 0 0 22px rgb(255 59 92 / .3); }
+.hc-t6 .hc-halo, .mc-t6 .hc-halo { filter: none; opacity: .8; }
+.hc-t6 .hc-holo, .mc-t6 .mc-holo { background-image: repeating-linear-gradient(115deg, #FFFFFF 0%, #FF8FA3 6%, #E6E8EC 12%, #FF3B5C 18%, #FFFFFF 25%); opacity: .25; }
+.hc-t6 .hc-name, .mc-t6 .mc-name { color: #FFFFFF; } .hc-t6 .hc-name small { color: #FF8FA3; }
+.hc-t6 .hc-nick { background: linear-gradient(90deg, #C9CDD6, #FFFFFF, #E6E8EC, #FFFFFF, #C9CDD6); color: #1B1C22; } .hc-t6 .hc-desc { color: #C9CDD6; }
+.hc-t6 .hc-foot, .mc-t6 .mc-foot { color: #B9BEC8; }
+.hc-t6 .hc-pill, .mc-t6 .mc-pill, .hc-t6 .hc-back .hc-bpill { background: linear-gradient(90deg, #E0244A, #FF5A75, #B3122E); color: #fff; }
+.hc-t6 .tier-tw, .mc-t6 .tier-tw { color: #fff; text-shadow: 0 0 6px #FF3B5C, 0 0 2px #fff; font-size: 12px; }
+.hc-t6 .hc-back { background: radial-gradient(90% 60% at 50% 45%, #3A1A24 0%, #0B0B0F 72%) padding-box, conic-gradient(from 200deg, #F4F5F8, #FF3B5C, #9AA0AA, #FFFFFF, #E0244A, #F4F5F8) border-box; color: #FFFFFF; }
+.hc-t6 .hc-back > .hc-emb { color: #FF3B5C; opacity: .4; filter: drop-shadow(0 0 10px #FF3B5C); }
+.hc-t6 .hc-back > .hc-ring { border: 1.5px solid rgb(217 220 227 / .6); }
+.hc-t6 .hc-back .hc-bk { color: #FF8FA3; }
+.hc-t6 .hc-back .hc-bd { color: #C9CDD6; }
+.hc-t6 .hc-back > .hc-wm { filter: grayscale(1); opacity: .5; }
+.hc-t6 .hc-back > .hc-bstars { opacity: .6; }

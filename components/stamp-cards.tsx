@@ -8,13 +8,15 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/kit";
 import { HoloCard, Twinkles } from "@/components/holo-card";
-import { TIERS, cardsOf, tierName, visitLabel, type Tier } from "@/lib/card-tier";
+import { TIERS, cardsOf, finishOf, tierName, visitLabel, type Tier } from "@/lib/card-tier";
 
 const GLOW: Record<Tier, string> = {
   1: "bg-[radial-gradient(circle,rgb(255_255_255/0.16)_0%,transparent_65%)]",
   2: "bg-[radial-gradient(circle,rgb(255_170_60/0.42)_0%,rgb(255_170_60/0.1)_40%,transparent_68%)]",
   3: "bg-[radial-gradient(circle,rgb(210_130_230/0.45)_0%,rgb(210_130_230/0.1)_40%,transparent_68%)]",
-  4: "bg-[radial-gradient(circle,rgb(190_225_255/0.55)_0%,rgb(190_225_255/0.14)_40%,transparent_68%)]",
+  4: "bg-[radial-gradient(circle,rgb(60_200_150/0.42)_0%,rgb(60_200_150/0.1)_40%,transparent_68%)]",
+  5: "bg-[radial-gradient(circle,rgb(190_225_255/0.55)_0%,rgb(190_225_255/0.14)_40%,transparent_68%)]",
+  6: "bg-[radial-gradient(circle,rgb(255_60_90/0.5)_0%,rgb(255_60_90/0.12)_40%,transparent_68%)]",
 };
 import { AlertDialog } from "@/components/gate";
 import { flagWideOf, countryOf } from "@/lib/countries";
@@ -58,7 +60,7 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
         <span className={`mc mc-t${top.tier}`}>
           <span className="mc-in">
             <span className="mc-name"><span>{x.name}</span><span className="mc-pips" aria-hidden>{TIERS.map((t) => <i key={t.tier} className={t.tier <= top.tier ? "on" : ""} />)}</span></span>
-            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} finish={top.tier === 4 ? "unique" : top.tier === 3 ? "epic" : top.tier === 2 ? "rare" : undefined} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier >= 3 && <Twinkles o={10} />}</span>
+            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} finish={finishOf(top.tier)} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier >= 3 && <Twinkles o={10} />}</span>
             <span className="mc-foot"><span className="mc-pill">{tierName(top.tier)}</span><span>{dot(top.at)}</span></span>
           </span>
         </span>
@@ -97,8 +99,8 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
   };
   const c = cards[cur] ?? cards[0];
   const flag = flagWideOf(x.country);
-  /* 0.95.5 유니크(마지막 등급) 뒤로도 방문하면 카드는 그대로, 상세 줄의 방문 횟수와 날짜만 올라간다 (마루님) */
-  const last = c.tier === 4 && x.visits > c.visit;
+  /* 0.95.5 마지막 등급(0.96.0 부터 레전드) 뒤로도 방문하면 카드는 그대로, 상세 줄의 방문 횟수와 날짜만 올라간다 (마루님) */
+  const last = c.tier === 6 && x.visits > c.visit;
   const lastDate = x.dates?.at(-1) ?? c.at;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>

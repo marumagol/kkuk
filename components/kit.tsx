@@ -317,9 +317,11 @@ export const BLOB_OUT = blobPath(43, 43, 42.5);
 const FINISH = {
   rare: { stops: ["#FFF0B8", "#F2C04E", "#C98A1E", "#FFE08A"], ring: "#D9A441", edge: "#FFF6D6", art: "#5A3B12" },
   epic: { stops: ["#1E1466", "#4A22A8", "#8B2F9E"], ring: "#4A22A8", edge: "#D9B8FF", art: "#FFFFFF" },
-  unique: { stops: ["#FFFFFF", "#BFE0FF", "#5E97DE", "#E4F3FF"], ring: "#5E97DE", edge: "#FFFFFF", art: "#16304F" },
+  royal: { stops: ["#063D30", "#0B6E52", "#17A37A"], ring: "#0B6E52", edge: "#C8F5E2", art: "#FFFFFF" },
+  diamond: { stops: ["#FFFFFF", "#BFE0FF", "#5E97DE", "#E4F3FF"], ring: "#5E97DE", edge: "#FFFFFF", art: "#16304F" },
+  legend: { stops: ["#FF6B84", "#D0153A", "#6E0A1E", "#F0405E"], ring: "#E6E8EC", edge: "#FFD0D9", art: "#FFFFFF" },
 } as const;
-export function StampFace({ name, country, earned = true, size = 86, finish }: { name: string; country?: string | null; earned?: boolean; size?: number; finish?: "rare" | "epic" | "unique" }) {
+export function StampFace({ name, country, earned = true, size = 86, finish }: { name: string; country?: string | null; earned?: boolean; size?: number; finish?: keyof typeof FINISH }) {
   const art = stampArt(country, name);
   const uid = useId().replace(/:/g, "");
   const f = earned && finish ? FINISH[finish] : null;
