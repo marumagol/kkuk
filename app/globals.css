@@ -506,6 +506,4 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .mc-glitter { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: overlay; opacity: .5; background-image: repeating-linear-gradient(45deg, rgb(255 255 255 / 0) 0 3px, rgb(255 255 255 / .18) 3px 4px), repeating-linear-gradient(-45deg, rgb(255 255 255 / 0) 0 3px, rgb(255 255 255 / .18) 3px 4px); }
 .mc-stars { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: .5; background-image: radial-gradient(circle, #fff 0 .8px, transparent 1.3px), radial-gradient(circle, #fff 0 .6px, transparent 1.1px); background-size: 19px 23px, 13px 11px; animation: mc-holo 6s linear infinite; }
 @keyframes mc-holo { to { background-position: 300% 0; } }
-.mc-sweep { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 38%, rgb(255 255 255 / .85) 50%, transparent 62%); transform: translateX(-130%); animation: mc-sweep 4.5s ease-in-out infinite; }
-@keyframes mc-sweep { 0%, 70% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
-@media (prefers-reduced-motion: reduce) { .mc-holo, .mc-stars, .mc-sweep { animation: none; } .mc-sweep { display: none; } }
+@media (prefers-reduced-motion: reduce) { .mc-holo, .mc-stars { animation: none; } }

@@ -48,7 +48,7 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
         <span className="mc">
           <span className="mc-in">
             <span className="mc-name">{x.name}</span>
-            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" /><span aria-hidden className="mc-sweep" style={{ animationDelay: `${(tiltOf(x.name) + 8) * 0.3}s` }} /></span>
+            <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" /></span>
             <span className="mc-foot"><span>KKUK</span><span>{dot(x.firstDate)}</span></span>
           </span>
         </span>
