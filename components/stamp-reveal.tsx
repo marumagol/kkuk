@@ -30,8 +30,8 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, onClose
   }, [city]);
   useEffect(() => {
     if (!city) return;
-    const t = setTimeout(() => navigator.vibrate?.([0, 30, 40, 90]), 1300); // 도시 도장이 찍히는 순간
-    const t2 = setTimeout(() => navigator.vibrate?.(50), 1850); // 입국 날짜 도장
+    const t = setTimeout(() => navigator.vibrate?.([0, 30, 40, 90]), 1700); // 도시 도장이 찍히는 순간 (0.94.6 표지가 다 넘어간 뒤)
+    const t2 = setTimeout(() => navigator.vibrate?.(50), 2250); // 입국 날짜 도장
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") close.current(); }; // 키보드 사용자는 Esc 로도 닫힘. 화면 바깥을 눌러서는 닫히지 않는다 (0.92.6)
     window.addEventListener("keydown", k);
     return () => { clearTimeout(t); clearTimeout(t2); window.removeEventListener("keydown", k); };
@@ -88,10 +88,10 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, onClose
         </div>
       )}
       {city && <>
-      <p className="sr-text mt-7 text-center text-[24px] font-extrabold text-white" style={{ animationDelay: "2050ms" }}>{heading}</p>
-      <p className="sr-text mt-1 text-center text-sub text-white/80" style={{ animationDelay: "2200ms" }}>{sub}</p>
+      <p className="sr-text mt-7 text-center text-[24px] font-extrabold text-white" style={{ animationDelay: "2450ms" }}>{heading}</p>
+      <p className="sr-text mt-1 text-center text-sub text-white/80" style={{ animationDelay: "2600ms" }}>{sub}</p>
       <button type="button" onClick={onClose}
-        className="sr-text press mt-7 h-12 rounded-btn bg-white px-10 text-sub font-bold text-[#111]" style={{ animationDelay: "2400ms" }}>확인</button>
+        className="sr-text press mt-7 h-12 rounded-btn bg-white px-10 text-sub font-bold text-[#111]" style={{ animationDelay: "2800ms" }}>확인</button>
       </>}
     </div>,
     document.body,
