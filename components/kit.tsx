@@ -312,13 +312,14 @@ export function Sheet({ title, badge, children, footer, inline }: { title: strin
 /* ---------- 도장 (마루님 "삿포로 도장" 기준, 디자인-가이드 2-1) ---------- */
 export const BLOB_IN = blobPath(43, 43, 37.75);
 export const BLOB_OUT = blobPath(43, 43, 42.5);
-/* 0.95.6 finish : 도장 카드 등급별 도장 색 (마루님 "에픽, 유니크답게, 모으고 싶게")
+/* 0.95.7 rare = 금박 + 갈색 그림 (마루님). 0.95.6 finish : 도장 카드 등급별 도장 색 (마루님 "에픽, 유니크답게, 모으고 싶게")
    epic = 짙은 자수정 그라데이션 + 흰 그림, unique = 오팔 진주(흰빛에 분홍·하늘) + 남색 그림. 카드 바탕(연보라/밤하늘)과 대비되게 */
 const FINISH = {
+  rare: { stops: ["#FFF0B8", "#F2C04E", "#C98A1E", "#FFE08A"], ring: "#D9A441", edge: "#FFF6D6", art: "#5A3B12" },
   epic: { stops: ["#1E1466", "#4A22A8", "#8B2F9E"], ring: "#4A22A8", edge: "#D9B8FF", art: "#FFFFFF" },
   unique: { stops: ["#F2F7FF", "#F6D9F1", "#D6E6FF", "#FFF1D8"], ring: "#C9B6FF", edge: "#FFFFFF", art: "#2A1F5C" },
 } as const;
-export function StampFace({ name, country, earned = true, size = 86, finish }: { name: string; country?: string | null; earned?: boolean; size?: number; finish?: "epic" | "unique" }) {
+export function StampFace({ name, country, earned = true, size = 86, finish }: { name: string; country?: string | null; earned?: boolean; size?: number; finish?: "rare" | "epic" | "unique" }) {
   const art = stampArt(country, name);
   const uid = useId().replace(/:/g, "");
   const f = earned && finish ? FINISH[finish] : null;
