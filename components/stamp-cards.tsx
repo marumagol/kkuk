@@ -104,10 +104,10 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
         className="relative flex w-full max-w-[340px] flex-col items-center overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-6 text-center text-on-deep shadow-float">
         <div aria-hidden className={`pointer-events-none absolute left-1/2 top-[-70px] size-[380px] -translate-x-1/2 rounded-full transition-[background] duration-300 ${GLOW[c.tier]}`} />
         {/* 여백 % 는 바깥 상자(트랙보다 40px 좁음) 기준이라 카드 반폭 93 - 20 = 73 */}
-        <div ref={track} onScroll={onScroll} className="relative -mx-5 flex w-[calc(100%+40px)] snap-x snap-mandatory gap-4 overflow-x-auto px-[calc(50%-73px)] pb-4 pt-2 [scrollbar-width:none]">
+        <div ref={track} onScroll={onScroll} className="relative -mx-5 flex w-[calc(100%+40px)] snap-x snap-mandatory -my-6 gap-4 overflow-x-auto px-[calc(50%-73px)] pb-10 pt-8 [scrollbar-width:none]">
           {cards.map((k, i) => (
-            <div key={k.tier} className={`flex-none snap-center transition-[transform,opacity] duration-300 ${i === cur ? "" : "scale-90 opacity-50"}`}>
-              <HoloCard name={x.name} country={x.country} tier={k.tier} date={dot(k.at)} visit={k.visit} visits={x.visits} />
+            <div key={k.tier} onClick={i === cur ? undefined : () => center(i, true)} className={`flex-none snap-center transition-[transform,opacity] duration-300 ${i === cur ? "" : "scale-90 opacity-50"}`}>
+              <HoloCard name={x.name} country={x.country} tier={k.tier} date={dot(k.at)} visit={k.visit} visits={x.visits} active={i === cur} />
             </div>
           ))}
         </div>
@@ -129,7 +129,7 @@ function StampMedal({ x, onClose }: { x: StampCard; onClose: () => void }) {
         </h2>
         <p className="relative mt-1 text-sub text-on-deep-sub">{countryOf(x.country)?.name ?? ""}{c.at ? ` · ${dot(c.at)} ${visitLabel(c.visit)}` : ""}</p>
         <p className="relative mt-1.5 text-tiny text-on-deep-sub/80">
-          {cards.length > 1 ? "옆으로 넘겨 보고, 카드를 누르면 뒷면이 보여요" : "카드를 누르면 뒷면이 보여요"}
+          {cards.length > 1 ? "카드를 끌어 돌려 보고, 옆 카드를 넘겨 보세요" : "카드를 끌어 돌려 보고, 누르면 뒷면이 보여요"}
         </p>
         {/* 다녀온 여행 (0.94.3) : 큰 줄 목록 대신 작은 알약 링크. 3개까지, 나머지는 "외 N개" */}
         {x.trips.length > 0 && (

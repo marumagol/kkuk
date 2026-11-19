@@ -3,7 +3,7 @@
   홀로그램 도장 카드 (0.94.0, 2026-11-18 마루님) : 도장 탭에서 모은 도장을 누르면 뜨는 카드
   - 앞면 : 금속 테두리 + 도장 그림 창(둥근 빛, 숨 쉬는 링) + 도시 별명 + 한 줄 소개. 빛 층(무지개, 반짝이, 별, 반사)이 각도를 따라 움직인다
   - 뒷면 : KKUK 워터마크 + 도장 실루엣 + 도시, 처음 받은 날, 방문 횟수
-  - 누르면 뒤집힌다 (0.95.0, 예전엔 끌어서 돌리기). 쉬는 동안 살짝 흔들린다. 동작 줄이기 설정이면 움직이지 않는다
+  - 누르면 뒤집히고, 가운데 카드는 끌어서 돌릴 수 있다 (0.95.2). 쉬는 동안 살짝 흔들린다. 동작 줄이기 설정이면 움직이지 않는다
   - 모양은 app/globals.css 의 hc-*
 */
 import { useEffect, useRef } from "react";
@@ -22,17 +22,22 @@ const EMB_OUT = "M36.55 8.35Q43.00 0.50 49.45 8.35Q55.91 16.20 66.07 16.35Q76.23
 const EMB_IN = "M37.27 12.22Q43.00 5.25 48.73 12.22Q54.47 19.19 63.49 19.33Q72.51 19.46 70.64 28.29Q68.76 37.12 74.28 44.26Q79.80 51.40 71.73 55.44Q63.66 59.48 61.52 68.24Q59.38 77.01 51.19 73.22Q43.00 69.42 34.81 73.22Q26.62 77.01 24.48 68.24Q22.34 59.48 14.27 55.44Q6.20 51.40 11.72 44.26Q17.24 37.12 15.36 28.29Q13.49 19.46 22.51 19.33Q31.53 19.19 37.27 12.22Z";
 
 /* 0.95.0 : 등급(tier)별 모양, 넘겨 보기 안에서 쓰므로 끌어 돌리기 대신 "누르면 뒤집기". 쉬는 동안 살짝 흔들림은 그대로 */
-export function HoloCard({ name, country, tier = 2, date, visit = 1, visits }: { name: string; country: string; tier?: Tier; date?: string; visit?: number; visits: number }) {
+export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, active = true }: { name: string; country: string; tier?: Tier; date?: string; visit?: number; visits: number; active?: boolean }) {
   const persp = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
   const front = useRef<HTMLDivElement>(null);
   const goal = useRef(0);
+  const on = useRef(active);
+  useEffect(() => { on.current = active; }, [active]);
 
   useEffect(() => {
     const box = persp.current, c = card.current, f = front.current;
     if (!box || !c || !f) return;
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
     let rx = 0, ry = 0, vy = 0, raf = 0;
+    /* 0.95.2 끌어서 돌리기 다시 (마루님) : 가운데 카드만. 끌면 손가락을 따라 돌고, 놓으면 가까운 면(앞/뒤)으로 돌아간다. 살짝 누르면 뒤집기 */
+    let drag: { x: number; y: number; ry: number; id: number; moved: boolean } | null = null;
+    let tx = 0;
     const t0 = performance.now();
     const paint = () => {
       c.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
@@ -42,25 +47,50 @@ export function HoloCard({ name, country, tier = 2, date, visit = 1, visits }: {
       f.style.setProperty("--fa", `${ry * 1.5}deg`); f.style.setProperty("--so", String(0.25 + Math.abs(s) * 0.6));
     };
     const tick = (now: number) => {
+      if (drag) { vy = 0; rx += (tx - rx) * 0.3; paint(); raf = requestAnimationFrame(tick); return; }
       // 목표 면(앞 0 / 뒤 180)으로 스프링, 쉬는 동안 살짝 흔들림
-      const idle = Math.sin((now - t0) / 900) * 7;
+      const idle = still ? 0 : Math.sin((now - t0) / 900) * 7;
       vy += (goal.current + (goal.current % 360 === 0 ? idle : -idle) - ry) * 0.05; vy *= 0.82; ry += vy;
-      rx += (Math.cos((now - t0) / 1300) * 4 - rx) * 0.05;
+      rx += ((still ? 0 : Math.cos((now - t0) / 1300) * 4) - rx) * 0.05;
       paint(); raf = requestAnimationFrame(tick);
     };
-    const flip = () => {
-      goal.current += 180; navigator.vibrate?.(6);
-      if (still) { ry = goal.current; paint(); }
+    const down = (e: PointerEvent) => {
+      if (!on.current) return;
+      drag = { x: e.clientX, y: e.clientY, ry, id: e.pointerId, moved: false };
+      box.setPointerCapture(e.pointerId);
     };
-    box.addEventListener("click", flip);
-    const start = still ? undefined : setTimeout(() => { raf = requestAnimationFrame(tick); }, 900); // 등장 움직임이 끝난 뒤
-    return () => { clearTimeout(start); cancelAnimationFrame(raf); box.removeEventListener("click", flip); };
+    const move = (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+      drag.moved = true;
+      ry = drag.ry + dx * 0.7;
+      tx = Math.max(-25, Math.min(25, -dy * 0.3));
+    };
+    const up = (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const tap = !drag.moved; drag = null; tx = 0;
+      goal.current = tap ? goal.current + 180 : Math.round(ry / 180) * 180;
+      navigator.vibrate?.(6);
+      if (still) { ry = goal.current; rx = 0; paint(); }
+    };
+    box.addEventListener("pointerdown", down);
+    box.addEventListener("pointermove", move);
+    box.addEventListener("pointerup", up);
+    box.addEventListener("pointercancel", up);
+    if (still) paint();
+    const start = setTimeout(() => { raf = requestAnimationFrame(tick); }, still ? 0 : 900); // 등장 움직임이 끝난 뒤
+    return () => {
+      clearTimeout(start); cancelAnimationFrame(raf);
+      box.removeEventListener("pointerdown", down); box.removeEventListener("pointermove", move);
+      box.removeEventListener("pointerup", up); box.removeEventListener("pointercancel", up);
+    };
   }, []);
 
   const lore = cityLore(country, name);
   const cname = countryOf(country)?.name ?? "";
   return (
-    <div ref={persp} className="hc-persp" role="button" tabIndex={-1} aria-label={`${tierName(tier)} 카드, 누르면 뒷면을 볼 수 있어요`}>
+    <div ref={persp} className="hc-persp" style={{ touchAction: active ? "none" : "pan-x" }} role="button" tabIndex={-1} aria-label={`${tierName(tier)} 카드, 누르면 뒷면을 볼 수 있어요`}>
       <div className="hc-enter">
         <div ref={card} className={`hc-card hc-t${tier}`}>
           <div ref={front} className="hc-side hc-front">
