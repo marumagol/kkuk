@@ -344,7 +344,7 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
 /* ───────── 도장 (3단계, migration 0012) ───────── */
 export type StampCard = {
   cityId: number | null; name: string; country: string; earned: boolean;
-  firstDate?: string; visits: number; trips: { id: string; title: string; verifiedBy: string | null }[];
+  firstDate?: string; firstAt?: string /* 처음 받은 시각 (정렬용, 0.94.6) */; visits: number; trips: { id: string; title: string; verifiedBy: string | null }[];
   /* 아직 못 받은 도장 : 이 도시가 든 내 여행 중 가장 가까운 것 (여행 중 > 다가오는 > 지난) */
   next?: { tripId: string; title: string; start: string; end: string };
 };
@@ -393,7 +393,7 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
   const byCity = new Map<number, StampCard>();
   for (const g of gs) {
     if (!g.cities) continue;
-    const s = byCity.get(g.city_id) ?? { cityId: g.city_id, name: g.cities.name, country: g.cities.country_code, earned: true, firstDate: g.granted_at.slice(0, 10), visits: 0, trips: [] };
+    const s = byCity.get(g.city_id) ?? { cityId: g.city_id, name: g.cities.name, country: g.cities.country_code, earned: true, firstDate: g.granted_at.slice(0, 10), firstAt: g.granted_at, visits: 0, trips: [] };
     s.visits += 1;
     s.trips.push({ id: g.trip_id, title: titleOf.get(g.trip_id) ?? "여행", verifiedBy: verifier.get(`${g.trip_id}:${g.city_id}`) ?? null });
     byCity.set(g.city_id, s);

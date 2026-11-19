@@ -3,7 +3,7 @@
   - 맨 위 : 모은 도장 수, 다음 목표까지 남은 수, 다음에 열릴 도장
   - 곧 열릴 도장 : 실루엣 대신 봉인 카드. 도장 모양은 받기 전까지 보여 주지 않는다
   - 목표 배지 : 첫 도장, 도장 5개 등. 못 이룬 것은 물음표
-  - 모은 도장 : 나라별로 묶고, 7일 안에 받은 도장은 NEW
+  - 도장 카드 : 최근에 받은 순 (0.94.6), 7일 안에 받은 도장은 NEW
   ?c=도시번호 로 도장 메달 창을 바로 연다 (3단계 4, 2026-11-17 메달 창으로)
 */
 import Link from "next/link";
@@ -12,7 +12,7 @@ import { AppShell, MainTabs, MockNote } from "@/components/screen";
 import { GateCta } from "@/components/gate";
 import { getViewer } from "@/lib/viewer";
 import { loadStamps, type StampCard } from "@/lib/trips";
-import { flagOf, countryOf } from "@/lib/countries";
+import { flagOf } from "@/lib/countries";
 import { addDays, daysBetween, md, todayKST } from "@/lib/mock";
 import { GOALS, type Goal } from "@/lib/stamp-goals";
 import { StampTester } from "@/components/stamp-tester";
@@ -77,9 +77,8 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
   let tester = false;
   if (viewer.kind === "user") { const sb = await createClient(); const { data } = sb ? await sb.rpc("am_stamp_tester") : { data: false }; tester = data === true; }
 
-  /* 나라별 묶음 (많이 모은 나라 먼저) */
-  const groups = [...s.earned.reduce((m, x) => m.set(x.country, [...(m.get(x.country) ?? []), x]), new Map<string, StampCard[]>())]
-    .sort((a, b) => b[1].length - a[1].length);
+  /* 도장 카드 : 나라 묶음 없이 최근에 받은 순 (0.94.6 마루님) */
+  const recent = [...s.earned].sort((a, b) => (b.firstAt ?? b.firstDate ?? "").localeCompare(a.firstAt ?? a.firstDate ?? ""));
 
   return (
     <AppShell>
@@ -152,22 +151,13 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
             {s.missing.length === 0 && <div className="pt-1"><GateCta href="/trips/new">여행 만들기</GateCta></div>}
           </section>
         ) : (
-          <section aria-labelledby="earned" className="flex flex-col gap-5">
-            <h2 id="earned" className="text-body font-bold text-ink">도장 카드</h2>
-            {groups.map(([code, list]) => (
-              <div key={code} className="flex flex-col gap-3">
-                <h3 className="flex items-center gap-1.5 text-sub font-bold text-ink">
-                  {flagOf(code) && <img src={flagOf(code)!} alt="" width={16} height={16} className="rounded-sm" />}
-                  {countryOf(code)?.name ?? code}
-                  <span className="font-semibold text-ink-sub">{list.length}</span>
-                </h3>
-                <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
-                  {list.map((x) => (
-                    <EarnedStamp key={`${x.country}:${x.name}`} x={x} isNew={!!x.firstDate && x.firstDate >= newSince} startOpen={picked === x} />
-                  ))}
-                </div>
-              </div>
-            ))}
+          <section aria-labelledby="earned" className="flex flex-col gap-3">
+            <h2 id="earned" className="text-body font-bold text-ink">도장 카드 <span className="text-sub font-semibold text-ink-sub">{count}</span></h2>
+            <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+              {recent.map((x) => (
+                <EarnedStamp key={`${x.country}:${x.name}`} x={x} isNew={!!x.firstDate && x.firstDate >= newSince} startOpen={picked === x} />
+              ))}
+            </div>
           </section>
         )}
       </div>
