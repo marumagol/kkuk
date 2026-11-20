@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-20 10:50", version: "0.100.1", items: ["카드 받기가 카드 봉지를 뜯는 연출로 바뀌었어요. 틈으로 빛이 새어 나오며 카드가 올라와요"] },
   { at: "2026-11-20 10:40", version: "0.100.0", items: ["도장을 받으면 [카드 받기]로 이번에 나온 카드를 바로 뒤집어 볼 수 있어요"] },
   { at: "2026-11-20 10:30", version: "0.99.6", items: ["받은 카드가 한 번 정해지면 앞으로 테마가 늘어나도 바뀌지 않아요"] },
   { at: "2026-11-20 10:10", version: "0.99.5", items: ["카드 상세에서 좌우 화살표로 카드를 넘길 수 있어요"] },
