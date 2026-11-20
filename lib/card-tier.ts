@@ -1,34 +1,58 @@
 /*
-  도장 카드 등급 (0.95.0, 2026-11-19 마루님) : 같은 도시를 여러 여행에서 받을수록 등급이 올라간다
-  - 방문 1회 = 여행 하나에서 받은 도장 하나 (같은 여행에서 다시 받아도 그대로)
-  - 0.98.0 컬렉션 (마루님) : 1번째 에메랄드(겨울 도시는 눈꽃), 2 골드, 3 자수정, 4 푸른 오팔, 5 레인보우(마지막). 6회부터는 레인보우 그대로, 상세 방문 횟수만 늘어난다
-  - 등급별 모양은 app/globals.css 의 hc-t1/2/3/5/6/w (큰 카드), mc-t… (목록 카드)
+  도장 카드 (0.95.0~, 2026-11-19 마루님) : 방문 1회 = 여행 하나에서 받은 도장 하나 (같은 여행에서 다시 받아도 그대로)
+  - 0.99.0 부터 방문마다 테마 하나를 랜덤으로 뽑는다 (아래). 목록에는 대표 카드(상세에서 설정), 없으면 가장 최근 카드
 */
-/* 0.98.0 등급 대신 컬렉션 (마루님) : 첫 카드부터 예쁜 카드. 다시 갈 때마다 다른 카드를 모은다 (위아래 이름 없음)
-   번호는 globals.css 의 모양 번호(hc-t2 골드, t3 자수정, t4 에메랄드, t5 푸른 오팔, t6 레인보우). 1(옛 일반)은 쓰지 않는다 */
-export type Tier = 2 | 3 | 4 | 5 | 6;
-export const TIERS: { tier: Tier; name: string; need: number }[] = [
-  { tier: 4, name: "에메랄드", need: 1 },
-  { tier: 2, name: "골드", need: 2 },
-  { tier: 3, name: "자수정", need: 3 },
-  { tier: 5, name: "푸른 오팔", need: 4 },
-  { tier: 6, name: "레인보우", need: 5 },
+/* 0.99.0 랜덤 카드 (2026-11-20 마루님) : 도장을 받을 때마다 8가지 테마 중 하나를 뽑는다
+   - 같은 도시에서는 이미 나온 테마가 다시 나오지 않는다. 8가지를 다 모은 뒤에는 마지막 카드 그대로, 방문 횟수만 늘어난다
+   - 레인보우만 다른 테마의 절반 확률
+   - 뽑기는 (나, 도시)로 정해지는 순서라서 새로고침해도 바뀌지 않는다 (DB 저장 없음)
+   번호는 globals.css 의 모양 번호 hc-t{n} / mc-t{n}. 10(눈꽃)은 hc-tw. 1(옛 일반)은 쓰지 않는다 */
+export type Tier = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 10;
+export const TIERS: { tier: Tier; name: string; weight: number }[] = [
+  { tier: 4, name: "에메랄드", weight: 1 },
+  { tier: 2, name: "골드", weight: 1 },
+  { tier: 3, name: "자수정", weight: 1 },
+  { tier: 5, name: "푸른 오팔", weight: 1 },
+  { tier: 10, name: "눈꽃", weight: 1 },
+  { tier: 7, name: "선셋 코랄", weight: 1 },
+  { tier: 8, name: "실버", weight: 1 },
+  { tier: 6, name: "레인보우", weight: 0.5 },
 ];
-export const tierOf = (visits: number): Tier => ([...TIERS].reverse().find((t) => visits >= t.need)?.tier ?? 4);
-export const tierName = (t: Tier, winter = false) => (t === 4 && winter ? "눈꽃" : TIERS.find((x) => x.tier === t)!.name);
+export const tierName = (t: Tier) => TIERS.find((x) => x.tier === t)?.name ?? "";
+/* 효과 : 반짝이 별(앞면), 뒷면 별 */
+export const twinkles = (t: Tier) => t !== 2 && t !== 8;
+export const backStars = (t: Tier) => t === 5 || t === 6;
 const ORD = ["첫", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
 export const visitLabel = (n: number) => (n <= ORD.length ? `${ORD[n - 1]} 번째 방문` : `${n}번째 방문`).replace("첫 번째", "첫");
 
-/* 모은 카드들 : 등급마다 그 등급에 닿은 방문(날짜)을 붙인다. dates 는 받은 시각 오름차순 */
-export function cardsOf(dates: string[]) {
-  return TIERS.filter((t) => dates.length >= t.need).map((t) => ({ ...t, at: dates[t.need - 1], visit: t.need }));
+/* 모은 카드들 : seed(나와 도시)로 섞은 순서대로, 방문마다 카드 하나. dates 는 받은 시각 오름차순 */
+function rng(seed: string) {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  return () => {
+    h = (h + 0x6d2b79f5) | 0;
+    let r = Math.imul(h ^ (h >>> 15), 1 | h);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+export function orderOf(seed: string) {
+  const rand = rng(seed);
+  const left = [...TIERS];
+  const out: typeof TIERS = [];
+  while (left.length) {
+    let r = rand() * left.reduce((n, x) => n + x.weight, 0);
+    const i = Math.max(0, left.findIndex((x) => (r -= x.weight) < 0));
+    out.push(left.splice(i, 1)[0]);
+  }
+  return out;
+}
+export function cardsOf(dates: string[], seed: string) {
+  return orderOf(seed).slice(0, dates.length).map((t, i) => ({ tier: t.tier, name: t.name, at: dates[i], visit: i + 1 }));
 }
 
-/* 겨울 도시 (0.98.0) : 겨울로 유명한 곳은 첫 카드가 에메랄드 대신 눈꽃 얼음 카드, 이름도 "눈꽃" */
-const WINTER = new Set(["JP:삿포로", "JP:오타루", "CN:하얼빈", "CA:밴프", "CA:퀘벡", "CH:체르마트", "CH:인터라켄", "AT:할슈타트"]);
-export const isWinter = (country: string | null | undefined, name: string) => WINTER.has(`${(country ?? "").toUpperCase()}:${name}`);
-/* 카드 모양 : 등급 번호(1~6), 겨울 첫 카드는 "w". globals.css 의 hc-t{look} / mc-t{look} */
-export type Look = Tier | "w";
-export const lookOf = (t: Tier, country: string | null | undefined, name: string): Look => (t === 4 && isWinter(country, name) ? "w" : t);
-/* 등급별 도장 색 (components/kit.tsx StampFace finish) */
-export const finishOf = (l: Look) => (l === "w" ? "diamond" : ([undefined, "rare", "epic", "royal", "opal", "legend"] as const)[l - 1]);
+/* 카드 모양 : globals.css 의 hc-t{look} / mc-t{look}. 눈꽃은 "w" */
+export type Look = Exclude<Tier, 10> | "w";
+export const lookOf = (t: Tier): Look => (t === 10 ? "w" : t);
+/* 테마별 도장 색 (components/kit.tsx StampFace finish) */
+export const finishOf = (l: Look) => (l === "w" ? "diamond" : ([undefined, "rare", "epic", "royal", "opal", "legend", "coral", "silver"] as const)[l - 1]);

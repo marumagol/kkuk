@@ -870,3 +870,14 @@ export async function getBooking(tripId: string, id: string) {
   const { loadBooking } = await import("@/lib/trips");
   return loadBooking(await getViewer(), tripId, id);
 }
+
+/* 0.99.0 대표 카드 : 그 도시 카드 중 목록에 보일 카드 (마루님). 0051_stamp_featured */
+export async function setFeaturedCard(cityId: number, tier: number): Promise<{ ok: boolean }> {
+  if (!Number.isInteger(cityId) || !Number.isInteger(tier) || tier < 1 || tier > 20) return { ok: false };
+  const sb = await createClient();
+  if (!sb) return { ok: false };
+  const { error } = await sb.rpc("set_stamp_featured", { p_city: cityId, p_tier: tier });
+  if (error) return { ok: false };
+  revalidatePath("/stamps");
+  return { ok: true };
+}

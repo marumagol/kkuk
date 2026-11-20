@@ -10,7 +10,7 @@ import { useEffect, useRef } from "react";
 import { StampFace } from "@/components/kit";
 import { countryOf } from "@/lib/countries";
 import { cityLore } from "@/lib/city-lore";
-import { finishOf, lookOf, tierName, visitLabel, type Tier } from "@/lib/card-tier";
+import { backStars, finishOf, lookOf, tierName, twinkles, visitLabel, type Tier } from "@/lib/card-tier";
 
 /* 에픽 카드 그림 창 네 모서리에서 차례로 반짝이는 별 */
 export function Twinkles({ o = 18 }: { o?: number }) {
@@ -88,34 +88,34 @@ export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, tri
   }, []);
 
   const lore = cityLore(country, name);
-  const look = lookOf(tier, country, name);
+  const look = lookOf(tier);
   const cname = countryOf(country)?.name ?? "";
   return (
-    <div ref={persp} className="hc-persp" style={{ touchAction: active ? "none" : "pan-x" }} role="button" tabIndex={-1} aria-label={`${tierName(tier, look === "w")} 카드, 누르면 뒷면을 볼 수 있어요`}>
+    <div ref={persp} className="hc-persp" style={{ touchAction: active ? "none" : "pan-x" }} role="button" tabIndex={-1} aria-label={`${tierName(tier)} 카드, 누르면 뒷면을 볼 수 있어요`}>
       <div className="hc-enter">
         <div ref={card} className={`hc-card hc-t${look}`}>
           <div ref={front} className="hc-side hc-front">
             <div className="hc-inner">
               <div className="hc-name"><span className="truncate">{name}</span><small>{country.slice(0, 2)}{cname ? ` · ${cname}` : ""}</small></div>
-              <div className="hc-win"><span aria-hidden className="hc-halo" /><span className="hc-art"><StampFace name={name} country={country} size={112} finish={finishOf(look)} /></span>{tier >= 3 && <Twinkles />}</div>
+              <div className="hc-win"><span aria-hidden className="hc-halo" /><span className="hc-art"><StampFace name={name} country={country} size={112} finish={finishOf(look)} /></span>{twinkles(tier) && <Twinkles />}</div>
               <div className="hc-nick">{lore?.nick ?? `${cname || name} 도장`}</div>
               <div className="hc-desc">{lore?.desc ?? `${name}에 직접 가서 꾹 눌러 받은 도장이에요`}</div>
-              <div className="hc-foot"><span className="hc-pill">{tierName(tier, look === "w")}</span>{date && <span>{date}</span>}</div>
+              <div className="hc-foot"><span className="hc-pill">{tierName(tier)}</span>{date && <span>{date}</span>}</div>
             </div>
             <span aria-hidden className="hc-holo" /><span aria-hidden className="hc-glitter" /><span aria-hidden className="hc-stars" />
             <span aria-hidden className="hc-shine" />
           </div>
           <div className="hc-side hc-back">
             <span aria-hidden className="hc-wm" />
-            {tier >= 5 && <span aria-hidden className="hc-bstars" />}
-            {tier >= 3 && <Twinkles />}
+            {backStars(tier) && <span aria-hidden className="hc-bstars" />}
+            {twinkles(tier) && <Twinkles />}
             <svg aria-hidden className="hc-emb" viewBox="0 0 86 86"><path d={EMB_OUT} fill="none" stroke="currentColor" strokeWidth="2" /><path d={EMB_IN} fill="currentColor" /></svg>
             <span aria-hidden className="hc-ring" />
             <span className="hc-bk text-[10px] font-bold tracking-[0.3em] opacity-80">KKUK</span>
             <span className="max-w-[150px] truncate text-[22px] font-extrabold">{name}</span>
             {date && <span className="hc-bd text-[11px] font-semibold tabular-nums opacity-90">{date}</span>}
             <span className="mt-1 text-[11px] font-bold">{visitLabel(visit)}</span>
-            <span className="hc-bpill">{tierName(tier, look === "w")}</span>
+            <span className="hc-bpill">{tierName(tier)}</span>
             {trip && <span className="hc-btrip mt-1.5 max-w-[150px] truncate text-[10.5px] font-semibold opacity-85">✈ {trip}</span>}{/* 0.95.4 받은 여행은 뒷면에 (마루님) */}
           </div>
         </div>

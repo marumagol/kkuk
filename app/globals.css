@@ -789,3 +789,54 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 
 /* 0.98.0 목록 카드 국기 (등급 점 대신) */
 .mc-flag { flex: none; border-radius: 2px; box-shadow: 0 0 0 1px rgb(255 255 255 / .8), 0 1px 2px rgb(0 0 0 / .2); }
+
+/* 0.99.0 새 테마 : t7 선셋 코랄, t8 실버 (마루님) */
+.hc-t7 .hc-front, .mc-t7 { background: linear-gradient(115deg, #FFB199 0%, #FFE6DA 20%, #FFFFFF 28%, #FFCDB5 36%, #FF8A6B 55%, #FFE6DA 75%, #FFFFFF 82%, #FFB199 100%); background-size: 250% 100%; animation: tier-sheen 4s ease-in-out infinite alternate; }
+.hc-t7 .hc-inner, .mc-t7 .mc-in { background: linear-gradient(180deg, #FFFAF7, #FDEADF); box-shadow: inset 0 0 0 1.5px #FFC1A8, inset 0 0 0 3px #FFFAF7, inset 0 0 0 4px #FADACB; }
+.hc-t7 .hc-win, .mc-t7 .mc-win { border-color: #F2795A; background: radial-gradient(circle, #FFF6F0 0, #FFDCCB 40%, #FFB89C 75%, #F58F72 100%); box-shadow: none; }
+.hc-t7 .hc-win::after, .mc-t7 .mc-win::after { content: ""; position: absolute; inset: -20%; background: repeating-linear-gradient(115deg, transparent 0 14%, rgb(255 255 255 / .45) 16%, transparent 19%, transparent 30%); mix-blend-mode: soft-light; animation: tier-prism 9s linear infinite; }
+.hc-t7 .hc-name, .mc-t7 .mc-name { color: #4A1E12; } .hc-t7 .hc-name small { color: #E0603E; }
+.hc-t7 .hc-nick { background: linear-gradient(90deg, #FFC2A8, #FFE6DA, #FFC2A8); color: #4A1E12; } .hc-t7 .hc-desc { color: #8A4B3A; }
+.hc-t7 .hc-foot, .mc-t7 .mc-foot { color: #D27052; }
+.hc-t7 .hc-pill, .mc-t7 .mc-pill { background: linear-gradient(90deg, #FFC2A8, #FFE6DA, #FFC2A8); color: #4A1E12; }
+.hc-t7 .hc-back { background: radial-gradient(120% 80% at 30% 15%, #FFD3BE 0%, transparent 55%), linear-gradient(160deg, #FF8C69, #D9566E); border-color: #FFC9B5; color: #FFF5F0; text-shadow: 0 1px 0 rgb(5 40 30 / .35); }
+.hc-t7 .hc-back > .hc-emb { color: #FFF5F0; opacity: .22; }
+.hc-t7 .hc-back > .hc-ring { border: 1.5px solid rgb(235 255 248 / .7); box-shadow: inset 0 0 0 4px transparent, inset 0 0 0 5.5px rgb(235 255 248 / .4); }
+.hc-t7 .hc-back .hc-bpill { background: linear-gradient(90deg, #FFC2A8, #FFE6DA, #FFC2A8); color: #4A1E12; }
+.hc-t7 .tier-tw, .mc-t7 .tier-tw { color: #F2795A; }
+@media (prefers-reduced-motion: reduce) { .hc-t7 .hc-front, .mc-t7, .hc-t7 .hc-win::after, .mc-t7 .mc-win::after { animation: none; } }
+.hc-t8 .hc-front, .mc-t8 { background: linear-gradient(115deg, #C3C9D2 0%, #EEF1F5 20%, #FFFFFF 28%, #DCE1E8 36%, #97A1AF 55%, #EEF1F5 75%, #FFFFFF 82%, #C3C9D2 100%); background-size: 250% 100%; animation: tier-sheen 4s ease-in-out infinite alternate; }
+.hc-t8 .hc-inner, .mc-t8 .mc-in { background: linear-gradient(180deg, #FDFDFE, #ECEFF3); box-shadow: inset 0 0 0 1.5px #C3CAD4, inset 0 0 0 3px #FDFDFE, inset 0 0 0 4px #DDE2E8; }
+.hc-t8 .hc-win, .mc-t8 .mc-win { border-color: #8E98A6; background: radial-gradient(circle, #FFFFFF 0, #E8ECF1 40%, #CBD2DB 75%, #A3ADBA 100%); box-shadow: none; }
+.hc-t8 .hc-win::after, .mc-t8 .mc-win::after { content: ""; position: absolute; inset: -20%; background: repeating-linear-gradient(115deg, transparent 0 14%, rgb(255 255 255 / .45) 16%, transparent 19%, transparent 30%); mix-blend-mode: soft-light; animation: tier-prism 9s linear infinite; }
+.hc-t8 .hc-name, .mc-t8 .mc-name { color: #1F2630; } .hc-t8 .hc-name small { color: #5E6B7C; }
+.hc-t8 .hc-nick { background: linear-gradient(90deg, #CDD3DB, #EEF1F5, #CDD3DB); color: #1F2630; } .hc-t8 .hc-desc { color: #4D5866; }
+.hc-t8 .hc-foot, .mc-t8 .mc-foot { color: #7A8594; }
+.hc-t8 .hc-pill, .mc-t8 .mc-pill { background: linear-gradient(90deg, #CDD3DB, #EEF1F5, #CDD3DB); color: #1F2630; }
+.hc-t8 .hc-back { background: radial-gradient(120% 80% at 30% 15%, #E6EBF1 0%, transparent 55%), linear-gradient(160deg, #8D97A5, #4A5463); border-color: #D5DAE2; color: #F7F9FB; text-shadow: 0 1px 0 rgb(5 40 30 / .35); }
+.hc-t8 .hc-back > .hc-emb { color: #F7F9FB; opacity: .22; }
+.hc-t8 .hc-back > .hc-ring { border: 1.5px solid rgb(235 255 248 / .7); box-shadow: inset 0 0 0 4px transparent, inset 0 0 0 5.5px rgb(235 255 248 / .4); }
+.hc-t8 .hc-back .hc-bpill { background: linear-gradient(90deg, #CDD3DB, #EEF1F5, #CDD3DB); color: #1F2630; }
+.hc-t8 .tier-tw, .mc-t8 .tier-tw { color: #8E98A6; }
+@media (prefers-reduced-motion: reduce) { .hc-t8 .hc-front, .mc-t8, .hc-t8 .hc-win::after, .mc-t8 .mc-win::after { animation: none; } }
+.hc-t7 .hc-holo, .mc-t7 .mc-holo { background-image: repeating-linear-gradient(115deg, #FFC2A8 0%, #FFF3EC 6%, #FF9E8A 12%, #FFE0C7 18%, #FFC2A8 25%); }
+.hc-t8 .hc-holo, .mc-t8 .mc-holo { background-image: repeating-linear-gradient(115deg, #E6EBF1 0%, #FFFFFF 6%, #C3CAD4 12%, #F2F5F8 18%, #E6EBF1 25%); }
+
+/* 실버 : 금박 카드처럼 금속 프레임 + 은빛 헤어라인 (마루님 "실버 느낌나게") */
+.hc-t8 .hc-front { background: conic-gradient(from var(--fa, 0deg), #8C96A3, #FFFFFF, #B9C1CC, #EEF2F6, #6F7986, #FBFCFD, #A3ADBA, #E2E7ED, #8C96A3); animation: none; }
+.mc-t8 { background: conic-gradient(from var(--tier-a), #8C96A3, #FFFFFF, #B9C1CC, #EEF2F6, #6F7986, #FBFCFD, #A3ADBA, #E2E7ED, #8C96A3); animation: tier-spin 10s linear infinite; }
+.hc-t8 .hc-inner, .mc-t8 .mc-in { background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0) 0 2px, rgb(255 255 255 / .35) 2px 3px),
+    linear-gradient(160deg, #FAFBFC 0%, #DDE2E8 38%, #C3CAD4 70%, #EEF1F5 100%);
+  box-shadow: inset 0 0 0 1.5px #8C96A3, inset 0 0 0 3px #FAFBFC, inset 0 0 0 4px rgb(140 150 163 / .55); }
+.hc-t8 .hc-win, .mc-t8 .mc-win { border-color: #8C96A3; background: radial-gradient(circle, #FFFFFF 0, #F3F5F8 45%, #D5DBE2 85%, #A3ADBA 100%); box-shadow: inset 0 0 14px rgb(80 90 104 / .25); }
+.hc-t8 .hc-nick { background: linear-gradient(90deg, #A3ADBA, #FFFFFF, #C3CAD4, #FFFFFF, #A3ADBA); color: #1F2630; }
+.hc-t8 .hc-pill, .mc-t8 .mc-pill, .hc-t8 .hc-back .hc-bpill { background: linear-gradient(90deg, #8C96A3, #F2F5F8, #A3ADBA); color: #1F2630; }
+.hc-t8 .hc-back { background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0) 0 2px, rgb(255 255 255 / .2) 2px 3px), linear-gradient(160deg, #C3CAD4, #8C96A3 55%, #5E6875); border-color: #EEF2F6; }
+.hc-t8 .hc-holo, .mc-t8 .mc-holo { opacity: .25; }
+@media (prefers-reduced-motion: reduce) { .mc-t8 { animation: none; } }
+
+
+/* 0.99.0 눈꽃 카드는 모든 도시에서 나오는 테마로 (마루님 "눈꽃 아이콘은 너무 쓰지 말고 조화롭게") : 눈꽃 무늬 대신 은은한 서리 반짝임 */
+.hc-tw .hc-inner, .mc-tw .mc-in { background: radial-gradient(1.4px 1.4px at 16% 20%, #fff 60%, transparent), radial-gradient(1px 1px at 78% 14%, #fff 60%, transparent), radial-gradient(1.2px 1.2px at 88% 62%, #fff 60%, transparent), radial-gradient(1px 1px at 30% 84%, #fff 60%, transparent), radial-gradient(120% 70% at 20% 0%, rgb(255 255 255 / .9), transparent 60%), linear-gradient(170deg, #FBFEFF 0%, #E4F1FC 55%, #D3E6F8 100%); background-size: auto; }
+.hc-tw .hc-back { background: radial-gradient(120% 70% at 25% 10%, rgb(255 255 255 / .85), transparent 60%) padding-box, linear-gradient(170deg, #F7FBFF 0%, #D6E8F8 100%) padding-box, conic-gradient(from 200deg, #F2F9FF, #A9D2FF, #4C8EEA, #1F5FC8, #A9D2FF, #F2F9FF) border-box; }
