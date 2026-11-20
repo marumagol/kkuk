@@ -7,7 +7,7 @@
    - 레인보우만 다른 테마의 절반 확률
    - 뽑기는 (나, 도시)로 정해지는 순서라서 새로고침해도 바뀌지 않는다 (DB 저장 없음)
    번호는 globals.css 의 모양 번호 hc-t{n} / mc-t{n}. 10(눈꽃)은 hc-tw. 1(옛 일반)은 쓰지 않는다 */
-export type Tier = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+export type Tier = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 10 | 11 | 12;
 export const TIERS: { tier: Tier; name: string; weight: number }[] = [
   { tier: 4, name: "에메랄드", weight: 1 },
   { tier: 2, name: "골드", weight: 1 },
@@ -49,12 +49,26 @@ export function orderOf(seed: string) {
   }
   return out;
 }
-export function cardsOf(dates: string[], seed: string) {
-  return orderOf(seed).slice(0, dates.length).map((t, i) => ({ tier: t.tier, name: t.name, at: dates[i], visit: i + 1 }));
+/* 0.99.6 받을 때 DB 가 뽑아 둔 카드(tiers, 0052)를 쓰고, 없는 것(옛 도장, 미리보기)만 seed 순서로 채운다. 이미 나온 테마는 건너뛴다 */
+export function cardsOf(dates: string[], seed: string, tiers?: (Tier | null)[]) {
+  const order = orderOf(seed);
+  const used = new Set(tiers?.filter((t): t is Tier => t != null));
+  const out: { tier: Tier; name: string; at: string; visit: number }[] = [];
+  let k = 0;
+  dates.forEach((at, i) => {
+    let t = tiers?.[i] ?? null;
+    if (t == null) {
+      while (k < order.length && used.has(order[k].tier)) k++;
+      if (k >= order.length) return;
+      t = order[k].tier; used.add(t);
+    } else if (out.some((o) => o.tier === t)) return;
+    out.push({ tier: t, name: tierName(t), at, visit: i + 1 });
+  });
+  return out;
 }
 
 /* 카드 모양 : globals.css 의 hc-t{look} / mc-t{look}. 눈꽃은 "w" */
 export type Look = Exclude<Tier, 10> | "w";
 export const lookOf = (t: Tier): Look => (t === 10 ? "w" : t);
 /* 테마별 도장 색 (components/kit.tsx StampFace finish) */
-export const finishOf = (l: Look) => (l === "w" ? "crystal" : ([undefined, "rare", "epic", "royal", "opal", "legend", "coral", "silver", "crystal", undefined, "sapphire", "ruby"] as const)[l - 1]);
+export const finishOf = (l: Look) => (l === "w" ? "crystal" : ([undefined, "rare", "epic", "royal", "opal", "legend", "coral", "silver", undefined, undefined, "sapphire", "ruby"] as const)[l - 1]);

@@ -345,7 +345,7 @@ export const loadPrep = cache(async (v: Viewer, tripId: string): Promise<PrepVie
 /* ───────── 도장 (3단계, migration 0012) ───────── */
 export type StampCard = {
   cityId: number | null; name: string; country: string; earned: boolean;
-  firstDate?: string; firstAt?: string /* 처음 받은 시각 (정렬용, 0.94.6) */; dates?: string[] /* 받은 시각 전부, 오름차순 (카드 등급, 0.95.0) */; seed?: string /* 카드 뽑기 순서 (0.99.0) */; featured?: Tier /* 대표 카드 (0.99.0) */; visits: number; trips: { id: string; title: string; verifiedBy: string | null }[];
+  firstDate?: string; firstAt?: string /* 처음 받은 시각 (정렬용, 0.94.6) */; dates?: string[] /* 받은 시각 전부, 오름차순 (카드 등급, 0.95.0) */; seed?: string /* 카드 뽑기 순서 (0.99.0) */; tiers?: (Tier | null)[] /* 받을 때 뽑힌 카드 (0.99.6, dates 와 같은 순서) */; featured?: Tier /* 대표 카드 (0.99.0) */; visits: number; trips: { id: string; title: string; verifiedBy: string | null }[];
   /* 아직 못 받은 도장 : 이 도시가 든 내 여행 중 가장 가까운 것 (여행 중 > 다가오는 > 지난) */
   next?: { tripId: string; title: string; start: string; end: string };
 };
@@ -370,14 +370,16 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
   if (v.kind === "preview") return PREVIEW_STAMPS;
   if (v.kind !== "user") return { earned: [], missing: [], cityCount: 0, countryCount: 0 };
   const sb = (await createClient())!;
-  const [{ data: grants }, { data: myCities }, { data: catalog }, { data: feats }] = await Promise.all([
-    sb.from("stamp_grants").select("trip_id, city_id, granted_at, cities(name, country_code)").eq("user_id", v.id).order("granted_at"),
+  const [{ data: grants0, error: gErr }, { data: myCities }, { data: catalog }, { data: feats }] = await Promise.all([
+    sb.from("stamp_grants").select("trip_id, city_id, granted_at, card_tier, cities(name, country_code)").eq("user_id", v.id).order("granted_at"),
     sb.from("trip_cities").select("name, country_code, trips!inner(id, title, start_date, end_date, removed_at)").is("trips.removed_at", null),
     sb.from("cities").select("id, name, country_code"),
     sb.from("stamp_featured").select("city_id, tier").eq("user_id", v.id), // 0.99.0 대표 카드 (표가 아직 없으면 빈 값)
   ]);
+  // card_tier 칸(0052)이 아직 없으면 예전처럼 읽는다
+  const grants = gErr ? (await sb.from("stamp_grants").select("trip_id, city_id, granted_at, cities(name, country_code)").eq("user_id", v.id).order("granted_at")).data : grants0;
   const featOf = new Map((feats ?? []).map((f: { city_id: number; tier: number }) => [f.city_id, f.tier as Tier]));
-  type G = { trip_id: string; city_id: number; granted_at: string; cities: { name: string; country_code: string } | null };
+  type G = { trip_id: string; city_id: number; granted_at: string; card_tier?: number | null; cities: { name: string; country_code: string } | null };
   const gs = (grants ?? []) as unknown as G[];
   const tripIds = [...new Set(gs.map((g) => g.trip_id))];
   const [{ data: trips }, { data: checks }] = tripIds.length
@@ -396,9 +398,10 @@ export const loadStamps = cache(async (v: Viewer): Promise<StampsView> => {
   const byCity = new Map<number, StampCard>();
   for (const g of gs) {
     if (!g.cities) continue;
-    const s = byCity.get(g.city_id) ?? { cityId: g.city_id, name: g.cities.name, country: g.cities.country_code, earned: true, firstDate: g.granted_at.slice(0, 10), firstAt: g.granted_at, dates: [] as string[], visits: 0, trips: [], seed: `${v.id}:${g.city_id}`, featured: featOf.get(g.city_id) };
+    const s = byCity.get(g.city_id) ?? { cityId: g.city_id, name: g.cities.name, country: g.cities.country_code, earned: true, firstDate: g.granted_at.slice(0, 10), firstAt: g.granted_at, dates: [] as string[], visits: 0, trips: [], seed: `${v.id}:${g.city_id}`, featured: featOf.get(g.city_id), tiers: [] as (Tier | null)[] };
     s.visits += 1;
     s.dates?.push(g.granted_at);
+    s.tiers?.push((g.card_tier ?? null) as Tier | null);
     s.trips.push({ id: g.trip_id, title: titleOf.get(g.trip_id) ?? "", verifiedBy: verifier.get(`${g.trip_id}:${g.city_id}`) ?? null });
     byCity.set(g.city_id, s);
   }

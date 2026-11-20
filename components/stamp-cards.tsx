@@ -17,7 +17,6 @@ const GLOW: Record<Look, string> = {
   3: "bg-[radial-gradient(circle,rgb(210_130_230/0.45)_0%,rgb(210_130_230/0.1)_40%,transparent_68%)]",
   7: "bg-[radial-gradient(circle,rgb(255_150_110/0.45)_0%,rgb(255_150_110/0.1)_40%,transparent_68%)]",
   8: "bg-[radial-gradient(circle,rgb(220_228_240/0.5)_0%,rgb(220_228_240/0.12)_40%,transparent_68%)]",
-  9: "bg-[radial-gradient(circle,rgb(230_235_255/0.55)_0%,rgb(230_235_255/0.12)_40%,transparent_68%)]",
   11: "bg-[radial-gradient(circle,rgb(80_130_240/0.5)_0%,rgb(80_130_240/0.12)_40%,transparent_68%)]",
   12: "bg-[radial-gradient(circle,rgb(230_70_110/0.45)_0%,rgb(230_70_110/0.1)_40%,transparent_68%)]",
   w: "bg-[radial-gradient(circle,rgb(190_225_255/0.55)_0%,rgb(190_225_255/0.14)_40%,transparent_68%)]",
@@ -49,7 +48,7 @@ export function SealedButton({ x, tone, label, children }: { x: StampCard; tone:
 }
 
 /* 카드들 : 받은 시각이 없으면(미리보기 등) 처음 받은 날 하나로 */
-const cardsFor = (x: StampCard) => cardsOf(x.dates?.length ? x.dates : Array.from({ length: x.visits }, () => x.firstAt ?? x.firstDate ?? ""), x.seed ?? `${x.country}:${x.name}`);
+const cardsFor = (x: StampCard) => cardsOf(x.dates?.length ? x.dates : Array.from({ length: x.visits }, () => x.firstAt ?? x.firstDate ?? ""), x.seed ?? `${x.country}:${x.name}`, x.tiers);
 
 /* 모은 도장 칸 : 그 도시에서 모은 가장 높은 등급 카드 한 장 (0.95.0). 누르면 카드 창 */
 export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: boolean; startOpen?: boolean }) {
@@ -114,7 +113,7 @@ function StampMedal({ x, onClose, featured, onFeature }: { x: StampCard; onClose
   const c = cards[cur] ?? cards[0];
   const flag = flagWideOf(x.country);
   /* 0.99.0 테마를 다 모은 뒤로도 방문하면 카드는 그대로, 상세 줄의 방문 횟수와 날짜만 올라간다 (마루님) */
-  const last = c.visit === cards.length && x.visits > c.visit;
+  const last = cur === cards.length - 1 && x.visits > c.visit;
   const lastDate = x.dates?.at(-1) ?? c.at;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>

@@ -318,7 +318,6 @@ const FINISH = {
   rare: { stops: ["#F6D27A", "#C8902E", "#7A4F14", "#E6B95A"], ring: "#8A5F1E", edge: "#FFF1B8", art: "#FFF8E1" },
   epic: { stops: ["#1E1466", "#4A22A8", "#8B2F9E"], ring: "#4A22A8", edge: "#D9B8FF", art: "#FFFFFF" },
   royal: { stops: ["#063D30", "#0B6E52", "#17A37A"], ring: "#0B6E52", edge: "#C8F5E2", art: "#FFFFFF" },
-  diamond: { stops: ["#FFFFFF", "#BFE0FF", "#5E97DE", "#E4F3FF"], ring: "#5E97DE", edge: "#FFFFFF", art: "#16304F" },
   opal: { stops: ["#F2F7FF", "#F6D9F1", "#D6E6FF", "#FFF1D8"], ring: "#A9C8F0", edge: "#FFFFFF", art: "#0C1B3A" },
   coral: { stops: ["#7A2E3A", "#C94F4A", "#F2905E"], ring: "#C94F4A", edge: "#FFD9C7", art: "#FFFFFF" },
   silver: { stops: ["#E2E7ED", "#8C96A3", "#4A5360", "#B9C1CC"], ring: "#5E6875", edge: "#FFFFFF", art: "#FFFFFF" },

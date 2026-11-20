@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-20 10:30", version: "0.99.6", items: ["받은 카드가 한 번 정해지면 앞으로 테마가 늘어나도 바뀌지 않아요"] },
   { at: "2026-11-20 10:10", version: "0.99.5", items: ["카드 상세에서 좌우 화살표로 카드를 넘길 수 있어요"] },
   { at: "2026-11-20 10:05", version: "0.99.4", items: ["눈꽃 카드가 얼음빛에 프리즘이 비치는 크리스탈 카드로 바뀌었어요"] },
   { at: "2026-11-20 10:00", version: "0.99.3", items: ["새 카드 테마 사파이어, 루비가 생겨 모두 10가지예요"] },
