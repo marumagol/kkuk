@@ -118,6 +118,14 @@ function StampMedal({ x, onClose, featured, onFeature }: { x: StampCard; onClose
       <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장 카드`} onClick={(e) => e.stopPropagation()}
         className="relative flex w-full max-w-[340px] flex-col items-center overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-6 text-center text-on-deep shadow-float">
         <div aria-hidden className={`pointer-events-none absolute left-1/2 top-[-70px] size-[380px] -translate-x-1/2 rounded-full transition-[background] duration-300 ${GLOW[lookOf(c.tier)]}`} />
+        {/* 0.99.2 대표 카드 : 오른쪽 위 작은 별 (마루님 "간단하게"). 채워진 별 = 지금 카드가 대표 */}
+        {cards.length > 1 && (
+          <button type="button" onClick={() => c.tier !== featured && onFeature(c.tier)} aria-pressed={c.tier === featured}
+            aria-label={c.tier === featured ? "대표 카드예요" : "대표 카드로 설정"}
+            className={`press absolute right-3 top-3 z-[2] grid size-9 place-items-center rounded-full text-[18px] leading-none ${c.tier === featured ? "bg-point/20 text-point" : "bg-deep-soft text-on-deep-sub"}`}>
+            {c.tier === featured ? "★" : "☆"}
+          </button>
+        )}
         {/* 여백 % 는 바깥 상자(트랙보다 40px 좁음) 기준이라 카드 반폭 93 - 20 = 73 */}
         <div ref={track} onScroll={onScroll} className="relative -mx-5 flex w-[calc(100%+40px)] snap-x snap-mandatory -my-6 gap-4 overflow-x-auto px-[calc(50%-73px)] pb-10 pt-8 [scrollbar-width:none]">
           {cards.map((k, i) => (
@@ -137,9 +145,6 @@ function StampMedal({ x, onClose, featured, onFeature }: { x: StampCard; onClose
             ))}
           </div>
         )}
-        {cards.length > 1 && (c.tier === featured
-          ? <span className="relative mt-3 inline-flex h-8 items-center gap-1 rounded-full bg-point/20 px-3 text-tiny font-extrabold text-point">★ 대표 카드</span>
-          : <button type="button" onClick={() => onFeature(c.tier)} className="press relative mt-3 inline-flex h-8 items-center rounded-full border border-on-deep-sub/40 px-3 text-tiny font-bold text-on-deep">대표 카드로 설정</button>)}
         <h2 className="relative mt-4 flex items-center justify-center gap-1.5 text-title-lg font-extrabold">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {flag && <img src={flag} alt="" width={27} height={18} className="rounded-[3px]" />}
