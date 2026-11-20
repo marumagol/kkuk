@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
+import { cardsOf, type Tier } from "@/lib/card-tier";
 import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
 import { AVATAR_PATH } from "@/lib/storage";
 import { cleanDetails } from "@/lib/place-fields";
@@ -663,7 +664,7 @@ export async function removeExpenses(tripId: string, ids: string[]): Promise<Cre
 
 /* ───────── 위치 도장 받기 (3단계 2) : 위치 확인은 DB 함수 claim_stamp 가 한다 ───────── */
 export type ClaimResult =
-  | { ok: true; status: "new" | "again" | "already"; city: string; country: string; visits: number; byMe: boolean }
+  | { ok: true; status: "new" | "again" | "already"; city: string; country: string; visits: number; byMe: boolean; card?: { tier: Tier; visit: number } | null }
   | { ok: false; code: string; error: string };
 const STAMP_ERRORS: Record<string, string> = {
   not_member: "이 여행을 함께하는 사람만 도장을 받을 수 있어요",
@@ -689,6 +690,20 @@ export async function loadStampTargets(tripId: string): Promise<{ targets: Stamp
   const rows = (data ?? []) as { name: string; country_code: string; lat: number; lng: number; radius_km: number; max_accuracy_m: number }[];
   return { targets: rows.map((r) => ({ name: r.name, country: r.country_code, lat: r.lat, lng: r.lng, radiusKm: r.radius_km, maxAccuracy: r.max_accuracy_m })) };
 }
+
+/* 0.100.0 이번에 받은 도장의 카드 (카드 뽑기 연출용). DB 가 뽑아 둔 card_tier(0052), 없으면 화면과 같은 순서로 계산. 테마를 다 모았으면 null */
+async function drawnCard(sb: NonNullable<Awaited<ReturnType<typeof createClient>>>, uid: string, city: string, country: string): Promise<{ tier: Tier; visit: number } | null> {
+  const { data: c } = await sb.from("cities").select("id").eq("country_code", country).eq("name", city).maybeSingle();
+  if (!c) return null;
+  const q = (cols: string) => sb.from("stamp_grants").select(cols).eq("user_id", uid).eq("city_id", c.id).order("granted_at");
+  let res = await q("granted_at, card_tier");
+  if (res.error) res = await q("granted_at");
+  const rows = (res.data ?? []) as unknown as { granted_at: string; card_tier?: number | null }[];
+  if (!rows.length) return null;
+  const cards = cardsOf(rows.map((r) => r.granted_at), `${uid}:${c.id}`, rows.map((r) => (r.card_tier ?? null) as Tier | null));
+  const hit = cards.find((k) => k.visit === rows.length);
+  return hit ? { tier: hit.tier, visit: hit.visit } : null;
+}
 export async function claimStampCity(tripId: string, city: string, country: string): Promise<ClaimResult> {
   if (!isUuid(tripId) || typeof city !== "string" || typeof country !== "string" || city.length > 80 || country.length > 5)
     return { ok: false, code: "no_city", error: STAMP_ERRORS.no_city };
@@ -703,7 +718,8 @@ export async function claimStampCity(tripId: string, city: string, country: stri
   }
   const r = (Array.isArray(data) ? data[0] : data) as { status: "new" | "again" | "already"; city_name: string; country_code: string; visits: number; verified_by_me: boolean };
   revalidatePath("/stamps"); revalidatePath("/");
-  return { ok: true, status: r.status, city: r.city_name, country: r.country_code, visits: r.visits, byMe: r.verified_by_me };
+  const card = r.status === "already" ? null : await drawnCard(sb, auth.user.id, r.city_name, r.country_code).catch(() => null);
+  return { ok: true, status: r.status, city: r.city_name, country: r.country_code, visits: r.visits, byMe: r.verified_by_me, card };
 }
 
 /*
@@ -724,8 +740,10 @@ export async function testStamp(country: string, city: string): Promise<ClaimRes
     return { ok: false, code, error: TEST_ERRORS[code] ?? "테스트 도장을 받지 못했어요" };
   }
   const r = (Array.isArray(data) ? data[0] : data) as { status: "new" | "again" | "already"; city_name: string; country_code: string; visits: number };
+  const { data: auth } = await sb.auth.getUser();
+  const card = r.status === "already" || !auth.user ? null : await drawnCard(sb, auth.user.id, r.city_name, r.country_code).catch(() => null);
   revalidatePath("/stamps"); revalidatePath("/");
-  return { ok: true, status: r.status, city: r.city_name, country: r.country_code, visits: r.visits, byMe: true };
+  return { ok: true, status: r.status, city: r.city_name, country: r.country_code, visits: r.visits, byMe: true, card };
 }
 export async function clearTestStamps(): Promise<{ error?: string; removed?: number }> {
   const sb = await createClient();

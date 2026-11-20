@@ -7,13 +7,17 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/kit";
+import { CardDraw } from "@/components/card-draw";
+import type { Tier } from "@/lib/card-tier";
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 const CHARGE_MS = 1200;
 
 
 /* city 가 아직 없으면(서버 답을 기다리는 동안) 빛만 모이고, 오면 바로 찍힌다. 글자로 기다리라고 하지 않는다 */
-export function StampReveal({ city: cityIn, country, title, sub, visits, onClose }: { city?: string | null; country?: string | null; title: string; sub: string; visits?: number; onClose: () => void }) {
+/* 0.100.0 card : 이번에 나온 카드. 있으면 확인 대신 [카드 받기] → 카드 뽑기 연출(card-draw.tsx) */
+export function StampReveal({ city: cityIn, country, title, sub, visits, card, onClose }: { city?: string | null; country?: string | null; title: string; sub: string; visits?: number; card?: { tier: Tier; visit: number } | null; onClose: () => void }) {
+  const [draw, setDraw] = useState(false);
   /* 0.88.0 : 답이 바로 와도 1.2초(0.89.2)는 긴장 고조 연출을 보여 준 뒤 찍는다 */
   const [ready, setReady] = useState(false);
   useEffect(() => { const t = setTimeout(() => setReady(true), CHARGE_MS); return () => clearTimeout(t); }, []);
@@ -46,7 +50,9 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, onClose
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={city ? `${city} 도장` : "도장"}
       className="sr-backdrop fixed inset-0 z-50 flex flex-col items-center justify-center px-6">
-      {!city ? (
+      {draw && city && card ? (
+        <CardDraw name={city} country={country ?? ""} tier={card.tier} visit={card.visit} onClose={onClose} />
+      ) : !city ? (
         <div className="relative flex size-[260px] items-center justify-center">
           {/* 긴장 고조 : 빛이 모이고, 점선 링이 점점 빨리 돌고, 빈 도장이 떨리며 내려올 준비를 한다 */}
           <span aria-hidden className="sr-charge absolute size-[220px] rounded-full" />
@@ -87,11 +93,11 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, onClose
           </div>
         </div>
       )}
-      {city && <>
+      {city && !draw && <>
       <p className="sr-text mt-7 text-center text-[24px] font-extrabold text-white" style={{ animationDelay: "2450ms" }}>{heading}</p>
       <p className="sr-text mt-1 text-center text-sub text-white/80" style={{ animationDelay: "2600ms" }}>{sub}</p>
-      <button type="button" onClick={onClose}
-        className="sr-text press mt-7 h-12 rounded-btn bg-white px-10 text-sub font-bold text-[#111]" style={{ animationDelay: "2800ms" }}>확인</button>
+      <button type="button" onClick={card ? () => setDraw(true) : onClose}
+        className="sr-text press mt-7 h-12 rounded-btn bg-white px-10 text-sub font-bold text-[#111]" style={{ animationDelay: "2800ms" }}>{card ? "카드 받기" : "확인"}</button>
       </>}
     </div>,
     document.body,

@@ -866,3 +866,26 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .hc-tw .hc-inner, .mc-tw .mc-in { background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / .7) 42%, transparent 52%), linear-gradient(170deg, #FBFEFF 0%, #E8F2FD 55%, #DCE9F9 100%); }
 .hc-tw .hc-holo, .mc-tw .mc-holo { background-image: repeating-linear-gradient(115deg, #FFFFFF 0%, #E6E1FF 5%, #D8F6FF 10%, #FFF3E2 15%, #E2FFF2 20%, #FFFFFF 25%); opacity: .45; }
 .hc-tw .hc-holo, .mc-tw .mc-holo { opacity: .18; }
+
+/* 카드 뽑기 연출 시안 (components/card-draw.tsx) */
+.cd-wrap { position: relative; display: flex; flex-direction: column; align-items: center; perspective: 900px; }
+.cd-light { position: absolute; top: -40px; width: 340px; height: 340px; border-radius: 50%; background: radial-gradient(circle, rgb(var(--cd-glow) / .0) 0%, transparent 70%); transition: background .5s; pointer-events: none; }
+.cd-light.on { background: radial-gradient(circle, rgb(var(--cd-glow) / .6) 0%, rgb(var(--cd-glow) / .15) 40%, transparent 70%); animation: cd-breathe 2.4s ease-in-out infinite; }
+.cd-card { position: relative; width: 186px; height: 260px; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.2,.9,.3,1.2); }
+.cd-card.back { transform: rotateY(180deg); animation: cd-shake .9s ease-in-out .3s infinite; }
+.cd-card.flip, .cd-card.shown { transform: rotateY(360deg); }
+.cd-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.cd-backface { transform: rotateY(180deg); border-radius: 14px; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(90% 60% at 50% 40%, #3A3F4A 0%, #1C1F26 75%); border: 3px solid #4A505C; box-shadow: 0 18px 40px rgb(0 0 0 / .45), 0 0 26px rgb(var(--cd-glow) / .35); }
+.cd-ring { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 2px dashed rgb(255 255 255 / .35); animation: cd-spin 6s linear infinite; }
+.cd-em { position: absolute; font-size: 44px; font-weight: 800; color: #FF6A3D; }
+.cd-q { position: absolute; bottom: 22px; font-size: 12px; font-weight: 800; letter-spacing: .3em; color: rgb(255 255 255 / .5); }
+.cd-text, .cd-sub, .cd-ok { opacity: 0; transform: translateY(8px); transition: opacity .4s, transform .4s; }
+.cd-text { margin-top: 26px; font-size: 22px; font-weight: 800; color: #fff; } .cd-text b { color: rgb(var(--cd-glow)); }
+.cd-sub { margin-top: 4px; font-size: 14px; color: rgb(255 255 255 / .75); transition-delay: .1s; }
+.cd-ok { margin-top: 24px; height: 48px; padding: 0 40px; border-radius: 14px; background: #fff; color: #111; font-weight: 700; transition-delay: .2s; }
+.cd-text.on, .cd-sub.on, .cd-ok.on { opacity: 1; transform: none; }
+@keyframes cd-shake { 0%, 100% { transform: rotateY(180deg) rotate(0); } 25% { transform: rotateY(180deg) rotate(-2deg) scale(1.02); } 75% { transform: rotateY(180deg) rotate(2deg) scale(1.02); } }
+@keyframes cd-spin { to { rotate: 360deg; } }
+@keyframes cd-breathe { 50% { opacity: .75; } }
+@media (prefers-reduced-motion: reduce) { .cd-card { transition: none; } .cd-card.back, .cd-ring, .cd-light.on { animation: none; } }
