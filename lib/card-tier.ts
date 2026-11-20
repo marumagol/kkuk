@@ -7,7 +7,7 @@
    - 레인보우만 다른 테마의 절반 확률
    - 뽑기는 (나, 도시)로 정해지는 순서라서 새로고침해도 바뀌지 않는다 (DB 저장 없음)
    번호는 globals.css 의 모양 번호 hc-t{n} / mc-t{n}. 10(눈꽃)은 hc-tw. 1(옛 일반)은 쓰지 않는다 */
-export type Tier = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 10;
+export type Tier = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 export const TIERS: { tier: Tier; name: string; weight: number }[] = [
   { tier: 4, name: "에메랄드", weight: 1 },
   { tier: 2, name: "골드", weight: 1 },
@@ -55,4 +55,4 @@ export function cardsOf(dates: string[], seed: string) {
 export type Look = Exclude<Tier, 10> | "w";
 export const lookOf = (t: Tier): Look => (t === 10 ? "w" : t);
 /* 테마별 도장 색 (components/kit.tsx StampFace finish) */
-export const finishOf = (l: Look) => (l === "w" ? "diamond" : ([undefined, "rare", "epic", "royal", "opal", "legend", "coral", "silver"] as const)[l - 1]);
+export const finishOf = (l: Look) => (l === "w" ? "diamond" : ([undefined, "rare", "epic", "royal", "opal", "legend", "coral", "silver", "crystal", undefined, "sapphire", "ruby"] as const)[l - 1]);

@@ -17,6 +17,9 @@ const GLOW: Record<Look, string> = {
   3: "bg-[radial-gradient(circle,rgb(210_130_230/0.45)_0%,rgb(210_130_230/0.1)_40%,transparent_68%)]",
   7: "bg-[radial-gradient(circle,rgb(255_150_110/0.45)_0%,rgb(255_150_110/0.1)_40%,transparent_68%)]",
   8: "bg-[radial-gradient(circle,rgb(220_228_240/0.5)_0%,rgb(220_228_240/0.12)_40%,transparent_68%)]",
+  9: "bg-[radial-gradient(circle,rgb(230_235_255/0.55)_0%,rgb(230_235_255/0.12)_40%,transparent_68%)]",
+  11: "bg-[radial-gradient(circle,rgb(80_130_240/0.5)_0%,rgb(80_130_240/0.12)_40%,transparent_68%)]",
+  12: "bg-[radial-gradient(circle,rgb(230_70_110/0.45)_0%,rgb(230_70_110/0.1)_40%,transparent_68%)]",
   w: "bg-[radial-gradient(circle,rgb(190_225_255/0.55)_0%,rgb(190_225_255/0.14)_40%,transparent_68%)]",
   5: "bg-[radial-gradient(circle,rgb(110_200_255/0.55)_0%,rgb(110_200_255/0.14)_40%,transparent_68%)]",
   6: "bg-[radial-gradient(circle,rgb(255_180_230/0.45)_0%,rgb(160_210_255/0.18)_40%,transparent_68%)]",
@@ -134,17 +137,6 @@ function StampMedal({ x, onClose, featured, onFeature }: { x: StampCard; onClose
             </div>
           ))}
         </div>
-        {/* 등급 탭 : 모은 카드만 (0.95.0, 못 모은 등급은 보이지 않음). 한 장뿐이면 탭 없음 */}
-        {cards.length > 1 && (
-          <div className="relative flex flex-wrap justify-center gap-1.5" role="tablist" aria-label="모은 카드">
-            {cards.map((k, i) => (
-              <button key={k.tier} type="button" role="tab" aria-selected={i === cur} onClick={() => center(i, true)}
-                className={`press inline-flex h-7 items-center rounded-full px-2.5 text-tiny font-extrabold ${i === cur ? "bg-on-deep text-deep" : "bg-deep-soft text-on-deep-sub"}`}>
-                {k.name}
-              </button>
-            ))}
-          </div>
-        )}
         <h2 className="relative mt-4 flex items-center justify-center gap-1.5 text-title-lg font-extrabold">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {flag && <img src={flag} alt="" width={27} height={18} className="rounded-[3px]" />}

@@ -840,3 +840,54 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 /* 0.99.0 눈꽃 카드는 모든 도시에서 나오는 테마로 (마루님 "눈꽃 아이콘은 너무 쓰지 말고 조화롭게") : 눈꽃 무늬 대신 은은한 서리 반짝임 */
 .hc-tw .hc-inner, .mc-tw .mc-in { background: radial-gradient(1.4px 1.4px at 16% 20%, #fff 60%, transparent), radial-gradient(1px 1px at 78% 14%, #fff 60%, transparent), radial-gradient(1.2px 1.2px at 88% 62%, #fff 60%, transparent), radial-gradient(1px 1px at 30% 84%, #fff 60%, transparent), radial-gradient(120% 70% at 20% 0%, rgb(255 255 255 / .9), transparent 60%), linear-gradient(170deg, #FBFEFF 0%, #E4F1FC 55%, #D3E6F8 100%); background-size: auto; }
 .hc-tw .hc-back { background: radial-gradient(120% 70% at 25% 10%, rgb(255 255 255 / .85), transparent 60%) padding-box, linear-gradient(170deg, #F7FBFF 0%, #D6E8F8 100%) padding-box, conic-gradient(from 200deg, #F2F9FF, #A9D2FF, #4C8EEA, #1F5FC8, #A9D2FF, #F2F9FF) border-box; }
+
+/* 테마 시안: t9 크리스탈, t11 사파이어, t12 루비 (루비는 금 대신 은빛, 중국풍 피함) */
+.hc-t9 .hc-front, .mc-t9 { background: linear-gradient(115deg, #DCD6FF 0%, #F4FBFF 20%, #FFFFFF 28%, #E3F6FF 36%, #C9E6FF 55%, #F4FBFF 75%, #FFFFFF 82%, #DCD6FF 100%); background-size: 250% 100%; animation: tier-sheen 4s ease-in-out infinite alternate; }
+.hc-t9 .hc-inner, .mc-t9 .mc-in { background: linear-gradient(180deg, #FFFFFF, #F1F4FB); box-shadow: inset 0 0 0 1.5px #D5DDF0, inset 0 0 0 3px #FFFFFF, inset 0 0 0 4px #E8ECF7; }
+.hc-t9 .hc-win, .mc-t9 .mc-win { border-color: #A9B7D6; background: radial-gradient(circle, #FFFFFF 0, #F3F6FF 40%, #E2E9FA 75%, #C3CFEA 100%); box-shadow: none; }
+.hc-t9 .hc-win::after, .mc-t9 .mc-win::after { content: ""; position: absolute; inset: -20%; background: repeating-linear-gradient(115deg, transparent 0 14%, rgb(255 255 255 / .45) 16%, transparent 19%, transparent 30%); mix-blend-mode: soft-light; animation: tier-prism 9s linear infinite; }
+.hc-t9 .hc-name, .mc-t9 .mc-name { color: #26304A; } .hc-t9 .hc-name small { color: #6A78A0; }
+.hc-t9 .hc-nick { background: linear-gradient(90deg, #E6E9FA, #F4FBFF, #E6E9FA); color: #26304A; } .hc-t9 .hc-desc { color: #4E5A78; }
+.hc-t9 .hc-foot, .mc-t9 .mc-foot { color: #7F8BAA; }
+.hc-t9 .hc-pill, .mc-t9 .mc-pill { background: linear-gradient(90deg, #E6E9FA, #F4FBFF, #E6E9FA); color: #26304A; }
+.hc-t9 .hc-back { background: radial-gradient(120% 80% at 30% 15%, #FFFFFF 0%, transparent 55%), linear-gradient(160deg, #B9C6E6, #7884AC); border-color: #E6EBFA; color: #FFFFFF; text-shadow: 0 1px 0 rgb(5 40 30 / .35); }
+.hc-t9 .hc-back > .hc-emb { color: #FFFFFF; opacity: .22; }
+.hc-t9 .hc-back > .hc-ring { border: 1.5px solid rgb(235 255 248 / .7); box-shadow: inset 0 0 0 4px transparent, inset 0 0 0 5.5px rgb(235 255 248 / .4); }
+.hc-t9 .hc-back .hc-bpill { background: linear-gradient(90deg, #E6E9FA, #F4FBFF, #E6E9FA); color: #26304A; }
+.hc-t9 .tier-tw, .mc-t9 .tier-tw { color: #A9B7D6; }
+@media (prefers-reduced-motion: reduce) { .hc-t9 .hc-front, .mc-t9, .hc-t9 .hc-win::after, .mc-t9 .mc-win::after { animation: none; } }
+.hc-t11 .hc-front, .mc-t11 { background: linear-gradient(115deg, #7FA8F0 0%, #DCE8FF 20%, #FFFFFF 28%, #A9C6FA 36%, #2F62D4 55%, #DCE8FF 75%, #FFFFFF 82%, #7FA8F0 100%); background-size: 250% 100%; animation: tier-sheen 4s ease-in-out infinite alternate; }
+.hc-t11 .hc-inner, .mc-t11 .mc-in { background: linear-gradient(180deg, #F7FAFF, #E2EBFC); box-shadow: inset 0 0 0 1.5px #9CB8EE, inset 0 0 0 3px #F7FAFF, inset 0 0 0 4px #C6D6F6; }
+.hc-t11 .hc-win, .mc-t11 .mc-win { border-color: #2753B8; background: radial-gradient(circle, #F2F6FF 0, #D3E1FB 40%, #A2BDF1 75%, #5F86DA 100%); box-shadow: none; }
+.hc-t11 .hc-win::after, .mc-t11 .mc-win::after { content: ""; position: absolute; inset: -20%; background: repeating-linear-gradient(115deg, transparent 0 14%, rgb(255 255 255 / .45) 16%, transparent 19%, transparent 30%); mix-blend-mode: soft-light; animation: tier-prism 9s linear infinite; }
+.hc-t11 .hc-name, .mc-t11 .mc-name { color: #0F2457; } .hc-t11 .hc-name small { color: #2B56C0; }
+.hc-t11 .hc-nick { background: linear-gradient(90deg, #A9C3F5, #DCE8FF, #A9C3F5); color: #0F2457; } .hc-t11 .hc-desc { color: #33487A; }
+.hc-t11 .hc-foot, .mc-t11 .mc-foot { color: #4A6CB4; }
+.hc-t11 .hc-pill, .mc-t11 .mc-pill { background: linear-gradient(90deg, #A9C3F5, #DCE8FF, #A9C3F5); color: #0F2457; }
+.hc-t11 .hc-back { background: radial-gradient(120% 80% at 30% 15%, #B9D0FF 0%, transparent 55%), linear-gradient(160deg, #2A55C2, #0F2C78); border-color: #9DB9F2; color: #F2F6FF; text-shadow: 0 1px 0 rgb(5 40 30 / .35); }
+.hc-t11 .hc-back > .hc-emb { color: #F2F6FF; opacity: .22; }
+.hc-t11 .hc-back > .hc-ring { border: 1.5px solid rgb(235 255 248 / .7); box-shadow: inset 0 0 0 4px transparent, inset 0 0 0 5.5px rgb(235 255 248 / .4); }
+.hc-t11 .hc-back .hc-bpill { background: linear-gradient(90deg, #A9C3F5, #DCE8FF, #A9C3F5); color: #0F2457; }
+.hc-t11 .tier-tw, .mc-t11 .tier-tw { color: #2753B8; }
+@media (prefers-reduced-motion: reduce) { .hc-t11 .hc-front, .mc-t11, .hc-t11 .hc-win::after, .mc-t11 .mc-win::after { animation: none; } }
+.hc-t12 .hc-front, .mc-t12 { background: linear-gradient(115deg, #F29AAE 0%, #FDE3E9 20%, #FFFFFF 28%, #F7BBC8 36%, #D8365A 55%, #FDE3E9 75%, #FFFFFF 82%, #F29AAE 100%); background-size: 250% 100%; animation: tier-sheen 4s ease-in-out infinite alternate; }
+.hc-t12 .hc-inner, .mc-t12 .mc-in { background: linear-gradient(180deg, #FFF8F9, #FBE6EA); box-shadow: inset 0 0 0 1.5px #F0A7B6, inset 0 0 0 3px #FFF8F9, inset 0 0 0 4px #F6CDD6; }
+.hc-t12 .hc-win, .mc-t12 .mc-win { border-color: #C22B4E; background: radial-gradient(circle, #FFF5F7 0, #FBD7DF 40%, #F2A3B4 75%, #DE5E7C 100%); box-shadow: none; }
+.hc-t12 .hc-win::after, .mc-t12 .mc-win::after { content: ""; position: absolute; inset: -20%; background: repeating-linear-gradient(115deg, transparent 0 14%, rgb(255 255 255 / .45) 16%, transparent 19%, transparent 30%); mix-blend-mode: soft-light; animation: tier-prism 9s linear infinite; }
+.hc-t12 .hc-name, .mc-t12 .mc-name { color: #4A0E1E; } .hc-t12 .hc-name small { color: #B8243F; }
+.hc-t12 .hc-nick { background: linear-gradient(90deg, #F5B3C2, #FDE3E9, #F5B3C2); color: #4A0E1E; } .hc-t12 .hc-desc { color: #7A2E40; }
+.hc-t12 .hc-foot, .mc-t12 .mc-foot { color: #B04A62; }
+.hc-t12 .hc-pill, .mc-t12 .mc-pill { background: linear-gradient(90deg, #F5B3C2, #FDE3E9, #F5B3C2); color: #4A0E1E; }
+.hc-t12 .hc-back { background: radial-gradient(120% 80% at 30% 15%, #FFC6D2 0%, transparent 55%), linear-gradient(160deg, #C8284C, #7A0F2A); border-color: #F4AEBE; color: #FFF3F5; text-shadow: 0 1px 0 rgb(5 40 30 / .35); }
+.hc-t12 .hc-back > .hc-emb { color: #FFF3F5; opacity: .22; }
+.hc-t12 .hc-back > .hc-ring { border: 1.5px solid rgb(235 255 248 / .7); box-shadow: inset 0 0 0 4px transparent, inset 0 0 0 5.5px rgb(235 255 248 / .4); }
+.hc-t12 .hc-back .hc-bpill { background: linear-gradient(90deg, #F5B3C2, #FDE3E9, #F5B3C2); color: #4A0E1E; }
+.hc-t12 .tier-tw, .mc-t12 .tier-tw { color: #C22B4E; }
+@media (prefers-reduced-motion: reduce) { .hc-t12 .hc-front, .mc-t12, .hc-t12 .hc-win::after, .mc-t12 .mc-win::after { animation: none; } }
+.hc-t9 .hc-holo, .mc-t9 .mc-holo { background-image: repeating-linear-gradient(115deg, #FFFFFF 0%, #E6E1FF 5%, #D8F6FF 10%, #FFF6E0 15%, #E2FFF2 20%, #FFFFFF 25%); opacity: .5; }
+.hc-t11 .hc-holo, .mc-t11 .mc-holo { background-image: repeating-linear-gradient(115deg, #DCE8FF 0%, #FFFFFF 6%, #8FB1F2 12%, #EAF1FF 18%, #DCE8FF 25%); }
+.hc-t12 .hc-holo, .mc-t12 .mc-holo { background-image: repeating-linear-gradient(115deg, #FDE3E9 0%, #FFFFFF 6%, #F29AAE 12%, #F3F5F8 18%, #FDE3E9 25%); }
+.hc-t11 .hc-holo, .mc-t11 .mc-holo, .hc-t12 .hc-holo, .mc-t12 .mc-holo { opacity: .14; }
+.hc-t9 .hc-win, .mc-t9 .mc-win { border-color: #B9C3E0; background: linear-gradient(135deg, #FFFFFF 0%, #EDE6FF 22%, #DDF4FF 44%, #FFF3E4 64%, #E3FFF1 82%, #FFFFFF 100%); }
+.hc-t9 .hc-front, .mc-t9 { background: linear-gradient(115deg, #E9E3FF 0%, #FFFFFF 18%, #D9F3FF 34%, #FFF1E2 50%, #E0FFF0 66%, #FFFFFF 80%, #E9E3FF 100%); background-size: 250% 100%; }
+.hc-t9 .hc-holo, .mc-t9 .mc-holo { opacity: .3; }
