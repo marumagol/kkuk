@@ -13,7 +13,7 @@ export const TIERS: { tier: Tier; name: string; weight: number }[] = [
   { tier: 2, name: "골드", weight: 1 },
   { tier: 3, name: "자수정", weight: 1 },
   { tier: 5, name: "오팔", weight: 1 },
-  { tier: 10, name: "눈꽃", weight: 1 },
+  { tier: 10, name: "크리스탈", weight: 1 },
   { tier: 7, name: "코랄", weight: 1 },
   { tier: 8, name: "실버", weight: 1 },
   { tier: 11, name: "사파이어", weight: 1 },
@@ -57,4 +57,4 @@ export function cardsOf(dates: string[], seed: string) {
 export type Look = Exclude<Tier, 10> | "w";
 export const lookOf = (t: Tier): Look => (t === 10 ? "w" : t);
 /* 테마별 도장 색 (components/kit.tsx StampFace finish) */
-export const finishOf = (l: Look) => (l === "w" ? "diamond" : ([undefined, "rare", "epic", "royal", "opal", "legend", "coral", "silver", "crystal", undefined, "sapphire", "ruby"] as const)[l - 1]);
+export const finishOf = (l: Look) => (l === "w" ? "crystal" : ([undefined, "rare", "epic", "royal", "opal", "legend", "coral", "silver", "crystal", undefined, "sapphire", "ruby"] as const)[l - 1]);

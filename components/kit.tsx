@@ -322,7 +322,7 @@ const FINISH = {
   opal: { stops: ["#F2F7FF", "#F6D9F1", "#D6E6FF", "#FFF1D8"], ring: "#A9C8F0", edge: "#FFFFFF", art: "#0C1B3A" },
   coral: { stops: ["#7A2E3A", "#C94F4A", "#F2905E"], ring: "#C94F4A", edge: "#FFD9C7", art: "#FFFFFF" },
   silver: { stops: ["#E2E7ED", "#8C96A3", "#4A5360", "#B9C1CC"], ring: "#5E6875", edge: "#FFFFFF", art: "#FFFFFF" },
-  crystal: { stops: ["#C9BFFF", "#9FD3F2", "#B9F0D8", "#FFD9B8", "#D8C8FF"], ring: "#8E9BC8", edge: "#FFFFFF", art: "#FFFFFF" },
+  crystal: { stops: ["#3D64C4", "#6E8FE8", "#A08AE6", "#5FB8E0", "#8FA8F2"], ring: "#6E8FE8", edge: "#FFFFFF", art: "#FFFFFF" },
   sapphire: { stops: ["#081650", "#163FAE", "#3F74E0"], ring: "#1F4FC2", edge: "#D6E4FF", art: "#FFFFFF" },
   ruby: { stops: ["#4A0619", "#A3122F", "#D93A5A"], ring: "#B8183E", edge: "#FFD6DE", art: "#FFFFFF" },
   legend: { stops: ["#FF4FA0", "#FF9A3D", "#FFD23D", "#2FCB7A", "#2FA6FF", "#7A5CFF"], ring: "#FFFFFF", edge: "#FFFFFF", art: "#FFFFFF" },
