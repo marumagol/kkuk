@@ -8,10 +8,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/kit";
 import { HoloCard, Twinkles } from "@/components/holo-card";
-import { TIERS, cardsOf, finishOf, lookOf, tierName, visitLabel, type Look } from "@/lib/card-tier";
+import { cardsOf, isWinter, finishOf, lookOf, tierName, visitLabel, type Look } from "@/lib/card-tier";
 
 const GLOW: Record<Look, string> = {
-  1: "bg-[radial-gradient(circle,rgb(255_255_255/0.16)_0%,transparent_65%)]",
+  4: "bg-[radial-gradient(circle,rgb(60_200_150/0.42)_0%,rgb(60_200_150/0.1)_40%,transparent_68%)]",
   2: "bg-[radial-gradient(circle,rgb(255_170_60/0.42)_0%,rgb(255_170_60/0.1)_40%,transparent_68%)]",
   3: "bg-[radial-gradient(circle,rgb(210_130_230/0.45)_0%,rgb(210_130_230/0.1)_40%,transparent_68%)]",
   w: "bg-[radial-gradient(circle,rgb(190_225_255/0.55)_0%,rgb(190_225_255/0.14)_40%,transparent_68%)]",
@@ -54,14 +54,16 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
   };
   const cards = cardsFor(x);
   const top = cards[cards.length - 1];
+  const flag = flagWideOf(x.country);
+  const win = isWinter(x.country, x.name);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 도장, ${tierName(top.tier)} 카드, ${x.visits}번 방문`} className="press relative block w-full">
+      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 도장, ${tierName(top.tier, win)} 카드, ${x.visits}번 방문`} className="press relative block w-full">
         <span className={`mc mc-t${lookOf(top.tier, x.country, x.name)}`}>
           <span className="mc-in">
-            <span className="mc-name"><span>{x.name}</span><span className="mc-pips" aria-hidden>{TIERS.map((t) => <i key={t.tier} className={t.tier <= top.tier ? "on" : ""} />)}</span></span>
+            <span className="mc-name"><span>{x.name}</span>{flag && <img src={flag} alt="" width={18} height={12} className="mc-flag" />}</span>
             <span className="mc-win"><span aria-hidden className="hc-halo" /><StampFace name={x.name} country={x.country} size={64} finish={finishOf(lookOf(top.tier, x.country, x.name))} /><span aria-hidden className="mc-holo" /><span aria-hidden className="mc-glitter" /><span aria-hidden className="mc-stars" />{top.tier >= 3 && <Twinkles o={10} />}</span>
-            <span className="mc-foot"><span className="mc-pill">{tierName(top.tier)}</span><span>{dot(top.at)}</span></span>
+            <span className="mc-foot"><span className="mc-pill">{tierName(top.tier, win)}</span><span>{dot(top.at)}</span></span>
           </span>
         </span>
         {isNew && <span className="absolute -right-1 -top-1.5 z-[1] rounded-full bg-point px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">NEW</span>}

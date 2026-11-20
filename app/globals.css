@@ -786,3 +786,6 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .hc-t2 .hc-back > .hc-ring { border: 1.5px solid rgb(255 241 184 / .75); }
 @media (prefers-reduced-motion: reduce) { .mc-t2 { animation: none; } }
 .hc-t2 .hc-win, .mc-t2 .mc-win { background: radial-gradient(circle, #FFFDF2 0, #FFF4D2 45%, #F4D488 85%, #D9A441 100%); }
+
+/* 0.98.0 목록 카드 국기 (등급 점 대신) */
+.mc-flag { flex: none; border-radius: 2px; box-shadow: 0 0 0 1px rgb(255 255 255 / .8), 0 1px 2px rgb(0 0 0 / .2); }
