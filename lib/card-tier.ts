@@ -12,9 +12,9 @@ export const TIERS: { tier: Tier; name: string; weight: number }[] = [
   { tier: 4, name: "에메랄드", weight: 1 },
   { tier: 2, name: "골드", weight: 1 },
   { tier: 3, name: "자수정", weight: 1 },
-  { tier: 5, name: "푸른 오팔", weight: 1 },
+  { tier: 5, name: "오팔", weight: 1 },
   { tier: 10, name: "눈꽃", weight: 1 },
-  { tier: 7, name: "선셋 코랄", weight: 1 },
+  { tier: 7, name: "코랄", weight: 1 },
   { tier: 8, name: "실버", weight: 1 },
   { tier: 6, name: "레인보우", weight: 0.5 },
 ];
