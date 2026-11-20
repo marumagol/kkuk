@@ -129,6 +129,7 @@ function StampMedal({ x, onClose, featured, onFeature }: { x: StampCard; onClose
             {c.tier === featured ? "★" : "☆"}
           </button>
         )}
+        <div className="relative w-full">
         {/* 여백 % 는 바깥 상자(트랙보다 40px 좁음) 기준이라 카드 반폭 93 - 20 = 73 */}
         <div ref={track} onScroll={onScroll} className="relative -mx-5 flex w-[calc(100%+40px)] snap-x snap-mandatory -my-6 gap-4 overflow-x-auto px-[calc(50%-73px)] pb-10 pt-8 [scrollbar-width:none]">
           {cards.map((k, i) => (
@@ -136,6 +137,16 @@ function StampMedal({ x, onClose, featured, onFeature }: { x: StampCard; onClose
               <HoloCard name={x.name} country={x.country} tier={k.tier} date={dot(k.at)} visit={k.visit} visits={x.visits} trip={x.trips[k.visit - 1]?.title} active={i === cur} />
             </div>
           ))}
+        </div>
+          {/* 0.99.5 좌우 화살표 (마루님 "간단하게") : 첫 카드/마지막 카드에서는 숨김 */}
+          {cur > 0 && (
+            <button type="button" onClick={() => center(cur - 1, true)} aria-label="이전 카드"
+              className="press absolute left-[-14px] top-1/2 z-[2] grid size-8 -translate-y-1/2 place-items-center rounded-full bg-deep-soft/80 text-[18px] leading-none text-on-deep">‹</button>
+          )}
+          {cur < cards.length - 1 && (
+            <button type="button" onClick={() => center(cur + 1, true)} aria-label="다음 카드"
+              className="press absolute right-[-14px] top-1/2 z-[2] grid size-8 -translate-y-1/2 place-items-center rounded-full bg-deep-soft/80 text-[18px] leading-none text-on-deep">›</button>
+          )}
         </div>
         <h2 className="relative mt-4 flex items-center justify-center gap-1.5 text-title-lg font-extrabold">
           {/* eslint-disable-next-line @next/next/no-img-element */}
