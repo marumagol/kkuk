@@ -11,7 +11,7 @@
 import { FlashToast } from "@/components/toast";
 import Link from "next/link";
 import { Icon, PinCard, StampFace } from "@/components/kit";
-import { AppShell, Logo, Avatar, MainTabs, MockNote, TripRow } from "@/components/screen";
+import { AppShell, Logo, LogoMark, Avatar, MainTabs, MockNote, TripRow } from "@/components/screen";
 import { EarnedStamp } from "@/components/stamp-cards";
 import { getViewer, isIn, initialOf, avatarOf } from "@/lib/viewer";
 import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, todayKST, periodText, md, type Trip, type Item } from "@/lib/mock";
@@ -62,8 +62,8 @@ function Sealed({ name, country }: { name: string; country: string }) {
     <li className="flex w-[72px] flex-none flex-col items-center gap-1.5 text-center">
       <span aria-hidden className="relative flex h-[84px] w-[60px] items-center justify-center overflow-hidden rounded-[10px] bg-deep">
         <span className="absolute inset-1 rounded-[7px] border border-dashed border-on-deep/25" />
-        <span className="flex size-8 items-center justify-center rounded-full bg-point/15 text-point"><Icon name="stamp" size={20} /></span>
-        <span className="absolute bottom-1.5 text-[8px] font-extrabold tracking-[0.12em] text-on-deep-sub">TRIPTUAL</span>
+        {/* 0.105.2 작은 뒷면은 글자 없이 로고 심볼만 (마루님 "꽉 차서 답답") */}
+        <LogoMark size={30} />
       </span>
       <span className="flex items-center gap-1 text-tiny font-bold text-ink">
         {/* eslint-disable-next-line @next/next/no-img-element */}
