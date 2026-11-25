@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { HoloCard } from "@/components/holo-card";
 import { tierName, visitLabel, type Tier } from "@/lib/card-tier";
 
-const GLOW: Partial<Record<Tier, string>> = {
+export const GLOW: Partial<Record<Tier, string>> = {
   2: "255 190 90", 3: "200 130 240", 4: "70 210 160", 5: "110 200 255", 6: "255 170 230",
   7: "255 140 105", 8: "220 228 240", 10: "170 200 255", 11: "80 130 240", 12: "235 80 115",
 };
