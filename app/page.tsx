@@ -23,6 +23,7 @@ import { settle, toKrw, isMixed } from "@/lib/settle";
 import { formatMoney, flagOf, decimalsOf } from "@/lib/countries";
 import { mapsDirUrl, canMap } from "@/lib/maps-link";
 import { nextGoal, goalValue } from "@/lib/stamp-goals";
+import { cardCountOf } from "@/lib/card-tier";
 import type { Viewer } from "@/lib/viewer";
 
 function Header({ loggedIn, initial, avatar, unread = 0, name, email }: { loggedIn: boolean; initial: string; avatar: string | null; unread?: number; name?: string; email?: string }) {
@@ -353,7 +354,7 @@ function Empty({ first, guest, cards, ago }: { first: boolean; guest: boolean; c
         <span className="inline-flex h-11 items-center justify-center self-start rounded-full bg-point px-5 text-sub font-bold text-white">시작하기</span>
       </Link>
       <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="도장 받는 법">
-        <h2 className="text-body font-bold text-ink">여행하면 도장이 모여요</h2>
+        <h2 className="text-body font-bold text-ink">여행하면 카드가 모여요</h2>
         <ol className="flex flex-col gap-2.5">
           {["여행을 만들고 도시를 넣어요", "여행 기간에 그 도시에 가요", "[도장 받기] 를 누르면 도장을 찍고 카드를 받아요"].map((t, i) => (
             <li key={t} className="flex items-center gap-2.5 text-sub text-ink">
@@ -444,7 +445,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
   const lastAt = (x: StampCard) => x.dates?.at(-1) ?? x.firstAt ?? x.firstDate ?? "";
   const latest = [...(stamps?.earned ?? [])].sort((a, b) => lastAt(b).localeCompare(lastAt(a))).slice(0, 3);
 
-  const count = stamps?.earned.length ?? 0;
+  const count = stamps?.earned.length ?? 0; // 도시 수 (목표 기준)
+  const cardTotal = (stamps?.earned ?? []).reduce((n, x) => n + cardCountOf(x), 0);
   const countries = stamps?.countryCount ?? 0;
   const goal = nextGoal(count, countries);
 
@@ -477,8 +479,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
           <Link href="/stamps" className="press mt-3 flex min-h-14 items-center gap-3 rounded-card bg-surface px-4 py-3">
             <span className="flex size-9 flex-none items-center justify-center rounded-full bg-point-soft text-point-text"><Icon name="stamp" size={20} /></span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sub font-bold text-ink">도장 카드 {count}개{countries ? `, 나라 ${countries}곳` : ""}</span>
-              <span className="block text-tiny text-ink-sub">{goal ? `${goal.label}까지 ${goal.need - goalValue(goal, count, countries)}${goal.of === "stamp" ? "개" : "곳"} 남았어요` : "모든 목표를 이뤘어요"}</span>
+              <span className="block text-sub font-bold text-ink">카드 {cardTotal}장, 도시 {count}곳{countries ? `, 나라 ${countries}곳` : ""}</span>
+              <span className="block text-tiny text-ink-sub">{goal ? `${goal.label}까지 ${goal.need - goalValue(goal, count, countries)}곳 남았어요` : "모든 목표를 이뤘어요"}</span>
             </span>
             <Icon name="right" size={18} className="text-ink-sub" />
           </Link>

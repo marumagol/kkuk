@@ -15,6 +15,7 @@ import { loadStamps, type StampCard } from "@/lib/trips";
 import { flagOf } from "@/lib/countries";
 import { addDays, daysBetween, md, todayKST } from "@/lib/mock";
 import { GOALS, type Goal } from "@/lib/stamp-goals";
+import { cardCountOf } from "@/lib/card-tier";
 import { StampTester } from "@/components/stamp-tester";
 import { GoalBadges } from "@/components/goal-badges";
 import { createClient } from "@/lib/supabase/server";
@@ -66,7 +67,8 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
   const s = await loadStamps(viewer);
   const today = todayKST();
   const picked = s.earned.find((x) => String(x.cityId) === c);
-  const count = s.earned.length;
+  const count = s.earned.length; // 도시 수 (목표 기준)
+  const cardTotal = s.earned.reduce((n, x) => n + cardCountOf(x), 0); // 2026-11-25 셀 때는 카드 (마루님 A안)
   const value = (g: Goal) => (g.of === "stamp" ? count : s.countryCount);
   const goal = GOALS.find((g) => value(g) < g.need);
   const prevNeed = goal ? Math.max(0, ...GOALS.filter((g) => g.of === goal.of && g.need < goal.need).map((g) => g.need)) : 0;
@@ -92,17 +94,17 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
         {tester && <StampTester />}
         {/* 수집 현황 */}
         <section aria-label="수집 현황" className="relative overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-5 text-on-deep">
-          <p className="text-tiny font-semibold text-on-deep-sub">모은 도장 카드</p>
+          <p className="text-tiny font-semibold text-on-deep-sub">모은 카드</p>
           <p className="mt-1 flex items-end gap-1.5">
-            <span className="text-[44px] font-extrabold leading-none tracking-tight">{count}</span>
-            <span className="pb-1 text-body font-bold">개</span>
-            {count > 0 && <span className="pb-1.5 pl-2 text-tiny text-on-deep-sub">나라 {s.countryCount}곳, 도시 {s.cityCount}곳</span>}
+            <span className="text-[44px] font-extrabold leading-none tracking-tight">{cardTotal}</span>
+            <span className="pb-1 text-body font-bold">장</span>
+            {count > 0 && <span className="pb-1.5 pl-2 text-tiny text-on-deep-sub">도시 {count}곳, 나라 {s.countryCount}곳</span>}
           </p>
           {goal ? (
             <div className="mt-4">
               <div className="flex items-center justify-between text-tiny">
                 <span className="font-semibold">다음 목표 <b className="text-point">{goal.label}</b></span>
-                <span className="text-on-deep-sub">{goal.need - value(goal)}{goal.of === "stamp" ? "개" : "곳"} 남았어요</span>
+                <span className="text-on-deep-sub">{goal.need - value(goal)}곳 남았어요</span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-on-deep/15">
                 <div className="h-full rounded-full bg-point" style={{ width: `${Math.max(pct, 4)}%` }} />
@@ -113,7 +115,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
             <Link href={`/trips/${upcoming.next.tripId}`} className="press mt-4 flex min-h-11 items-center justify-between gap-2 rounded-field bg-on-deep/10 px-3 py-2">
               <span className="flex min-w-0 items-center gap-2 text-sub">
                 <span className="flex size-7 flex-none items-center justify-center rounded-full border border-dashed border-point text-tiny font-extrabold text-point">?</span>
-                <span className="truncate">다음에 열릴 도장 <b>{upcoming.name}</b></span>
+                <span className="truncate">다음에 받을 카드 <b>{upcoming.name}</b></span>
               </span>
               <span className="flex-none text-tiny font-bold text-point">{status(upcoming, today).badge === "지금" ? "지금 받기" : status(upcoming, today).badge}</span>
             </Link>
@@ -124,7 +126,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
         {s.missing.length > 0 && (
           <section aria-labelledby="sealed" className="flex flex-col gap-3">
             <div>
-              <h2 id="sealed" className="text-body font-bold text-ink">곧 열릴 도장 <span className="text-point">{s.missing.length}</span></h2>
+              <h2 id="sealed" className="text-body font-bold text-ink">곧 받을 카드 <span className="text-point">{s.missing.length}</span></h2>
               <p className="mt-0.5 text-tiny text-ink-sub">어떤 도장일지는 그 도시에 가야 알 수 있어요</p>
             </div>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -154,7 +156,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
           </section>
         ) : (
           <section aria-labelledby="earned" className="flex flex-col gap-3">
-            <h2 id="earned" className="text-body font-bold text-ink">도장 카드 <span className="text-sub font-semibold text-ink-sub">{count}</span></h2>
+            <h2 id="earned" className="text-body font-bold text-ink">모은 카드 <span className="text-sub font-semibold text-ink-sub">도시 {count}곳</span></h2>
             <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
               {recent.map((x) => (
                 <EarnedStamp key={`${x.country}:${x.name}`} x={x} isNew={!!lastAt(x) && lastAt(x).slice(0, 10) >= newSince} startOpen={picked === x} />

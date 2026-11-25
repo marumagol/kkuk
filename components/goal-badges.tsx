@@ -86,7 +86,7 @@ function BadgeDialog({ g, value, onClose }: { g: Goal; value: number; onClose: (
         })}
         <span className={`relative rounded-full px-3 py-1 text-tiny font-extrabold tracking-wider ${done ? "gb-tier text-[#3A2A18]" : "bg-deep-soft text-on-deep-sub"}`}>{done ? TIER_NAME[g.tier] : "아직 잠겨 있어요"}</span>
         <h2 className="relative mt-2.5 text-title-lg font-extrabold">{g.label}</h2>
-        <p className="relative mt-1 text-sub text-on-deep-sub">{done ? g.desc : `${left}${g.of === "stamp" ? "개" : "곳"} 더 모으면 ${TIER_NAME[g.tier]} 배지를 받아요`}</p>
+        <p className="relative mt-1 text-sub text-on-deep-sub">{done ? g.desc : `${left}곳 더 가면 ${TIER_NAME[g.tier]} 배지를 받아요`}</p>
         {!done && (
           <>
             <div className="relative mt-4 h-2 w-full overflow-hidden rounded-full bg-deep-soft"><i className="absolute inset-y-0 left-0 rounded-full bg-point" style={{ width: `${(value / g.need) * 100}%` }} /></div>

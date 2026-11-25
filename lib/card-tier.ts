@@ -67,6 +67,10 @@ export function cardsOf(dates: string[], seed: string, tiers?: (Tier | null)[]) 
   return out;
 }
 
+/* 한 도시에서 모은 카드 장수 (stamp-cards.tsx cardsFor 와 같은 계산). 2026-11-25 용어 정리 : 셀 때는 카드 */
+export const cardCountOf = (x: { dates?: string[]; visits: number; firstAt?: string; firstDate?: string; seed?: string; country: string; name: string; tiers?: (Tier | null)[] }) =>
+  cardsOf(x.dates?.length ? x.dates : Array.from({ length: x.visits }, () => x.firstAt ?? x.firstDate ?? ""), x.seed ?? `${x.country}:${x.name}`, x.tiers).length;
+
 /* 카드 모양 : globals.css 의 hc-t{look} / mc-t{look}. 눈꽃은 "w" */
 export type Look = Exclude<Tier, 10> | "w";
 export const lookOf = (t: Tier): Look => (t === 10 ? "w" : t);
