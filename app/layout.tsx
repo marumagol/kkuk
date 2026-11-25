@@ -9,7 +9,7 @@ import { SwRegister } from "@/components/sw-register";
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getViewer, isIn, PATH_HEADER } from "@/lib/viewer";
-import { BRAND } from "@/components/screen";
+import { BRAND, SLOGAN } from "@/components/screen";
 
 // 페이퍼로지 : 쓰는 굵기 4개만 (가이드 4장). 늦게 와도 글자가 먼저 보이게 swap
 const paperlogy = localFont({
@@ -26,10 +26,11 @@ const paperlogy = localFont({
 
 export const metadata: Metadata = {
   title: { default: BRAND, template: `%s | ${BRAND}` },
-  description: "가고 싶은 장소를 모아 계획하고, 기록하고, 모으는 앱",
-  appleWebApp: { capable: true, title: "KKuK", statusBarStyle: "default" },
+  description: SLOGAN,
+  applicationName: BRAND,
+  appleWebApp: { capable: true, title: BRAND, statusBarStyle: "default" },
   /* 0.89.6 : 앱 주소를 메신저에 붙였을 때 보이는 카드 */
-  openGraph: { siteName: BRAND, title: BRAND, description: "가고 싶은 장소를 모아 계획하고, 기록하고, 모으는 앱", locale: "ko_KR", type: "website", images: [{ url: "/icon-512.png", width: 512, height: 512 }] },
+  openGraph: { siteName: BRAND, title: BRAND, description: SLOGAN, locale: "ko_KR", type: "website", images: [{ url: "/og.png", width: 1200, height: 630 }] },
 };
 
 export const viewport: Viewport = {

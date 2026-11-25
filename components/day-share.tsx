@@ -26,7 +26,7 @@ export function DayShareForm({ tripId, days, shares }: { tripId: string; days: D
     catch { setMsg("복사하지 못했어요. 링크를 길게 눌러 복사해 주세요"); }
   };
   const send = async (t: string) => {
-    try { await navigator.share({ title: "KKuK 일정", url: urlOf(t) }); }
+    try { await navigator.share({ title: "트립추얼 일정", url: urlOf(t) }); }
     catch (e) { if ((e as Error)?.name !== "AbortError") await copy(t); }
   };
   const make = (ds: number[] | null) => start(async () => {

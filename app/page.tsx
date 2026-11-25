@@ -63,7 +63,7 @@ function Sealed({ name, country }: { name: string; country: string }) {
       <span aria-hidden className="relative flex h-[84px] w-[60px] items-center justify-center overflow-hidden rounded-[10px] bg-deep">
         <span className="absolute inset-1 rounded-[7px] border border-dashed border-on-deep/25" />
         <span className="flex size-8 items-center justify-center rounded-full bg-point/15 text-point"><Icon name="stamp" size={20} /></span>
-        <span className="absolute bottom-1.5 text-[8px] font-extrabold tracking-[0.12em] text-on-deep-sub">KKuK</span>
+        <span className="absolute bottom-1.5 text-[8px] font-extrabold tracking-[0.12em] text-on-deep-sub">TRIPUAL</span>
       </span>
       <span className="flex items-center gap-1 text-tiny font-bold text-ink">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -424,7 +424,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
     <AppShell>
       <Header loggedIn={loggedIn} initial={initialOf(viewer)} avatar={avatarOf(viewer)} unread={unread} name={viewer.kind === "user" ? viewer.name ?? undefined : undefined} email={viewer.kind === "user" ? viewer.email : undefined} />
       {viewer.kind === "preview" && <MockNote />}
-      {bye && <FlashToast message="탈퇴했어요. 그동안 KKuK를 써 주셔서 고마워요" param="bye" />}
+      {bye && <FlashToast message="탈퇴했어요. 그동안 트립추얼을 써 주셔서 고마워요" param="bye" />}
       <div className="flex flex-col gap-3 px-5 pb-4 pt-4">
         {ongoing ? <During v={viewer} trip={ongoing} today={todayOf(ongoing)} />
           : soon || (coming && !recent) ? <Before v={viewer} trip={coming!} today={todayOf(coming!)} missing={stamps?.missing ?? []} />

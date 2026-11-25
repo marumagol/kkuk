@@ -17,10 +17,10 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   const p = ((data ?? []) as Preview[])[0];
   if (!p || p.status !== "ok" || !p.title) return { title: "초대", robots: { index: false } };
   const title = `${p.inviter ?? "함께할 사람"}님이 "${p.title}" 여행에 초대했어요`;
-  const description = p.start_date && p.end_date ? `${md(p.start_date)} ~ ${md(p.end_date)}, KKuK 에서 함께 계획해요` : "KKuK 에서 함께 계획해요";
+  const description = p.start_date && p.end_date ? `${md(p.start_date)} ~ ${md(p.end_date)}, 트립추얼에서 함께 계획해요` : "트립추얼에서 함께 계획해요";
   return {
     title, description, robots: { index: false },
-    openGraph: { title, description, siteName: "KKuK", images: [{ url: "/icon-512.png", width: 512, height: 512 }] },
+    openGraph: { title, description, siteName: "트립추얼", images: [{ url: "/og.png", width: 1200, height: 630 }] },
   };
 }
 

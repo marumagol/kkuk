@@ -1,5 +1,5 @@
 /*
-  KKuK 오프라인 보기 (3단계 10)
+  트립추얼 오프라인 보기 (3단계 10)
   - 화면(HTML) : 인터넷 먼저, 끊기면 전에 열어 본 화면을 보여 준다 (여행, 도장, 홈)
   - 앱 파일(/_next/static) : 한 번 받으면 저장해 두고 쓴다 (이름에 버전이 들어 있어 바뀌지 않음)
   - 저장은 하지 않는다 (서버 동작은 인터넷이 있어야 함)
@@ -8,7 +8,7 @@
 const PAGES = "kkuk-pages-v1";
 const STATIC = "kkuk-static-v1";
 const KEEP = /^\/($|trips(\/|$)|stamps$)/;
-const OFFLINE_HTML = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KKuK</title>
+const OFFLINE_HTML = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>트립추얼</title>
 <style>body{margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;background:#F5F3EE;color:#2D3139;font-family:system-ui,sans-serif;text-align:center;padding:24px}
 @media (prefers-color-scheme:dark){body{background:#17181C;color:#F1EFEA}}h1{font-size:20px;margin:0 0 8px}p{margin:0;font-size:15px;opacity:.75}button{margin-top:20px;height:44px;padding:0 20px;border:0;border-radius:999px;background:#2D3139;color:#fff;font-size:15px;font-weight:700}</style></head>
 <body><div><h1>인터넷이 끊겼어요</h1><p>이 화면은 아직 열어 본 적이 없어서 보여 드릴 수 없어요.<br>연결되면 다시 열어 주세요.</p><button onclick="location.reload()">다시 시도</button></div></body></html>`;
@@ -80,9 +80,9 @@ self.addEventListener("message", (e) => {
 
 /* 휴대폰 푸시 (5단계 7번) : push 함수가 보낸 알림을 띄우고, 누르면 알림 화면으로 */
 self.addEventListener("push", (e) => {
-  let d = { title: "꾹", body: "새 알림이 있어요", url: "/notifications" };
+  let d = { title: "트립추얼", body: "새 알림이 있어요", url: "/notifications" };
   try { d = { ...d, ...e.data.json() }; } catch {}
-  e.waitUntil(self.registration.showNotification(d.title, { body: d.body, icon: "/icon.png", badge: "/icon.png", data: { url: d.url }, tag: "kkuk" }));
+  e.waitUntil(self.registration.showNotification(d.title, { body: d.body, icon: "/icon-192.png", badge: "/icon-192.png", data: { url: d.url }, tag: "kkuk" }));
 });
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();

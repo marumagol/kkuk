@@ -110,7 +110,7 @@ export default async function TripBookPage({ params }: { params: Promise<{ id: s
           </div>
         </section>
       )}
-      <p className="mt-10 text-center text-tiny text-ink-sub">꾹(KKuK)으로 만든 여행 한 권</p>
+      <p className="mt-10 text-center text-tiny text-ink-sub">트립추얼로 만든 여행 한 권</p>
     </main>
   );
 }

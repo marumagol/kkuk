@@ -34,7 +34,7 @@ export function MembersPanel({ view }: { view: MembersView }) {
   const [canShare, setCanShare] = useState(false);
   useEffect(() => setCanShare(typeof navigator.share === "function"), []);
   const share = async (u: string) => {
-    try { await navigator.share({ title: "KKuK 여행 초대", text: "같이 여행 계획해요", url: u }); }
+    try { await navigator.share({ title: "트립추얼 여행 초대", text: "같이 여행 계획해요", url: u }); }
     catch (e) { if ((e as Error)?.name !== "AbortError") await copy(u); }
   };
   const copy = async (u: string) => {

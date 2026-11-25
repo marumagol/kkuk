@@ -3,9 +3,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "KKuK",
-    short_name: "KKuK",
-    description: "가고 싶은 장소를 모아 계획하고, 기록하고, 모으는 앱",
+    name: "트립추얼",
+    short_name: "트립추얼",
+    description: "나의 여행이 쌓이는 곳",
     start_url: "/",
     scope: "/",
     display: "standalone",

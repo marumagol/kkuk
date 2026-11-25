@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!s) return { title: "일정", robots: { index: false, follow: false } };
   const title = `${s.title} 일정`;
   const description = s.whole ? `${md(s.start_date)} ~ ${md(s.end_date)} 여행 일정` : s.days.map((d) => `${d + 1}일차 ${md(addDays(s.start_date, d))}`).join(", ");
-  return { title, description, robots: { index: false, follow: false }, openGraph: { title, description, siteName: "KKuK", images: [{ url: "/icon-512.png", width: 512, height: 512 }] } };
+  return { title, description, robots: { index: false, follow: false }, openGraph: { title, description, siteName: "트립추얼", images: [{ url: "/og.png", width: 1200, height: 630 }] } };
 }
 
 export default async function SharedDays({ params }: Props) {
@@ -24,7 +24,7 @@ export default async function SharedDays({ params }: Props) {
   return (
     <AppShell bottomGap={false}>
       <div className="flex items-center justify-between px-5 pt-4">
-        <Link href="/" aria-label="KKuK 처음으로" className="press flex h-11 items-center"><Logo /></Link>
+        <Link href="/" aria-label="트립추얼 처음으로" className="press flex h-11 items-center"><Logo /></Link>
       </div>
       <header className="px-5 pt-3">
         <h1 className="text-title-xl font-extrabold text-ink">{s.title}</h1>
@@ -72,7 +72,7 @@ export default async function SharedDays({ params }: Props) {
             </ol>
           </section>
         )}
-        <Link href="/" className="press flex h-14 items-center justify-center rounded-btn bg-btn text-[16px] font-bold text-on-btn">KKuK 로 내 여행 계획하기</Link>
+        <Link href="/" className="press flex h-14 items-center justify-center rounded-btn bg-btn text-[16px] font-bold text-on-btn">트립추얼로 내 여행 계획하기</Link>
       </div>
     </AppShell>
   );

@@ -10,8 +10,10 @@ import { flagOf } from "@/lib/countries";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-/* 서비스 이름은 여기 한 곳에서만 바꾼다. 표기는 KKuK (한글 "꾹" 은 쓰지 않음, 2026-11-14). 중복 확인 전 */
-export const BRAND = "KKuK";
+/* 서비스 이름은 여기 한 곳에서만 바꾼다. 2026-11-25 KKuK → 트립추얼 (영문 Tripual, Trip + Ritual). 영문 대문자 표기는 BRAND_EN */
+export const BRAND = "트립추얼";
+export const BRAND_EN = "TRIPUAL";
+export const SLOGAN = "나의 여행이 쌓이는 곳";
 
 export type ScreenState = "ok" | "empty" | "loading" | "error";
 export const readState = (v: string | string[] | undefined): ScreenState =>
@@ -36,11 +38,11 @@ export function BottomDock({ children, align = "center" }: { children: ReactNode
   );
 }
 
-/* 로고 : 마루님이 만든 피그마 "꾹 개발 시안" 01 홈의 "로고"(35:123)를 2배 PNG 로 내보낸 것 (주황 도장 + KKüK) */
+/* 로고 : 주황 물결 도장("트") + 트립추얼 글자, 2배 PNG (0.104.0). 만든 스크립트는 기획/20 참고 */
 export function Logo({ height = 32 }: { height?: number }) {
-  // 원본 비율 180 : 58 (2026-11-14 마루님 피그마 새 로고. 01 홈 "머리"의 Component 2 인스턴스 전체를 내보냄. "꾹" 글자는 로고 프레임 밖에 있어 프레임만 내보내면 빠짐)
+  // 원본 비율 183 : 58
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/logo.png" alt={BRAND} width={Math.round((height * 180) / 58)} height={height} className="block" />;
+  return <img src="/logo.png" alt={BRAND} width={Math.round((height * 183) / 58)} height={height} className="block" />;
 }
 
 export function Avatar({ initial, tone = "point", size = 40, ring, src }: { initial: string; tone?: "point" | "accent"; size?: number; ring?: boolean; src?: string | null }) {

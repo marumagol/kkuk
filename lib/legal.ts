@@ -10,10 +10,10 @@ const NOTICE = "내용이 바뀌면 시행하기 전에 업데이트 내역으�
 export const TERMS: LegalDoc = {
   title: "이용약관",
   notice: NOTICE,
-  effective: "2026년 11월 18일",
+  effective: "2026년 11월 25일",
   sections: [
     { h: "1. 서비스", items: [
-      "꾹(KKuK)은 여행 일정을 짜고, 함께 갈 사람과 준비하고, 여행한 도시의 도장을 모으는 서비스예요.",
+      "트립추얼(Tripual)은 여행 일정을 짜고, 함께 갈 사람과 준비하고, 여행한 도시의 도장을 모으는 서비스예요.",
       "지금은 모든 기능이 무료예요. 나중에 유료 기능이 생기면 미리 알리고, 이미 쓰던 기능을 갑자기 유료로 바꾸지 않아요.",
     ] },
     { h: "2. 계정", items: [
@@ -48,7 +48,7 @@ export const TERMS: LegalDoc = {
 export const PRIVACY: LegalDoc = {
   title: "개인정보 처리방침",
   notice: NOTICE,
-  effective: "2026년 11월 18일",
+  effective: "2026년 11월 25일",
   sections: [
     { h: "1. 모으는 정보", items: [
       "가입할 때 : 카카오 또는 구글 계정의 이메일 주소와 계정 구분값, 카카오로 가입하면 카카오 닉네임과 프로필 사진도 받아요 (앱 표시 이름과 사진은 직접 정해요)",
