@@ -53,8 +53,8 @@ function km(a: Item, b: Item) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat! * r) * Math.cos(b.lat! * r) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
-/* 직선거리라는 걸 칩에 같이 쓴다 (2026-11-25, 걷는 거리로 오해하지 않게) */
-const distText = (d: number) => `직선 ${d < 1 ? `${Math.max(10, Math.round(d * 100) * 10)}m` : d < 100 ? `${d.toFixed(1)}km` : `${Math.round(d)}km`}`;
+/* 거리 칩 ("직선" 표기는 2026-11-25 마루님이 뺌) */
+const distText = (d: number) => (d < 1 ? `${Math.max(10, Math.round(d * 100) * 10)}m` : d < 100 ? `${d.toFixed(1)}km` : `${Math.round(d)}km`);
 
 /*
   연박, 체크아웃 날 숙소 카드 (2026-11-17 마루님 "기본은 맨 위, 위치 조정 가능, 거리 계산에도 들어가게") :
