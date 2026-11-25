@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/kit";
+import { LogoMark } from "@/components/screen";
 import { HoloCard } from "@/components/holo-card";
 import { tierName, visitLabel, type Tier } from "@/lib/card-tier";
 
@@ -108,7 +109,7 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
             {glowing && <span aria-hidden className="se-edge" />}
             {/* 표지 (0.94.3) : 바깥면과 안쪽면이 있는 한 장. 왼쪽 경첩을 따라 넘어가 펼쳐진 채로 남는다 */}
             <div className="sp-cover" aria-hidden>
-              <div className="sp-face sp-out"><span className="sp-em">트</span><span className="sp-ttl">PASSPORT</span></div>
+              <div className="sp-face sp-out"><span className="sp-em"><LogoMark size={60} /></span><span className="sp-ttl">PASSPORT</span></div>
               <div className="sp-face sp-in"><span className="sp-in-hd">TRIPTUAL PASSPORT</span><span className="sp-photo" /></div>
             </div>
           </div>
@@ -118,8 +119,8 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
           <div className="se-card">
             {/* 도는 동안은 어떤 카드인지 모르게 양면 모두 공통 뒷면 */}
             <div aria-hidden className="se-spinner">
-              <div className="se-face"><span className="se-em">트</span><span className="se-ttl">TRIPTUAL</span></div>
-              <div className="se-face se-face-b"><span className="se-em">트</span><span className="se-ttl">TRIPTUAL</span></div>
+              <div className="se-face"><span className="se-em"><LogoMark size={64} /></span><span className="se-ttl">TRIPTUAL</span></div>
+              <div className="se-face se-face-b"><span className="se-em"><LogoMark size={64} /></span><span className="se-ttl">TRIPTUAL</span></div>
             </div>
             <div className="se-real">
             <HoloCard name={city} country={country ?? ""} tier={card.tier} visit={card.visit} visits={card.visit} active={phase === "shown"}
