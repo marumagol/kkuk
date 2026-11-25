@@ -168,7 +168,7 @@ async function Before({ v, trip, today, missing }: { v: Viewer; trip: Trip; toda
 
   const cards = sealed.length > 0 && (
     <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="이번 여행에서 받을 카드">
-      <Head title={`이번 여행에서 받을 카드 ${sealed.length}장`} href="/stamps" more="도장" />
+      <Head title={`이번 여행에서 받을 카드 ${sealed.length}장`} href="/stamps" more="카드" />
       <ul className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 pt-0.5 [scrollbar-width:none]">
         {sealed.map((m) => <Sealed key={m.name} name={m.name} country={m.country} />)}
       </ul>
@@ -283,7 +283,7 @@ async function After({ v, trip }: { v: Viewer; trip: Trip }) {
     <>
       <h1 className="text-title-xl font-extrabold text-ink">{trip.cities[0]} 여행,<br /><span className="text-point-text">잘 다녀왔어요</span></h1>
 
-      <section className="flex flex-col items-center gap-3 rounded-deep bg-deep px-5 py-5 text-center text-on-deep" aria-label="이번 여행에서 받은 도장">
+      <section className="flex flex-col items-center gap-3 rounded-deep bg-deep px-5 py-5 text-center text-on-deep" aria-label="이번 여행에서 받은 카드">
         <p className="text-tiny font-semibold text-on-deep-sub">{trip.title}</p>
         {got.length ? (
           <>
@@ -292,13 +292,13 @@ async function After({ v, trip }: { v: Viewer; trip: Trip }) {
                 <li key={s.name} style={{ transform: `rotate(${i % 2 ? 6 : -6}deg)` }}><StampFace name={s.name} country={s.country} size={72} /></li>
               ))}
             </ul>
-            <p className="text-title font-extrabold">도장 <span className="text-point">{got.length}개</span>를 받았어요</p>
+            <p className="text-title font-extrabold">카드 <span className="text-point">{got.length}장</span>을 받았어요</p>
             <p className="text-tiny text-on-deep-sub">{got.map((s) => s.name).join(", ")}</p>
           </>
         ) : (
           <>
             <span className="flex size-16 items-center justify-center rounded-full border-2 border-dashed border-on-deep/40 text-title font-extrabold text-on-deep-sub">?</span>
-            <p className="text-sub font-semibold">이번 여행에서는 도장을 받지 못했어요</p>
+            <p className="text-sub font-semibold">이번 여행에서는 카드를 받지 못했어요</p>
             <p className="text-tiny text-on-deep-sub">다음 여행에서는 도시에 도착하면 [도장 받기] 를 눌러 보세요</p>
           </>
         )}
@@ -367,7 +367,7 @@ function Empty({ first, cards, ago }: { first: boolean; cards: StampCard[]; ago?
       {/* 여행이 없을 때도 지금까지 모은 카드를 보여 준다 (2026-11-25) */}
       {cards.length > 0 && (
         <section className="flex flex-col gap-3" aria-label="최근 모은 카드">
-          <Head title="최근 모은 카드" href="/stamps" more="도장" />
+          <Head title="최근 모은 카드" href="/stamps" more="카드" />
           <div className="grid grid-cols-3 gap-2.5">
             {cards.map((x) => <EarnedStamp key={`${x.country}:${x.name}`} x={x} isNew={false} />)}
           </div>

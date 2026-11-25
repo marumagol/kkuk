@@ -110,7 +110,7 @@ export default async function CollectionScreen({ searchParams }: { searchParams:
           <ErrorState title="도감을 불러오지 못했어요" desc="인터넷 연결을 확인하고 다시 불러와 주세요" />
         )}
       </div>
-      <BottomDock><TabBar active="도장" /></BottomDock>
+      <BottomDock><TabBar active="카드" /></BottomDock>
     </AppShell>
   );
 }

@@ -667,12 +667,12 @@ export type ClaimResult =
   | { ok: true; status: "new" | "again" | "already"; city: string; country: string; visits: number; byMe: boolean; card?: { tier: Tier; visit: number } | null }
   | { ok: false; code: string; error: string };
 const STAMP_ERRORS: Record<string, string> = {
-  not_member: "이 여행을 함께하는 사람만 도장을 받을 수 있어요",
+  not_member: "이 여행을 함께하는 사람만 카드를 받을 수 있어요",
   trip_removed: "삭제된 여행이에요",
-  not_in_dates: "여행 기간에만 도장을 받을 수 있어요",
+  not_in_dates: "여행 기간에만 카드를 받을 수 있어요",
   low_accuracy: "위치가 정확하지 않아요. 밖에서 잠시 뒤 다시 눌러 주세요",
   bad_location: "위치를 읽지 못했어요. 다시 눌러 주세요",
-  no_city: "이 여행의 도시는 아직 도장이 없어요. 목록에 있는 도시만 도장을 받을 수 있어요",
+  no_city: "이 여행의 도시는 아직 카드가 없어요. 목록에 있는 도시만 카드를 받을 수 있어요",
   too_far: "여행 도시에서 멀리 있어요. 도시 안에서 다시 눌러 주세요",
 };
 
@@ -727,7 +727,7 @@ export async function claimStampCity(tripId: string, city: string, country: stri
   권한 검사는 DB 함수(test_stamp, test_stamp_clear)가 한다. private.stamp_testers 에 없는 계정은 not_tester 로 막힌다
 */
 const TEST_ERRORS: Record<string, string> = {
-  not_tester: "테스트 권한이 없어요", no_city: "도장 목록에 없는 도시예요", no_trip: "함께하는 여행이 하나는 있어야 테스트 도장을 붙일 수 있어요",
+  not_tester: "테스트 권한이 없어요", no_city: "카드 목록에 없는 도시예요", no_trip: "함께하는 여행이 하나는 있어야 테스트 도장을 붙일 수 있어요",
 };
 export async function testStamp(country: string, city: string): Promise<ClaimResult> {
   if (typeof country !== "string" || typeof city !== "string" || country.length > 5 || city.length > 40)

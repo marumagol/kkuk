@@ -20,7 +20,7 @@ import { StampTester } from "@/components/stamp-tester";
 import { GoalBadges } from "@/components/goal-badges";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "도장" };
+export const metadata = { title: "카드" };
 
 
 
@@ -87,7 +87,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
   return (
     <AppShell>
       <header className="relative px-5 pt-4">
-        <h1 className="text-title-xl font-extrabold text-ink">도장</h1>
+        <h1 className="text-title-xl font-extrabold text-ink">카드</h1>
       </header>
       {viewer.kind === "preview" && <MockNote />}
       <div className="flex flex-col gap-7 px-5 pb-6 pt-4">
@@ -127,7 +127,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
           <section aria-labelledby="sealed" className="flex flex-col gap-3">
             <div>
               <h2 id="sealed" className="text-body font-bold text-ink">곧 받을 카드 <span className="text-point">{s.missing.length}</span></h2>
-              <p className="mt-0.5 text-tiny text-ink-sub">어떤 도장일지는 그 도시에 가야 알 수 있어요</p>
+              <p className="mt-0.5 text-tiny text-ink-sub">어떤 카드일지는 그 도시에 가야 알 수 있어요</p>
             </div>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
               {s.missing.map((x) => <SealedCard key={`${x.country}:${x.name}`} x={x} today={today} />)}
@@ -144,7 +144,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
         {/* 모은 도장 */}
         {count === 0 ? (
           <section aria-labelledby="howto" className="flex flex-col gap-3 rounded-card bg-surface px-4 py-5">
-            <h2 id="howto" className="text-body font-bold text-ink">첫 도장 받는 법</h2>
+            <h2 id="howto" className="text-body font-bold text-ink">첫 카드 받는 법</h2>
             <ol className="flex flex-col gap-2.5">
               {["여행을 만들고 도시를 넣어요", "여행 기간에 그 도시에 가요", "여행 화면에서 [도장 받기] 를 눌러요"].map((t, i) => (
                 <li key={t} className="flex items-center gap-2.5 text-sub text-ink">
@@ -165,7 +165,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
           </section>
         )}
       </div>
-      <MainTabs active="도장" />
+      <MainTabs active="카드" />
     </AppShell>
   );
 }

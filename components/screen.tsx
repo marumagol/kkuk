@@ -124,7 +124,7 @@ export function PhotoThumb({ size = 48 }: { size?: number }) {
 
 /* 하단 탭 (홈, 여행, 도장, 마이 화면에서). + 는 로그인 문지기를 거친다 */
 /* 아래 탭바는 이제 app/layout.tsx 의 GlobalTabs 가 모든 화면에 그린다 (2026-11-15). 예전 자리 표시용으로만 남김 */
-export function MainTabs(_: { active: "홈" | "여행" | "도장" | "설정" }) { // eslint-disable-line @typescript-eslint/no-unused-vars
+export function MainTabs(_: { active: "홈" | "여행" | "카드" | "설정" }) { // eslint-disable-line @typescript-eslint/no-unused-vars
   return null;
 }
 

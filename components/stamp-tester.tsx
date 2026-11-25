@@ -48,7 +48,7 @@ export function StampTester() {
       {reveal && <StampReveal city={reveal.name} country={reveal.code} title="도장 꾹!" sub={reveal.sub} visits={reveal.visits} card={reveal.card} onClose={() => setReveal(null)} />}
       <div className="text-center">
         <p className="text-tiny font-bold tracking-wide text-point-text">도장 테스트 <span className="ml-1 rounded-full bg-point-soft px-2 py-0.5 text-[11px]">내 계정만</span></p>
-        <p className="mt-1 text-title font-extrabold text-ink">{city} 도장이 기다리고 있어요</p>
+        <p className="mt-1 text-title font-extrabold text-ink">{city} 카드가 기다리고 있어요</p>
       </div>
       <select value={pick} onChange={(e) => setPick(e.target.value)} aria-label="테스트할 도시" disabled={pending}
         className="h-11 rounded-field border border-line-strong bg-surface px-3 text-sub text-ink">

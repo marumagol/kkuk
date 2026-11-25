@@ -5,7 +5,7 @@ import { Icon } from "@/components/kit";
 export function TripSummaryRow({ s, className = "" }: { s: TripSummary; className?: string }) {
   const cells: [string, string, string, boolean][] = [
     ["함께한 시간", String(s.days), "일", false], ["꽂은 핀", String(s.places), "", true],
-    ["남긴 사진", String(s.photos), "", false], ["새 도장", String(s.stamps), "", false],
+    ["남긴 사진", String(s.photos), "", false], ["새 카드", String(s.stamps), "", false],
   ];
   return (
     <dl className={"grid grid-cols-4 gap-2 rounded-card bg-deep px-5 py-4 text-on-deep " + className} aria-label="여행 요약">

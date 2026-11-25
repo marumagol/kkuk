@@ -98,8 +98,8 @@ export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, tri
             <div className="hc-inner">
               <div className="hc-name"><span className="truncate">{name}</span><small>{country.slice(0, 2)}{cname ? ` · ${cname}` : ""}</small></div>
               <div className="hc-win"><span aria-hidden className="hc-halo" /><span className="hc-art"><StampFace name={name} country={country} size={112} finish={finishOf(look)} /></span>{twinkles(tier) && <Twinkles />}</div>
-              <div className="hc-nick">{lore?.nick ?? `${cname || name} 도장`}</div>
-              <div className="hc-desc">{lore?.desc ?? `${name}에 직접 가서 꾹 눌러 받은 도장이에요`}</div>
+              <div className="hc-nick">{lore?.nick ?? `${cname || name} 여행`}</div>
+              <div className="hc-desc">{lore?.desc ?? `${name}에 직접 가서 받은 카드예요`}</div>
               <div className="hc-foot"><span className="hc-pill">{tierName(tier)}</span>{date && <span>{date}</span>}</div>
             </div>
             <span aria-hidden className="hc-holo" /><span aria-hidden className="hc-glitter" /><span aria-hidden className="hc-stars" />

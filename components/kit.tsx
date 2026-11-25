@@ -466,7 +466,7 @@ export function SkeletonPinCard() {
   - 탭 3개(홈/여행/도장), 글자는 늘 보임. 아이콘 24, 선 1.5
   - 현재 탭 : 아이콘 뒤 연한 주황 알약(56x30), 아이콘 주황 + 안쪽 옅게 채움, 글자 진하게
 */
-const TAB_ICON: Record<"홈" | "여행" | "도장" | "설정", { line: ReactNode; fill: ReactNode }> = {
+const TAB_ICON: Record<"홈" | "여행" | "카드" | "설정", { line: ReactNode; fill: ReactNode }> = {
   홈: {
     line: <path d="M4.5 10.2 12 4l7.5 6.2V19a1.5 1.5 0 0 1-1.5 1.5h-3.5V15h-5v5.5H6A1.5 1.5 0 0 1 4.5 19z" />,
     fill: <path d="M4.5 10.2 12 4l7.5 6.2V19a1.5 1.5 0 0 1-1.5 1.5h-3.5V15h-5v5.5H6A1.5 1.5 0 0 1 4.5 19z" />,
@@ -475,7 +475,7 @@ const TAB_ICON: Record<"홈" | "여행" | "도장" | "설정", { line: ReactNode
     line: <><path d="M9 4.5 3.75 6.4v13.1L9 17.6l6 1.9 5.25-1.9V4.5L15 6.4z" /><path d="M9 4.5v13.1M15 6.4v13.1" /></>,
     fill: <path d="M9 4.5 3.75 6.4v13.1L9 17.6l6 1.9 5.25-1.9V4.5L15 6.4z" />,
   },
-  도장: {
+  카드: {
     line: <><circle cx="12" cy="6.8" r="2.8" /><path d="M10.6 9.4v3.6M13.4 9.4v3.6" /><path d="M5.5 13h13a1 1 0 0 1 1 1v2.5h-15V14a1 1 0 0 1 1-1z" /><path d="M6 20h12" /></>,
     fill: <><circle cx="12" cy="6.8" r="2.8" /><path d="M5.5 13h13a1 1 0 0 1 1 1v2.5h-15V14a1 1 0 0 1 1-1z" /></>,
   },
@@ -486,9 +486,9 @@ const TAB_ICON: Record<"홈" | "여행" | "도장" | "설정", { line: ReactNode
     fill: <path transform="translate(1.68 1.68) scale(0.86)" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />,
   },
 };
-export function TabBar({ active = "홈" }: { active?: "홈" | "여행" | "도장" | "설정" }) {
-  const tabs: { name: "홈" | "여행" | "도장" | "설정"; href: string }[] = [
-    { name: "홈", href: "/" }, { name: "여행", href: "/trips" }, { name: "도장", href: "/stamps" }, { name: "설정", href: "/me" }, // 2026-11-18 설정 다시 탭으로 (프로필 메뉴에도 남김)
+export function TabBar({ active = "홈" }: { active?: "홈" | "여행" | "카드" | "설정" }) {
+  const tabs: { name: "홈" | "여행" | "카드" | "설정"; href: string }[] = [
+    { name: "홈", href: "/" }, { name: "여행", href: "/trips" }, { name: "카드", href: "/stamps" }, { name: "설정", href: "/me" }, // 2026-11-18 설정 다시 탭으로 (프로필 메뉴에도 남김)
   ];
   return (
     <nav aria-label="하단 메뉴"

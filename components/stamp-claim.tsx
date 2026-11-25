@@ -27,7 +27,7 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
 
   /* 휴대폰 안에서 가장 가까운 여행 도시를 고른다 (반경 대비 거리). 좌표는 이 함수 밖으로 나가지 않는다 */
   const pick = (list: StampTarget[], p: GeolocationPosition): { city: StampTarget } | { error: string } => {
-    if (!list.length) return { error: "이 여행의 도시는 아직 도장이 없어요. 목록에 있는 도시만 도장을 받을 수 있어요" };
+    if (!list.length) return { error: "이 여행의 도시는 아직 카드가 없어요. 목록에 있는 도시만 카드를 받을 수 있어요" };
     if (p.coords.accuracy > list[0].maxAccuracy) return { error: "위치가 정확하지 않아요. 밖에서 잠시 뒤 다시 눌러 주세요" };
     const near = list.map((c) => ({ c, d: km(p.coords.latitude, p.coords.longitude, c.lat, c.lng) })).sort((a, b) => a.d / a.c.radiusKm - b.d / b.c.radiusKm)[0];
     if (near.d > near.c.radiusKm) return { error: "여행 도시에서 멀리 있어요. 도시 안에서 다시 눌러 주세요" };
@@ -79,10 +79,10 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
   };
 
   const msg = state.kind === "done"
-    ? state.r.status === "already" ? `${state.r.city} 도장은 이 여행에서 이미 받았어요`
-      : state.r.status === "again" ? `${state.r.city} 도장을 또 받았어요. ${state.r.visits}번째 방문이에요`
-      : `${state.r.city} 도장을 받았어요. 함께하는 사람도 같이 받아요`
-    : state.kind === "denied" ? "위치를 허용하면 도장을 받을 수 있어요. 브라우저 설정에서 위치를 켜 주세요"
+    ? state.r.status === "already" ? `${state.r.city} 카드는 이 여행에서 이미 받았어요`
+      : state.r.status === "again" ? `${state.r.city}에 또 왔어요. ${state.r.visits}번째 방문이에요`
+      : `${state.r.city} 카드를 받았어요. 함께하는 사람도 같이 받아요`
+    : state.kind === "denied" ? "위치를 허용하면 카드를 받을 수 있어요. 브라우저 설정에서 위치를 켜 주세요"
     : state.kind === "error" ? state.text
     : hint ? "조금 더 꾹 눌러 주세요. 게이지가 다 차면 도장이 찍혀요" : null;
 
@@ -90,7 +90,7 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
     <section className={(inset ? "mx-5 mt-4 " : "") + "flex flex-col gap-3 rounded-card bg-surface px-5 pb-5 pt-5"} aria-label="도장 받기">
       {reveal && (
         <StampReveal city={state.kind === "done" ? state.r.city : null} country={state.kind === "done" ? state.r.country : null} visits={state.kind === "done" ? state.r.visits : undefined} card={state.kind === "done" ? state.r.card : null}
-          title={state.kind === "done" && state.r.status === "already" ? "이미 받은 도장" : "도장 꾹!"} sub={msg ?? ""} onClose={() => setReveal(false)} />
+          title={state.kind === "done" && state.r.status === "already" ? "이미 받은 카드" : "도장 꾹!"} sub={msg ?? ""} onClose={() => setReveal(false)} />
       )}
       {state.kind === "done" && (
         <div className="flex justify-center">
@@ -104,7 +104,7 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
           {/* 0.89.0 : 막대 버튼 대신 빈 도장 자체를 꾹 누른다. 둘레 링이 차오르면 찍힌다 */}
           <div className="text-center">
             <p className="text-tiny font-bold tracking-wide text-point-text">도장 받기</p>
-            <p className="mt-1 text-title font-extrabold text-ink">{city ? `${city} 도장이 기다리고 있어요` : "여행 도장이 기다리고 있어요"}</p>
+            <p className="mt-1 text-title font-extrabold text-ink">{city ? `${city} 카드가 기다리고 있어요` : "여행 카드가 기다리고 있어요"}</p>
           </div>
           <div className="flex justify-center py-1">
             <HoldButton ring={132} onStart={locate} onComplete={finish} onShort={() => setHint(true)} disabled={busy}

@@ -129,7 +129,7 @@ export function PushToggle() {
 const KINDS: { label: string; kinds: string[] }[] = [
   { label: "함께하는 사람 참여", kinds: ["joined"] },
   { label: "장소 고침", kinds: ["items"] },
-  { label: "도장", kinds: ["stamp"] },
+  { label: "카드", kinds: ["stamp"] },
 ];
 function KindPrefs() {
   const [off, setOff] = useState<string[] | null>(null);

@@ -17,7 +17,7 @@ const HIDE = [
 export function GlobalTabs() {
   const path = usePathname() ?? "/";
   if (HIDE.some((r) => r.test(path))) return null;
-  const active = path.startsWith("/stamps") ? "도장" : path.startsWith("/trips") ? "여행" : path.startsWith("/me") ? "설정" : "홈";
+  const active = path.startsWith("/stamps") ? "카드" : path.startsWith("/trips") ? "여행" : path.startsWith("/me") ? "설정" : "홈";
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-[560px] in-data-editing:hidden">
       <TabBar active={active} />

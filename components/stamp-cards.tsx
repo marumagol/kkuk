@@ -41,8 +41,8 @@ export function SealedButton({ x, tone, label, children }: { x: StampCard; tone:
       : `${x.name}에 가는 여행을 다시 떠나면 받을 수 있어요. 여행지에서 [도장 받기]를 눌러 주세요`;
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 도장, ${label}`} className="press block h-full w-full text-left">{children}</button>
-      {open && <AlertDialog title={tone === "now" ? `지금 ${x.name} 도장을 받을 수 있어요` : `${x.name} 도장은 아직 열리지 않았어요`} desc={desc} onClose={() => setOpen(false)} />}
+      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 카드, ${label}`} className="press block h-full w-full text-left">{children}</button>
+      {open && <AlertDialog title={tone === "now" ? `지금 ${x.name} 카드를 받을 수 있어요` : `${x.name} 카드는 아직 열리지 않았어요`} desc={desc} onClose={() => setOpen(false)} />}
     </>
   );
 }
@@ -68,7 +68,7 @@ export function EarnedStamp({ x, isNew, startOpen }: { x: StampCard; isNew: bool
   };
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} 도장, ${tierName(top.tier)} 카드, ${x.visits}번 방문`} className="press relative block w-full">
+      <button type="button" onClick={() => setOpen(true)} aria-label={`${x.name} ${tierName(top.tier)} 카드, ${x.visits}번 방문`} className="press relative block w-full">
         <span className={`mc mc-t${lookOf(top.tier)}`}>
           <span className="mc-in">
             <span className="mc-name"><span>{x.name}</span>{flag && <img src={flag} alt="" width={18} height={12} className="mc-flag" />}</span>
@@ -117,7 +117,7 @@ function StampMedal({ x, onClose, featured, onFeature }: { x: StampCard; onClose
   const lastDate = x.dates?.at(-1) ?? c.at;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-[2px]" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={`${x.name} 도장 카드`} onClick={(e) => e.stopPropagation()}
+      <div role="dialog" aria-modal="true" aria-label={`${x.name} 카드`} onClick={(e) => e.stopPropagation()}
         className="relative flex w-full max-w-[340px] flex-col items-center overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-6 text-center text-on-deep shadow-float">
         <div aria-hidden className={`pointer-events-none absolute left-1/2 top-[-70px] size-[380px] -translate-x-1/2 rounded-full transition-[background] duration-300 ${GLOW[lookOf(c.tier)]}`} />
         {/* 0.99.2 대표 카드 : 오른쪽 위 작은 별 (마루님 "간단하게"). 채워진 별 = 지금 카드가 대표 */}
