@@ -53,7 +53,8 @@ function km(a: Item, b: Item) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat! * r) * Math.cos(b.lat! * r) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
-const distText = (d: number) => (d < 1 ? `${Math.max(10, Math.round(d * 100) * 10)}m` : d < 100 ? `${d.toFixed(1)}km` : `${Math.round(d)}km`);
+/* 직선거리라는 걸 칩에 같이 쓴다 (2026-11-25, 걷는 거리로 오해하지 않게) */
+const distText = (d: number) => `직선 ${d < 1 ? `${Math.max(10, Math.round(d * 100) * 10)}m` : d < 100 ? `${d.toFixed(1)}km` : `${Math.round(d)}km`}`;
 
 /*
   연박, 체크아웃 날 숙소 카드 (2026-11-17 마루님 "기본은 맨 위, 위치 조정 가능, 거리 계산에도 들어가게") :
@@ -132,6 +133,31 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   const lastY = useRef(0);
   const overRef = useRef<number | null>(null);
   const busy = useRef(false);
+  /*
+    길게 눌러 옮기기 (2026-11-25 마루님, 0.62.2 에서 뺐던 것을 스크롤과 안 겹치게 다시) :
+    - 0.4초 동안 8px 넘게 움직이거나 화면이 스크롤되면 스크롤로 보고 취소. 가만히 누르고 있을 때만 카드가 떠오르며 시작
+    - 시작한 뒤에만 스크롤을 막는다. 막는 touchmove 는 목록에 처음부터 (passive: false) 달아 둔다 (아이폰은 도중에 단 것을 안 듣는다)
+    - 화면 아래, 위 끝에서는 아래 자동 스크롤 effect 가 목록을 움직인다. 위 날짜 칩에 놓으면 그 날로
+    - 길게 누를 때 뜨는 글자 선택, 사진 저장 메뉴는 카드 줄에서 끈다
+  */
+  const dragging = useRef<"touch" | "pointer" | null>(null);
+  const press = useRef<{ id: string; x: number; y: number; timer: ReturnType<typeof setTimeout>; src: "touch" | "pointer" } | null>(null);
+  const noClickUntil = useRef(0);
+  const listRef = useRef<HTMLDivElement>(null);
+  const cancelPress = () => { if (press.current) { clearTimeout(press.current.timer); press.current = null; } };
+  const startPress = (id: string, x: number, y: number, src: "touch" | "pointer") => {
+    cancelPress();
+    const timer = setTimeout(() => {
+      press.current = null;
+      if (busy.current) return; // 앞의 저장이 끝나기 전
+      before.current = colsRef.current; lastY.current = y; dragging.current = src;
+      try { navigator.vibrate?.(15); } catch { /* 진동이 없는 기기 (아이폰) */ }
+      try { getSelection()?.removeAllRanges(); } catch { /* 없음 */ }
+      setDragId(id); setMsg(""); setUndo(null);
+    }, 400);
+    press.current = { id, x, y, timer, src };
+  };
+  const pressMoved = (x: number, y: number) => { const p = press.current; if (p && Math.hypot(x - p.x, y - p.y) > 8) cancelPress(); };
   /* 편집 모드 (2026-11-17 마루님 참고 화면) : 동그라미로 여러 개 고르고 아래 바에서 [날짜 이동] [삭제하기] */
   const [picked, setPicked] = useState<string[]>([]);
   const [moving, setMoving] = useState(false); // 옮길 날 고르기 창
@@ -191,13 +217,18 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     return undefined;
   };
   const router = useRouter();
+  /* 영업시간 경고 (그날 날짜 기준). 날짜 미정이면 없음 */
+  const hoursOf = (it: Item, c: number) => (c === U || c === ALL || !it.hours ? undefined : hoursWarning(it.hours, addDays(start, c), it.time));
+  const hoursCount = (list: Item[], c: number) => real(list).filter((x) => hoursOf(x, c)).length;
   const sortRoute = (c: number) => {
     if (busy.current) return; // 앞의 저장이 끝나기 전에 또 누르면 무시
     const cur = colsRef.current[c];
     const next = routeOrder(cur);
-    if (!next) { setUndo(null); setMsg("순서를 바꿀 수 있는 관광, 쇼핑 장소가 2곳 이상이어야 해요. 지도 위치가 없으면 [위치 찾기] 를 먼저 눌러 주세요"); return; }
+    if (!next) { setUndo(null); setMsg("시간을 정하지 않은 관광, 쇼핑 장소가 2곳 이상이어야 순서를 바꿀 수 있어요. 시간을 정한 곳과 지도 위치가 없는 곳은 그대로 둬요"); return; }
     if (next.every((x, i) => x === cur[i])) { setUndo(null); setMsg("이미 가장 짧은 동선이에요"); return; }
-    void applyDay(c, next, "가까운 순서로 동선을 정리했어요", { c, items: cur });
+    // 정리한 날에 영업시간이 안 맞는 곳이 있으면 같이 알린다 (2026-11-25)
+    const n = hoursCount(next, c);
+    void applyDay(c, next, `가까운 순서로 동선을 정리했어요${n ? `. 영업시간이 안 맞는 곳이 ${n}곳 있어요` : ""}`, { c, items: cur });
   };
 
   /* 고른 것 한꺼번에 삭제 (확인 창 한 번). 하나씩 저장하고, 실패하면 새로 불러와 맞춘다 */
@@ -231,7 +262,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
       if (r?.error) { err = r.error; break; }
     }
     busy.current = false; setPicked([]);
-    if (err) { setMsg(err); router.refresh(); } else setMsg(`${moved.length}개를 ${target === U ? "날짜 미정" : `${target + 1}일차`}로 옮겼어요`);
+    const n = hoursCount(moved, target);
+    if (err) { setMsg(err); router.refresh(); } else setMsg(`${moved.length}개를 ${target === U ? "날짜 미정" : `${target + 1}일차`}로 옮겼어요${n ? `. 영업시간이 안 맞는 곳이 ${n}곳 있어요` : ""}`);
   };
 
   // 저장 뒤나 다른 사람이 고쳐서 새 목록이 오면 맞춘다 (끄는 중, 저장 중에는 그대로)
@@ -292,7 +324,11 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
       : await safeCall(() => moveItem(tripId, id, b.c === U ? null : b.c, ids)));
     busy.current = false;
     if (r?.error) { setCols(prev); setMsg(r.error); }
-    else setMsg(a.c === b.c ? "순서를 바꿨어요" : `${b.c === U ? "날짜 미정" : `${b.c + 1}일차`}로 옮겼어요`);
+    else {
+      // 다른 날로 옮겼는데 그날 쉬거나 문 닫는 시간이면 같이 알린다 (2026-11-25)
+      const w = a.c !== b.c ? hoursOf(now[b.c][b.i], b.c) : undefined;
+      setMsg(a.c === b.c ? "순서를 바꿨어요" : `${b.c === U ? "날짜 미정" : `${b.c + 1}일차`}로 옮겼어요${w ? `. ${w}` : ""}`);
+    }
   };
 
   /* 끄는 자리 계산 : 고른 날 안에서 몇 번째인지 */
@@ -322,22 +358,30 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   };
 
   /* 끄는 동안의 움직임과 놓기는 창(window)에서 받는다 (2026-11-15 버그 : 버튼에서 받으면 놓기를 놓친다) */
+  const moveAt = (id: string, x: number, y: number) => {
+    lastY.current = y;
+    const chip = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-col]");
+    const c = chip ? Number(chip.dataset.col) : null;
+    overRef.current = c; setOverCol(c);
+    if (c == null) place(id, y);
+  };
   useEffect(() => {
     if (!dragId) return;
     const id = dragId;
-    const move = (e: PointerEvent) => {
-      lastY.current = e.clientY;
-      const chip = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-col]");
-      const c = chip ? Number(chip.dataset.col) : null;
-      overRef.current = c; setOverCol(c);
-      if (c == null) place(id, e.clientY);
-    };
     const drop = () => {
       const c = overRef.current;
-      overRef.current = null; setOverCol(null); setDragId(null);
+      overRef.current = null; setOverCol(null); setDragId(null); dragging.current = null;
+      noClickUntil.current = Date.now() + 500; // 놓자마자 카드 상세가 열리지 않게
       if (c != null) moveTo(id, c);
       void save(id);
     };
+    /* 길게 눌러 시작한 손가락 끌기 : 움직임은 목록의 touchmove(아래 effect)가 받고, 놓기만 여기서. 포인터 취소는 무시 (2026-11-25) */
+    if (dragging.current === "touch") {
+      addEventListener("touchend", drop);
+      addEventListener("touchcancel", drop);
+      return () => { removeEventListener("touchend", drop); removeEventListener("touchcancel", drop); };
+    }
+    const move = (e: PointerEvent) => moveAt(id, e.clientX, e.clientY);
     addEventListener("pointermove", move);
     addEventListener("pointerup", drop);
     addEventListener("pointercancel", drop);
@@ -385,13 +429,33 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
   };
 
   const canSort = editable && cols.flat().every((i) => i.id);
+  const canPress = canSort && !editing && sel !== ALL && !finding; // 길게 눌러 옮기기 (전체 보기, 편집, 검색 중에는 안 함)
+  const touchMove = useRef<(e: TouchEvent) => void>(() => {});
+  touchMove.current = (e) => {
+    const t = e.touches[0];
+    if (!t) return;
+    if (dragging.current === "touch" && dragId) { if (e.cancelable) e.preventDefault(); moveAt(dragId, t.clientX, t.clientY); return; }
+    pressMoved(t.clientX, t.clientY);
+  };
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const tm = (e: TouchEvent) => touchMove.current(e);
+    const sc = () => { if (press.current) cancelPress(); }; // 기다리는 동안 스크롤이 시작되면 취소
+    el.addEventListener("touchmove", tm, { passive: false });
+    addEventListener("scroll", sc, { passive: true });
+    return () => { el.removeEventListener("touchmove", tm); removeEventListener("scroll", sc); cancelPress(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const showUndated = cols[U].length > 0 || sel === U || (editable && !!dragId);
   // 전체 : 날마다 묶어 이어서 보인다. 번호는 1일차부터 이어서 (지도 핀과 같은 번호)
   const groups = useMemo(() => (sel === ALL ? [...cols.map((items, c) => ({ c, items }))].filter((g) => g.c < U || g.items.length) : [{ c: sel, items: cols[sel] ?? [] }]), [cols, sel, U]);
   const groupMarks = useMemo(() => { let n = 0; return groups.map((g) => { const m = numbering(g.items, n); n = Math.max(n, ...m.map((x) => x.n)); return m; }); }, [groups]);
   const cur = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const marks = useMemo(() => groupMarks.flat(), [groupMarks]);
-  const points = useMemo<DayPoint[]>(() => cur.flatMap((x, i) => (marks[i].n && hasPos(x) ? [{ lat: x.lat!, lng: x.lng!, n: marks[i].n, title: x.title }, ...(x.arrive ? [{ lat: x.arrive.lat, lng: x.arrive.lng, n: marks[i].n, title: `${x.arrive.name || "도착"} (도착)` }] : [])] : [])), [cur, marks]);
+  // d : 몇 일차인지. 전체 보기에서 날마다 점선을 끊는다 (2026-11-25)
+  const points = useMemo<DayPoint[]>(() => groups.flatMap((g, gi) => g.items.flatMap((x, i) => { const n = groupMarks[gi][i].n; return n && hasPos(x) ? [{ lat: x.lat!, lng: x.lng!, n, title: x.title, d: g.c }, ...(x.arrive ? [{ lat: x.arrive.lat, lng: x.arrive.lng, n, title: `${x.arrive.name || "도착"} (도착)`, d: g.c }] : [])] : []; })), [groups, groupMarks]);
+  /* 지도에 안 보이는 장소 (위치 없음. 메모, 이동, 연박 카드는 원래 지도에 없어서 뺀다) (2026-11-25) */
+  const offMap = useMemo(() => cur.filter((x) => x.id && !x.virt && x.category !== "메모" && !modeMark(x) && !hasPos(x)), [cur]);
   const onPin = useCallback((n: number) => {
     const list = sel === ALL ? colsRef.current.flat() : colsRef.current[sel] ?? [];
     const i = numbering(list).findIndex((m) => m.n === n);
@@ -418,6 +482,22 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     if (!k) return [];
     return cols.map((list, c) => ({ c, hits: list.flatMap((x) => { if (x.virt || !x.id) return []; const m = findIn(x, k); return m === null ? [] : [{ x, m }]; }) })).filter((g) => g.hits.length);
   }, [q, cols]);
+
+  /*
+    카드 경고 (2026-11-25) : 영업시간 + 앞 장소보다 이른 시간 (손으로 순서를 바꿔 시간이 거꾸로 된 것)
+    밤 8시 넘은 곳 뒤의 새벽 6시 전은 다음 날 새벽으로 보고 넘어간다
+  */
+  const warnAt = (list: Item[], i: number, c: number) => {
+    const x = list[i];
+    const out: string[] = [];
+    const h = hoursOf(x, c);
+    if (h) out.push(h);
+    if (x.time && !x.virt) {
+      const p = list.slice(0, i).reverse().find((y) => y.time && !y.virt);
+      if (p && p.time! > x.time && !(p.time! >= "20:00" && x.time < "06:00")) out.push("앞 장소보다 이른 시간이에요");
+    }
+    return out.length ? out.join(", ") : undefined;
+  };
 
   /* 장소 사이 거리 : 앞쪽에서 가장 가까운 위치 있는 장소와 (위치 없는 곳, 메모는 건너뜀) */
   const gapBefore = (list: Item[], i: number) => {
@@ -455,6 +535,13 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
       {/* 지도 : 스크롤해도 그 자리에 있고, 시트가 그 위로 올라온다 */}
       <div className="sticky top-[var(--tabs-h,0px)] z-0 mt-3 h-[40dvh] min-h-[240px]">
         <DayMap points={points} onPick={onPin} className="size-full" />
+        {/* 지도에 없는 장소 알림 (2026-11-25 마루님) : 누르면 첫 번째 카드로 */}
+        {offMap.length > 0 && !finding && (
+          <button type="button" onClick={() => { const id = offMap[0].id!; setJump(id); }}
+            className="press absolute left-3 top-3 z-[1] flex h-8 items-center gap-1 rounded-full bg-surface/95 px-3 text-tiny font-bold text-ink-sub shadow-float">
+            <Icon name="pin" size={14} />지도에 없는 장소 {offMap.length}곳
+          </button>
+        )}
         {/* "위치 없는 장소 n곳 찾기" 단추는 2026-11-17 마루님 "필요 없을 것 같아" 로 뺌 (fillTripCoords 는 남김) */}
       </div>
 
@@ -570,7 +657,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           </div>
         </div>
 
-        <div className={"px-5 " + (finding ? "hidden" : "")}
+        <div ref={listRef} className={"px-5 " + (finding ? "hidden" : "")}
           onTouchStart={(e) => {
             const t = e.touches[0];
             swipe.current = e.touches.length === 1 && !(e.target as Element).closest("input, textarea, select, [data-grip]") ? { x: t.clientX, y: t.clientY } : null;
@@ -578,7 +665,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
           onTouchEnd={(e) => {
             const s = swipe.current, t = e.changedTouches[0];
             swipe.current = null;
-            if (!s || !t || dragId || editing) return;
+            if (!s || !t || dragId || dragging.current || editing) return;
             const dx = t.clientX - s.x, dy = t.clientY - s.y;
             if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // 세로 스크롤과 헷갈리지 않게 가로로 충분히 밀었을 때만
             // 칩 순서 그대로 : 전체 → 1일차 → … → 날짜 미정 (2026-11-16 마루님 "1일차에서 넘기면 전체로")
@@ -603,7 +690,17 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                 const gap = gapBefore(list, i);
                 return (
                   <li key={it.id ?? `${g.c}-${i}`} ref={(el) => { if (el && it.id) rows.current.set(it.id, el); }}
-                    className={"flex flex-col transition-transform " + (dragId === it.id ? "relative z-10 scale-[1.02] opacity-90 drop-shadow-lg" : "")}>
+                    className={"flex flex-col transition-transform " + (canPress && it.id ? "select-none [-webkit-touch-callout:none] " : "") + (dragId === it.id ? "relative z-10 scale-[1.02] opacity-90 drop-shadow-lg" : "")}
+                    {...(canPress && it.id ? {
+                      onTouchStart: (e: React.TouchEvent) => { if (e.touches.length !== 1 || (e.target as Element).closest("a, summary")) { cancelPress(); return; } const t = e.touches[0]; startPress(it.id!, t.clientX, t.clientY, "touch"); },
+                      onTouchEnd: cancelPress, onTouchCancel: cancelPress,
+                      onPointerDown: (e: React.PointerEvent) => { if (e.pointerType === "mouse" && e.button === 0 && !(e.target as Element).closest("a, summary")) startPress(it.id!, e.clientX, e.clientY, "pointer"); },
+                      onPointerMove: (e: React.PointerEvent) => { if (e.pointerType === "mouse") pressMoved(e.clientX, e.clientY); },
+                      onPointerUp: (e: React.PointerEvent) => { if (e.pointerType === "mouse") cancelPress(); },
+                      onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+                      onDragStart: (e: React.DragEvent) => e.preventDefault(),
+                    } : {})}
+                    onClickCapture={(e) => { if (Date.now() < noClickUntil.current) { e.preventDefault(); e.stopPropagation(); } }}>
                     {gap && !dragId && (
                       <span className={"-mt-2 mb-1 w-fit rounded-full border border-line bg-bg px-2 py-0.5 text-tiny font-bold leading-4 text-ink-sub " + (editing && editable && it.id ? "ml-9" : "-ml-1") /* 편집 중에는 왼쪽 동그라미만큼 카드와 같이 밀림 (2026-11-17 마루님) */}>{gap}</span>
                     )}
@@ -622,8 +719,8 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                         <PinCard index={gm[i].n} mark={gm[i].mark} time={it.time ?? ""} timeEnd={it.timeEnd} badge={it.virt ? (it.virt.out ? "체크아웃" : `${it.virt.n}박째`) : it.category === "숙소" && it.nights ? `체크인 · ${it.nights}박` : undefined} category={it.category} title={it.title} detail={it.detail}
                           desc={it.desc ?? ""} editedBy={showEditor(it) ? it.editedBy : undefined} editedFace={it.editedFace} editedAgo={it.editedAgo} photo={it.photos?.find((x) => !x.path.endsWith(".pdf"))?.url} onPhoto={it.photos?.length && !editing ? () => setViewing({ files: it.photos!.map((x) => ({ url: x.url, pdf: isPdf(x.path) })), start: Math.max(0, it.photos!.findIndex((x) => !isPdf(x.path))) }) : undefined} photoCount={it.photos?.length} last={i === list.length - 1}
                           href={editable && it.id && !editing ? `/trips/${tripId}/places/${it.virt?.id ?? it.id}` : undefined}
-                          onOpen={!editing ? () => setMemo({ it, warn: dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined }) : undefined}
-                          warn={dayDate && it.hours ? hoursWarning(it.hours, dayDate, it.time) : undefined}
+                          onOpen={!editing ? () => setMemo({ it, warn: warnAt(list, i, g.c) }) : undefined}
+                          warn={warnAt(list, i, g.c)}
                           corner={!editing && it.category !== "메모" && canMap(it) ? (
                             <a href={mapsDirUrl(it)} target="_blank" rel="noopener noreferrer" aria-label={`${it.title} 길찾기 (구글 지도)`}
                               className="press flex size-8 items-center justify-center rounded-full bg-bg"><Icon name="pin" size={16} className="text-point" /></a>
@@ -634,7 +731,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
                         <button type="button" data-grip aria-label={`${it.title} 옮기기. 위아래 화살표로 순서와 날짜를 바꿔요`}
                           className="press -mr-2 flex size-11 flex-none cursor-grab touch-none items-center justify-center rounded-full text-ink-sub active:cursor-grabbing"
                           onKeyDown={(e) => onKey(e, it.id!)}
-                          onPointerDown={(e) => { e.preventDefault(); before.current = colsRef.current; lastY.current = e.clientY; setDragId(it.id!); setMsg(""); }}>
+                          onPointerDown={(e) => { e.preventDefault(); before.current = colsRef.current; lastY.current = e.clientY; dragging.current = "pointer"; setDragId(it.id!); setMsg(""); }}>
                           <Icon name="menu" size={22} />
                         </button>
                       )}
@@ -714,14 +811,14 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
 
 /*
   동선 정리 (2026-11-15) : 가까운 곳부터 차례로 + 엇갈린 길 풀기(2-opt)
-  - 움직이지 않는 칸 : 맨 처음(출발점), 맨 끝 숙소(도착점), 이동, 식사, 숙소, 메모, 지도 위치가 없는 곳
-  - 관광, 쇼핑(위치 있음)만 그 칸들 사이 빈자리에서 순서를 바꾼다
-  - 시간은 칸에 남는다 : 10:00 칸에 들어간 장소가 10:00 이 된다 (시간 순서가 흐트러지지 않게)
+  - 움직이지 않는 칸 : 맨 처음(출발점), 맨 끝 숙소(도착점), 이동, 식사, 숙소, 메모, 지도 위치가 없는 곳, 시간을 정한 곳
+  - 시간을 정하지 않은 관광, 쇼핑(위치 있음)만 그 칸들 사이 빈자리에서 순서를 바꾼다
+  - 시간을 정한 곳은 제자리 (2026-11-25 마루님 : 예전엔 시간이 칸에 남아 14:00 예약이 다른 장소로 넘어갔다)
   - 바꿀 곳이 2곳 미만이면 null
 */
 const has = (x: Item) => x.lat != null && x.lng != null;
 const isFixed = (x: Item, i: number, last: number) =>
-  i === 0 || (i === last && x.category === "숙소") || x.category === "이동" || x.category === "식사" || x.category === "숙소" || x.category === "메모" || !has(x);
+  i === 0 || (i === last && x.category === "숙소") || x.category === "이동" || x.category === "식사" || x.category === "숙소" || x.category === "메모" || !has(x) || !!x.time || !!x.timeEnd;
 export const movableOf = (items: Item[]) => items.filter((x, i) => !isFixed(x, i, items.length - 1)).length;
 
 function routeOrder(items: Item[]): Item[] | null {
@@ -760,7 +857,7 @@ function routeOrder(items: Item[]): Item[] | null {
     }
   }
   const out = [...items];
-  slots.forEach((slot, k) => { out[slot] = path[k] === items[slot] ? path[k] : { ...path[k], time: items[slot].time }; });
+  slots.forEach((slot, k) => { out[slot] = path[k]; });
   return out;
 }
 

@@ -8,7 +8,13 @@
 import { useEffect, useRef, useState } from "react";
 import { loadMaps, mapEnabled } from "@/components/trip-map";
 
-export type DayPoint = { lat: number; lng: number; n: number; title: string };
+export type DayPoint = { lat: number; lng: number; n: number; title: string; d?: number /* 몇 일차. 전체 보기에서 날이 바뀌면 점선을 끊는다 */ };
+/* 같은 날끼리 이어지는 점 묶음 */
+const byDay = <T,>(points: DayPoint[], pick: (p: DayPoint, i: number) => T): T[][] => {
+  const out: T[][] = [];
+  points.forEach((p, i) => { if (!i || p.d !== points[i - 1].d) out.push([]); out[out.length - 1].push(pick(p, i)); });
+  return out;
+};
 const PIN = "#FF5A36";
 
 export function DayMap({ points, onPick, className = "" }: { points: DayPoint[]; onPick?: (n: number) => void; className?: string }) {
@@ -45,12 +51,12 @@ export function DayMap({ points, onPick, className = "" }: { points: DayPoint[];
     objs.current = [];
     if (!points.length) return;
     const bounds = new g.LatLngBounds();
-    if (points.length > 1) {
+    byDay(points, (p) => ({ lat: p.lat, lng: p.lng })).filter((path) => path.length > 1).forEach((path) => {
       objs.current.push(new g.Polyline({
-        map: map.current, path: points.map((p) => ({ lat: p.lat, lng: p.lng })), strokeOpacity: 0,
+        map: map.current, path, strokeOpacity: 0,
         icons: [{ icon: { path: g.SymbolPath.CIRCLE, scale: 2.2, fillOpacity: 0.85, fillColor: "#3A3B40", strokeOpacity: 0 }, offset: "0", repeat: "11px" }],
       }));
-    }
+    });
     points.forEach((p) => {
       const m = new g.Marker({
         map: map.current, position: { lat: p.lat, lng: p.lng }, title: p.title, zIndex: 100 - p.n,
@@ -94,7 +100,7 @@ function Sketch({ points, onPick }: { points: DayPoint[]; onPick?: (n: number) =
         <pattern id="dm-dot" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" className="fill-line-strong" /></pattern>
       </defs>
       <rect width={W} height={H} fill="url(#dm-dot)" />
-      {xy.length > 1 && <polyline points={xy.map((p) => p.join(",")).join(" ")} fill="none" className="stroke-ink-sub" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="0.1 8" />}
+      {byDay(points, (_, i) => xy[i]).filter((l) => l.length > 1).map((l, k) => <polyline key={k} points={l.map((p) => p.join(",")).join(" ")} fill="none" className="stroke-ink-sub" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="0.1 8" />)}
       {xy.map(([x, y], i) => (
         <g key={i} onClick={() => onPick?.(points[i].n)} className={onPick ? "cursor-pointer" : ""}>
           <circle cx={x} cy={y} r="12" fill={PIN} stroke="#fff" strokeWidth="2.5" />
