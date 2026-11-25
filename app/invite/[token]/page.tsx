@@ -3,7 +3,7 @@
   상태 : ok / joined(이미 함께함) / revoked / expired / trip_removed / not_found
 */
 import Link from "next/link";
-import { AppShell, Logo } from "@/components/screen";
+import { AppShell, BRAND, Logo } from "@/components/screen";
 import { getViewer } from "@/lib/viewer";
 import { createClient } from "@/lib/supabase/server";
 import { md } from "@/lib/mock";
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   const description = p.start_date && p.end_date ? `${md(p.start_date)} ~ ${md(p.end_date)}, 트립추얼에서 함께 계획해요` : "트립추얼에서 함께 계획해요";
   return {
     title, description, robots: { index: false },
-    openGraph: { title, description, siteName: "트립추얼", images: [{ url: "/og.png", width: 1200, height: 630 }] },
+    openGraph: { title, description, siteName: BRAND, images: [{ url: "/og.png", width: 1200, height: 630 }] },
   };
 }
 

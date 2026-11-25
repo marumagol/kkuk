@@ -6,7 +6,8 @@
 import { useRef, useState, useTransition } from "react";
 import { HoldButton } from "@/components/hold-button";
 import { StampReveal } from "@/components/stamp-reveal";
-import { Icon, StampFace } from "@/components/kit";
+import { Icon } from "@/components/kit";
+import { StampFace } from "@/components/stamp-face";
 import { claimStampCity, loadStampTargets, type ClaimResult, type StampTarget } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 

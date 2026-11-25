@@ -14,6 +14,8 @@ const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).jo
 export const BRAND = "트립추얼";
 export const BRAND_EN = "TRIPTUAL";
 export const SLOGAN = "나의 여행이 쌓이는 곳";
+/* 운영 주소 (공유 카드 그림 주소의 기준). 2026-11-25 triptual-app.vercel.app */
+export const SITE_URL = "https://triptual-app.vercel.app";
 
 export type ScreenState = "ok" | "empty" | "loading" | "error";
 export const readState = (v: string | string[] | undefined): ScreenState =>

@@ -6,7 +6,7 @@
 */
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Icon, Pin } from "@/components/kit";
+import { Icon } from "@/components/kit";
 
 type Dialog = { title: string; desc: string; confirm?: () => void; confirmLabel?: string } | null;
 const Ctx = createContext<{ loggedIn: boolean; open: (d: Dialog) => void }>({ loggedIn: false, open: () => {} });
@@ -69,26 +69,10 @@ export function GateButton({ href, soon = "이 기능은 다음 단계에서 열
   return <button type="button" aria-label={label} onClick={onClick} className={className}>{children}</button>;
 }
 
-/* 자주 쓰는 모양 3가지 */
-export function PlusTab() {
+/* 큰 버튼 모양 */
+export function GateCta({ children, icon = "arrow", href }: { children: ReactNode; icon?: "arrow" | "plus"; href?: string }) {
   return (
-    <GateButton label="장소 추가" href="/add"
-      className="press flex size-[52px] items-center justify-center rounded-full bg-point text-white">
-      <Icon name="plus" size={24} strokeWidth={2.5} />
-    </GateButton>
-  );
-}
-export function GateFab({ href }: { href?: string }) {
-  return (
-    <GateButton href={href} soon="장소 추가는 장소 넣기 단계에서 열려요"
-      className="press inline-flex h-12 items-center gap-2 rounded-full bg-btn pl-4 pr-5 text-sub font-bold text-on-btn shadow-float">
-      <Pin size={20} /> 장소 추가
-    </GateButton>
-  );
-}
-export function GateCta({ children, icon = "arrow", soon, href }: { children: ReactNode; icon?: "arrow" | "plus"; soon?: string; href?: string }) {
-  return (
-    <GateButton soon={soon} href={href} className="press inline-flex h-14 w-full items-center justify-center gap-2 rounded-btn bg-btn px-5 text-[16px] font-bold text-on-btn">
+    <GateButton href={href} className="press inline-flex h-14 w-full items-center justify-center gap-2 rounded-btn bg-btn px-5 text-[16px] font-bold text-on-btn">
       {children}<Icon name={icon} size={20} />
     </GateButton>
   );

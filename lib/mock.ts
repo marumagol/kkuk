@@ -84,14 +84,10 @@ export const weekday = (s: string) => WD[new Date(day(s)).getUTCDay()];
 export const md = (s: string) => { const [, m, d] = s.split("-").map(Number); return `${m}.${d}`; };
 export const addDays = (s: string, n: number) => new Date(day(s) + n * 86400000).toISOString().slice(0, 10);
 export const periodText = (t: Trip) => `${md(t.start)} (${weekday(t.start)}) ~ ${md(t.end)} (${weekday(t.end)}), ${tripLength(t) - 1}박 ${tripLength(t)}일`;
-export const yearOf = (s: string) => s.slice(0, 4);
-
 export const getTrip = (id: string) => TRIPS.find((t) => t.id === id);
 /* 목록 나누기 : 오늘은 여행마다 그 여행 시간대로 */
 export const upcomingOf = (list: Trip[]) => list.filter((t) => statusOf(t, todayOf(t)) !== "past").sort((a, b) => a.start.localeCompare(b.start));
 export const pastOf = (list: Trip[]) => list.filter((t) => statusOf(t, todayOf(t)) === "past").sort((a, b) => b.start.localeCompare(a.start));
-export const upcomingTrips = (today = todayKST()) => TRIPS.filter((t) => statusOf(t, today) !== "past").sort((a, b) => a.start.localeCompare(b.start));
-export const pastTrips = (today = todayKST()) => TRIPS.filter((t) => statusOf(t, today) === "past").sort((a, b) => b.start.localeCompare(a.start));
 
 /* 디데이 배지 (여행 목록, 홈 다른 다가오는 여행). 색 : 여행 중과 D-7 이내 hot, D-30 이내 near, 그보다 멀면 far */
 export function ddayOf(t: Trip): { label: string; tone: "hot" | "near" | "far" } {

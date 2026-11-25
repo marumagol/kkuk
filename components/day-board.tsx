@@ -291,7 +291,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     try { sessionStorage.setItem(dayKey, sel === U ? "u" : sel === ALL ? "all" : String(sel + 1)); } catch { /* 기억 못 해도 주소에 남는다 */ }
     nav.current?.querySelector<HTMLElement>(`[data-col="${sel}"]`)?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
     history.replaceState(history.state, "", `/trips/${tripId}?${sel === U ? "undated=1" : sel === ALL ? "day=all" : `day=${sel + 1}`}`);
-  }, [sel, tripId, U]);
+  }, [sel, tripId, U, dayKey]);
 
   // 위에 고정된 여행 탭 줄만큼 덜 올린다 (2026-11-17)
   const tabsH = () => (document.querySelector<HTMLElement>("[data-trip-tabs]")?.offsetHeight ?? 0);
@@ -445,13 +445,12 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
     el.addEventListener("touchmove", tm, { passive: false });
     addEventListener("scroll", sc, { passive: true });
     return () => { el.removeEventListener("touchmove", tm); removeEventListener("scroll", sc); cancelPress(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
   const showUndated = cols[U].length > 0 || sel === U || (editable && !!dragId);
   // 전체 : 날마다 묶어 이어서 보인다. 번호는 1일차부터 이어서 (지도 핀과 같은 번호)
   const groups = useMemo(() => (sel === ALL ? [...cols.map((items, c) => ({ c, items }))].filter((g) => g.c < U || g.items.length) : [{ c: sel, items: cols[sel] ?? [] }]), [cols, sel, U]);
   const groupMarks = useMemo(() => { let n = 0; return groups.map((g) => { const m = numbering(g.items, n); n = Math.max(n, ...m.map((x) => x.n)); return m; }); }, [groups]);
   const cur = useMemo(() => groups.flatMap((g) => g.items), [groups]);
-  const marks = useMemo(() => groupMarks.flat(), [groupMarks]);
   // d : 몇 일차인지. 전체 보기에서 날마다 점선을 끊는다 (2026-11-25)
   const points = useMemo<DayPoint[]>(() => groups.flatMap((g, gi) => g.items.flatMap((x, i) => { const n = groupMarks[gi][i].n; return n && hasPos(x) ? [{ lat: x.lat!, lng: x.lng!, n, title: x.title, d: g.c }, ...(x.arrive ? [{ lat: x.arrive.lat, lng: x.arrive.lng, n, title: `${x.arrive.name || "도착"} (도착)`, d: g.c }] : [])] : []; })), [groups, groupMarks]);
   /* 지도에 안 보이는 장소 (위치 없음. 메모, 이동, 연박 카드는 원래 지도에 없어서 뺀다) (2026-11-25) */
@@ -476,7 +475,7 @@ export function DayBoard({ tripId, start, days, undated, editable, canAdd, user,
       el.animate?.([{ transform: "scale(1.03)" }, { transform: "scale(1)" }], { duration: 500 });
     }, 80);
     return () => clearTimeout(t);
-  }, [jump, sel]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jump, sel]);
   const results = useMemo(() => {
     const k = norm(q);
     if (!k) return [];

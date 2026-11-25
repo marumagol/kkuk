@@ -4,13 +4,14 @@
   화면 번호(1~9)로 "3번 더 크게" 처럼 피드백을 받는다.
 */
 import type { ReactNode } from "react";
+import { Stamp } from "@/components/stamp-face";
 import { notFound } from "next/navigation";
 import {
   Button, IconButton, FloatingPinButton, Chip, CategoryChip, Card, StatTile, PinCard, Field, Sheet,
-  Stamp, TicketCard, EmptyState, OfflineBar, SkeletonPinCard, TabBar, Pin, Icon,
+  TicketCard, EmptyState, OfflineBar, SkeletonPinCard, TabBar, Pin, Icon,
 } from "@/components/kit";
 
-export const metadata = { title: "조각 모음 | 핀모리" };
+export const metadata = { title: "조각 모음" };
 
 function Block({ no, title, note, children }: { no: number; title: string; note?: string; children: ReactNode }) {
   return (
@@ -32,7 +33,7 @@ export default function KitPage() {
     <main className="mx-auto flex w-full max-w-[430px] flex-col gap-10 px-5 pb-16 pt-8">
       <div>
         <h1 className="text-title-xl font-extrabold">조각 모음</h1>
-        <p className="mt-1 text-sub text-ink-sub">핀모리 공통 조각, 라이트/다크 확인용</p>
+        <p className="mt-1 text-sub text-ink-sub">공통 조각, 라이트/다크 확인용</p>
       </div>
 
       <Block no={1} title="버튼" note="높이 56 / 44">

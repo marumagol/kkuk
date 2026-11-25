@@ -5,7 +5,8 @@
 */
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Icon, Stamp } from "@/components/kit";
+import { Icon } from "@/components/kit";
+import { Stamp } from "@/components/stamp-face";
 import { PrintButton } from "@/components/print-button";
 import { getViewer } from "@/lib/viewer";
 import { loadTrip, loadTripBook, loadTripSummary } from "@/lib/trips";

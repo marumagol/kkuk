@@ -7,7 +7,7 @@
   - 모양은 app/globals.css 의 hc-*
 */
 import { useEffect, useRef } from "react";
-import { StampFace } from "@/components/kit";
+import { StampFace } from "@/components/stamp-face";
 import { countryOf } from "@/lib/countries";
 import { cityLore } from "@/lib/city-lore";
 import { backStars, finishOf, lookOf, tierName, twinkles, visitLabel, type Tier } from "@/lib/card-tier";

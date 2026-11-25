@@ -9,7 +9,7 @@ import { SwRegister } from "@/components/sw-register";
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getViewer, isIn, PATH_HEADER } from "@/lib/viewer";
-import { BRAND, SLOGAN } from "@/components/screen";
+import { BRAND, SITE_URL, SLOGAN } from "@/components/screen";
 
 // 페이퍼로지 : 쓰는 굵기 4개만 (가이드 4장). 늦게 와도 글자가 먼저 보이게 swap
 const paperlogy = localFont({
@@ -25,6 +25,7 @@ const paperlogy = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: BRAND, template: `%s | ${BRAND}` },
   description: SLOGAN,
   applicationName: BRAND,

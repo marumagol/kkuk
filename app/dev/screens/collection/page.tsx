@@ -4,7 +4,8 @@
   ?state=empty | loading | error 로 상태별 화면을 본다. 데이터는 모두 가짜
 */
 import { notFound } from "next/navigation";
-import { Button, Card, Stamp, TabBar, EmptyState, Icon } from "@/components/kit";
+import { Button, Card, TabBar, EmptyState, Icon } from "@/components/kit";
+import { Stamp } from "@/components/stamp-face";
 import { AppShell, BottomDock, SectionTitle, ErrorState, Skel, PhotoThumb, readState } from "@/components/screen";
 
 export const metadata = { title: "도감 | 시안" };

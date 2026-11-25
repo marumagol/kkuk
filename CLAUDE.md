@@ -6,7 +6,7 @@
 
 | 파일 | 크기 | 읽는 법 |
 |---|---|---|
-| `lib/stamp-art.ts` | 83KB | 도장 그림 SVG 모음. **절대 통째로 읽지 않는다.** `grep -n '"JP:삿포로"'` 처럼 그 도시 줄만 |
+| `lib/stamp-art.ts` | 83KB | 도장 그림 SVG 모음. `components/stamp-face.tsx` 에서만 import. **절대 통째로 읽지 않는다.** `grep -n '"JP:삿포로"'` 처럼 그 도시 줄만 |
 | `lib/changelog.ts` | 66KB | 업데이트 내역. 새 항목은 맨 위에 추가하므로 `head -30` 만 |
 | `app/actions.ts` | 64KB | 모든 서버 동작. `grep -n 'export async function 이름'` 으로 찾아 그 함수만 (`sed -n 'N,Mp'`) |
 | `components/day-board.tsx` | 61KB | 일정 화면 본체. 필요한 부분을 grep 으로 찾아 그 근처만 |
@@ -30,7 +30,7 @@
 | 함께하는 사람, 초대 | `/trips/[id]/members`, `/invite/[token]` | `members-panel.tsx`, `join-button.tsx` |
 | 일정 공유 | `/trips/[id]/share`, 공개 `/s/[token]` | `day-share.tsx` |
 | 여행 지도 | `/trips/[id]/map` | `trip-map.tsx` |
-| 도장 | `/stamps` | `stamp-cards.tsx`, `stamp-claim.tsx`, `hold-button.tsx`, `stamp-reveal.tsx`, `holo-card.tsx`, `goal-badges.tsx`, `lib/city-lore.ts`, `stamp-tester.tsx`, `lib/stamp-art.ts` |
+| 카드 (도장 받기, 모은 카드) | `/stamps` | `stamp-cards.tsx`, `stamp-face.tsx`(도장 그림, stamp-art 를 부르는 유일한 조각), `stamp-claim.tsx`, `hold-button.tsx`, `stamp-reveal.tsx`, `holo-card.tsx`, `goal-badges.tsx`, `lib/city-lore.ts`, `stamp-tester.tsx`, `lib/stamp-art.ts` |
 | 설정 | `/me`, `/me/name`, `/me/trash`, `/me/updates`, `/me/withdraw` | `avatar-editor.tsx`, `avatar-cropper.tsx`, `theme-picker.tsx`, `push-toggle.tsx`, `restore-button.tsx`, `withdraw-form.tsx`, `update-seen.tsx` |
 | 로그인, 처음 이름 | `/login`, `/auth/callback`, `/welcome` | `app/login/`, `name-form.tsx`, `lib/random-name.ts`, `lib/viewer.ts` |
 | 알림 | `/notifications` | `read-all.tsx`, `clear-read.tsx` |
@@ -41,7 +41,7 @@
 
 ## 공통
 
-- 디자인 토큰 `app/globals.css`, 공통 조각 `components/kit.tsx`, 화면 틀/브랜드 `components/screen.tsx`, 아래 탭 `components/global-tabs.tsx`, 토스트 `components/toast.tsx`
+- 디자인 토큰 `app/globals.css`, 공통 조각 `components/kit.tsx` (도장 그림은 `stamp-face.tsx` 로 따로. kit 에서 `lib/stamp-art` 를 부르면 모든 화면이 100KB 무거워짐), 화면 틀/브랜드 `components/screen.tsx`, 아래 탭 `components/global-tabs.tsx`, 토스트 `components/toast.tsx`
 - 로그인 확인과 둘러보기 얼럿 `components/gate.tsx`, 작성 중 나가기 경고 `leave-guard.tsx`, 오프라인 `network-banner.tsx`, `offline-saver.tsx`, `sw-register.tsx`, `public/sw.js`
 - 주소 보호와 숨긴 주소 돌려보내기 `middleware.ts` + `lib/features.ts`
 - Supabase 클라이언트 `lib/supabase/`, 저장 실패 처리 `lib/safe-call.ts`, 그림 줄이기 `lib/image.ts`

@@ -295,7 +295,7 @@ async function syncReservation(sb: NonNullable<Awaited<ReturnType<typeof createC
 export async function deletePlace(tripId: string, placeId: string): Promise<CreateTripResult> {
   if (!isUuid(tripId) || !isUuid(placeId)) return { error: "삭제하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   const sb = await createClient();
-  if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 지울 수 없어요" };
+  if (!sb) return { error: "아직 로그인 서버가 연결되지 않아 삭제할 수 없어요" };
   const now = new Date().toISOString();
   const { data, error } = await sb.from("itinerary_items").update({ removed_at: now }).eq("trip_id", tripId).eq("id", placeId).is("removed_at", null).select("id");
   if (error || !data?.length) return { error: "삭제하지 못했어요. 수정할 권한이 없거나 이미 삭제됐을 수 있어요. 화면을 새로고침해 확인해 주세요" };
@@ -562,17 +562,6 @@ export async function reorderPrep(tripId: string, ids: string[]): Promise<Create
   if (res.some((r) => r.error || !r.data?.length)) return { error: "순서를 저장하지 못했어요. 화면을 새로고침한 뒤 다시 시도해 주세요" };
   revalidatePath(`/trips/${tripId}/prep`);
 }
-export async function saveBudget(tripId: string, currency: string, amount: string): Promise<CreateTripResult> {
-  if (!isUuid(tripId) || !/^[A-Z]{3}$/.test(currency)) return PREP_FAIL;
-  const text = String(amount ?? "").replace(/,/g, "").trim();
-  const d = decimalsOf(currency);
-  if (!new RegExp(`^\\d{1,12}${d ? `(\\.\\d{1,${d}})?` : ""}$`).test(text)) return { error: "예산은 숫자로 적어 주세요" };
-  const c = await prepClient(tripId); if (!c.sb) return { error: c.error };
-  const { error } = await c.sb.from("trip_budgets").upsert({ trip_id: tripId, currency, total: Math.round(Number(text) * 10 ** d), updated_by: c.uid }, { onConflict: "trip_id" });
-  if (error) return PREP_FAIL;
-  revalidatePath(`/trips/${tripId}/prep`); revalidatePath(`/trips/${tripId}/expenses`);
-}
-
 /*
   예산 한 번에 저장 (2026-11-17 마루님 "총예산 원화 + 통화별") : 총예산은 원화로 trip_budgets, 통화별 예산(미리 환전한 돈)은 trip_cash (0041)
   - total 이 비면 총예산은 그대로 둔다 (지우는 권한이 없는 표). cash 의 빈 값은 그 통화 예산을 지운다
@@ -599,11 +588,11 @@ export async function saveBudgetPlan(tripId: string, total: string, cash: Record
     const ready = "통화별 예산 저장 준비가 아직 안 됐어요. 총예산은 저장했어요";
     if (rows.length) {
       const { error } = await c.sb.from("trip_cash").upsert(rows.map((r) => ({ trip_id: tripId, ...r, updated_by: c.uid, updated_at: new Date().toISOString() })), { onConflict: "trip_id,currency" });
-      if (error) return { error: error.code === "42P01" || error.message?.includes("trip_cash") ? ready : "통화별 예산을 저장하지 못했어요" };
+      if (error) return { error: error.code === "42P01" || error.message?.includes("trip_cash") ? ready : "통화별 예산을 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
     }
     if (drop.length) {
       const { error } = await c.sb.from("trip_cash").delete().eq("trip_id", tripId).in("currency", drop);
-      if (error && !(error.code === "42P01" || error.message?.includes("trip_cash"))) return { error: "통화별 예산을 지우지 못했어요" };
+      if (error && !(error.code === "42P01" || error.message?.includes("trip_cash"))) return { error: "통화별 예산을 삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
     }
   }
   revalidatePath(`/trips/${tripId}/expenses`); revalidatePath(`/trips/${tripId}/prep`); revalidatePath("/");
@@ -737,7 +726,7 @@ export async function testStamp(country: string, city: string): Promise<ClaimRes
   const { data, error } = await sb.rpc("test_stamp", { p_country: country, p_name: city });
   if (error) {
     const code = Object.keys(TEST_ERRORS).find((k) => error.message.includes(k)) ?? "server";
-    return { ok: false, code, error: TEST_ERRORS[code] ?? "테스트 도장을 받지 못했어요" };
+    return { ok: false, code, error: TEST_ERRORS[code] ?? "테스트 도장을 받지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   }
   const r = (Array.isArray(data) ? data[0] : data) as { status: "new" | "again" | "already"; city_name: string; country_code: string; visits: number };
   const { data: auth } = await sb.auth.getUser();
@@ -749,7 +738,7 @@ export async function clearTestStamps(): Promise<{ error?: string; removed?: num
   const sb = await createClient();
   if (!sb) return { error: "아직 로그인 서버가 연결되지 않았어요" };
   const { data, error } = await sb.rpc("test_stamp_clear");
-  if (error) return { error: error.message.includes("not_tester") ? TEST_ERRORS.not_tester : "지우지 못했어요" };
+  if (error) return { error: error.message.includes("not_tester") ? TEST_ERRORS.not_tester : "삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   revalidatePath("/stamps"); revalidatePath("/");
   return { removed: Number(data) || 0 };
 }

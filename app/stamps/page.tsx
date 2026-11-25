@@ -146,7 +146,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
           <section aria-labelledby="howto" className="flex flex-col gap-3 rounded-card bg-surface px-4 py-5">
             <h2 id="howto" className="text-body font-bold text-ink">첫 카드 받는 법</h2>
             <ol className="flex flex-col gap-2.5">
-              {["여행을 만들고 도시를 넣어요", "여행 기간에 그 도시에 가요", "여행 화면에서 [도장 받기] 를 눌러요"].map((t, i) => (
+              {["여행을 만들고 도시를 넣어요", "여행 기간에 그 도시에 가요", "여행 화면에서 [도장 받기]를 눌러요"].map((t, i) => (
                 <li key={t} className="flex items-center gap-2.5 text-sub text-ink">
                   <span className="flex size-6 flex-none items-center justify-center rounded-full bg-point text-tiny font-extrabold text-white">{i + 1}</span>{t}
                 </li>

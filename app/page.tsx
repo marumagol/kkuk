@@ -10,7 +10,8 @@
 */
 import { FlashToast } from "@/components/toast";
 import Link from "next/link";
-import { Icon, PinCard, StampFace } from "@/components/kit";
+import { Icon, PinCard } from "@/components/kit";
+import { StampFace } from "@/components/stamp-face";
 import { AppShell, Logo, LogoMark, Avatar, MainTabs, MockNote, TripRow } from "@/components/screen";
 import { EarnedStamp } from "@/components/stamp-cards";
 import { getViewer, isIn, initialOf, avatarOf } from "@/lib/viewer";
@@ -299,7 +300,7 @@ async function After({ v, trip }: { v: Viewer; trip: Trip }) {
           <>
             <span className="flex size-16 items-center justify-center rounded-full border-2 border-dashed border-on-deep/40 text-title font-extrabold text-on-deep-sub">?</span>
             <p className="text-sub font-semibold">이번 여행에서는 카드를 받지 못했어요</p>
-            <p className="text-tiny text-on-deep-sub">다음 여행에서는 도시에 도착하면 [도장 받기] 를 눌러 보세요</p>
+            <p className="text-tiny text-on-deep-sub">다음 여행에서는 도시에 도착하면 [도장 받기]를 눌러 보세요</p>
           </>
         )}
       </section>
@@ -356,7 +357,7 @@ function Empty({ first, cards, ago }: { first: boolean; cards: StampCard[]; ago?
       <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="도장 받는 법">
         <h2 className="text-body font-bold text-ink">여행하면 카드가 모여요</h2>
         <ol className="flex flex-col gap-2.5">
-          {["여행을 만들고 도시를 넣어요", "여행 기간에 그 도시에 가요", "[도장 받기] 를 누르면 도장을 찍고 카드를 받아요"].map((t, i) => (
+          {["여행을 만들고 도시를 넣어요", "여행 기간에 그 도시에 가요", "[도장 받기]를 누르면 도장을 찍고 카드를 받아요"].map((t, i) => (
             <li key={t} className="flex items-center gap-2.5 text-sub text-ink">
               <span className="flex size-6 flex-none items-center justify-center rounded-full bg-point text-tiny font-extrabold text-white">{i + 1}</span>{t}
             </li>

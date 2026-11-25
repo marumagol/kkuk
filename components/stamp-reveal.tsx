@@ -6,7 +6,7 @@
 */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { StampFace } from "@/components/kit";
+import { StampFace } from "@/components/stamp-face";
 import { LogoMark } from "@/components/screen";
 import { HoloCard } from "@/components/holo-card";
 import { tierName, visitLabel, type Tier } from "@/lib/card-tier";

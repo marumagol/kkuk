@@ -98,8 +98,8 @@ export function MemoForm({ ctx, day, back }: { ctx: PlaceContext; day: number | 
         <div className="flex flex-wrap gap-2">
           {photos.map((ph, i) => (
             <span key={ph.path} className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <button type="button" onClick={() => setViewAt(i)} aria-label={`사진 ${i + 1} 크게 보기`} className="block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={ph.url} alt={`사진 ${i + 1}`} width={88} height={88} className="size-22 rounded-field object-cover" />
               </button>
               <button type="button" aria-label={`사진 ${i + 1} 빼기`} disabled={busy} onClick={() => setPhotos(photos.filter((x) => x !== ph))}

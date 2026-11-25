@@ -442,42 +442,6 @@ export const loadTripSummary = cache(async (v: Viewer, trip: Trip): Promise<Trip
   return { days, places, photos: placePhotos, stamps: count ?? 0 };
 });
 
-/* ───────── 내 장소 지도 (4단계 5) : 다녀온 여행(끝난 날이 지난 여행)의 장소 중 지도 위치가 있는 것 ───────── */
-export type MyPlacePin = { id: string; tripId: string; title: string; tripTitle: string; lat: number; lng: number };
-export type MyPlacesView = { pins: MyPlacePin[]; placeCount: number; cityCount: number; countryCount: number; tripCount: number };
-const PREVIEW_PLACES: MyPlacesView = {
-  pins: [
-    { id: "p1", tripId: "", title: "오도리 공원", tripTitle: "삿포로 겨울 여행", lat: 43.0605, lng: 141.3485 },
-    { id: "p2", tripId: "", title: "오타루 운하", tripTitle: "삿포로 겨울 여행", lat: 43.1985, lng: 140.9945 },
-    { id: "p3", tripId: "", title: "기요미즈데라", tripTitle: "가을 교토", lat: 34.9949, lng: 135.785 },
-  ],
-  placeCount: 12, cityCount: 3, countryCount: 1, tripCount: 2,
-};
-export const loadMyPlaces = cache(async (v: Viewer): Promise<MyPlacesView> => {
-  if (v.kind === "preview") return PREVIEW_PLACES;
-  if (v.kind !== "user") return { pins: [], placeCount: 0, cityCount: 0, countryCount: 0, tripCount: 0 };
-  const sb = (await createClient())!;
-  const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-  const { data: trips } = await sb.from("trips").select("id, title").is("removed_at", null).lt("end_date", today);
-  const ts = (trips ?? []) as { id: string; title: string }[];
-  if (!ts.length) return { pins: [], placeCount: 0, cityCount: 0, countryCount: 0, tripCount: 0 };
-  const ids = ts.map((t) => t.id);
-  const titleOf = new Map(ts.map((t) => [t.id, t.title]));
-  const [{ data: items }, { data: cities }] = await Promise.all([
-    sb.from("itinerary_items").select("id, trip_id, title, lat, lng").in("trip_id", ids).is("removed_at", null),
-    sb.from("trip_cities").select("name, country_code").in("trip_id", ids),
-  ]);
-  const rows = (items ?? []) as { id: string; trip_id: string; title: string; lat: number | null; lng: number | null }[];
-  const cs = (cities ?? []) as { name: string; country_code: string | null }[];
-  return {
-    pins: rows.flatMap((r) => (r.lat != null && r.lng != null ? [{ id: r.id, tripId: r.trip_id, title: r.title, tripTitle: titleOf.get(r.trip_id) ?? "여행", lat: r.lat, lng: r.lng }] : [])),
-    placeCount: rows.length,
-    cityCount: new Set(cs.map((c) => `${c.country_code}:${c.name}`)).size,
-    countryCount: new Set(cs.map((c) => c.country_code).filter(Boolean)).size,
-    tripCount: ts.length,
-  };
-});
-
 /* ───────── 일부 일정만 공유 (4단계 7, migration 0015) ───────── */
 export type DayShare = { token: string; days: number[] | null; createdAt: string };
 export const loadDayShares = cache(async (v: Viewer, tripId: string): Promise<DayShare[]> => {

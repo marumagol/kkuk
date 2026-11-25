@@ -6,7 +6,7 @@
 */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { StampFace } from "@/components/kit";
+import { StampFace } from "@/components/stamp-face";
 import { HoloCard, Twinkles } from "@/components/holo-card";
 import { cardsOf, finishOf, lookOf, tierName, twinkles, visitLabel, type Look, type Tier } from "@/lib/card-tier";
 import { setFeaturedCard } from "@/app/actions";

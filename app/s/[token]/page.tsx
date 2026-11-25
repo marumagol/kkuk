@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CategoryChip } from "@/components/kit";
-import { AppShell, Logo } from "@/components/screen";
+import { AppShell, BRAND, Logo } from "@/components/screen";
 import { TripMap, type MapPoint } from "@/components/trip-map";
 import { loadPublicShare } from "@/lib/trips";
 import { addDays, md, weekday } from "@/lib/mock";
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!s) return { title: "일정", robots: { index: false, follow: false } };
   const title = `${s.title} 일정`;
   const description = s.whole ? `${md(s.start_date)} ~ ${md(s.end_date)} 여행 일정` : s.days.map((d) => `${d + 1}일차 ${md(addDays(s.start_date, d))}`).join(", ");
-  return { title, description, robots: { index: false, follow: false }, openGraph: { title, description, siteName: "트립추얼", images: [{ url: "/og.png", width: 1200, height: 630 }] } };
+  return { title, description, robots: { index: false, follow: false }, openGraph: { title, description, siteName: BRAND, images: [{ url: "/og.png", width: 1200, height: 630 }] } };
 }
 
 export default async function SharedDays({ params }: Props) {

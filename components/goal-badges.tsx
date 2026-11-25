@@ -8,7 +8,8 @@
 */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { BLOB_IN, BLOB_OUT, Icon } from "@/components/kit";
+import { Icon } from "@/components/kit";
+import { BLOB_IN, BLOB_OUT } from "@/components/stamp-face";
 import { GOALS, TIER_NAME, type Goal } from "@/lib/stamp-goals";
 
 function Badge({ g, value, big }: { g: Goal; value: number; big?: boolean }) {

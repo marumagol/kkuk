@@ -30,7 +30,7 @@ export function StampTester() {
       const r = await safeCall(() => testStamp(o.code, o.name));
       if (!("ok" in r) || !r.ok) { setReveal(null); setRes(null); setMsg(r.error); return; }
       setRes(r);
-      const text = r.status === "already" ? `${r.city} 도장은 이미 있어요` : `${r.city} 테스트 도장을 받았어요${r.visits > 1 ? ` (${r.visits}번째)` : ""}`;
+      const text = r.status === "already" ? `${r.city} 카드는 이미 있어요` : `${r.city} 테스트 도장을 받았어요${r.visits > 1 ? ` (${r.visits}번째)` : ""}`;
       setMsg(text);
       setReveal((v) => v && { ...v, sub: text, visits: r.visits, card: r.card });
     });
@@ -38,7 +38,7 @@ export function StampTester() {
   const clear = () => start(async () => {
     const r = await safeCall(() => clearTestStamps());
     setRes(null);
-    setMsg("error" in r && r.error ? r.error : `테스트 도장 ${(r as { removed?: number }).removed ?? 0}개를 지웠어요`);
+    setMsg("error" in r && r.error ? r.error : `테스트 카드 ${(r as { removed?: number }).removed ?? 0}장을 삭제했어요`);
   });
 
   const city = OPTIONS.find((o) => o.key === pick)?.name ?? "";
@@ -65,7 +65,7 @@ export function StampTester() {
       </div>
       <p role="status" className={"text-center text-sub " + (msg ? "text-ink" : "text-ink-sub")}>{msg || "위치 확인 없이 실제처럼 꾹 눌러 받아 봐요"}</p>
       <button type="button" onClick={clear} disabled={pending}
-        className="mx-auto text-tiny font-semibold text-ink-sub underline underline-offset-2 disabled:opacity-50">테스트로 받은 도장 지우기</button>
+        className="mx-auto text-tiny font-semibold text-ink-sub underline underline-offset-2 disabled:opacity-50">테스트로 받은 카드 삭제</button>
     </section>
   );
 }
