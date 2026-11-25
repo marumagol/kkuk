@@ -11,9 +11,10 @@
 import { FlashToast } from "@/components/toast";
 import Link from "next/link";
 import { Icon, PinCard, StampFace } from "@/components/kit";
-import { AppShell, Logo, Avatar, MainTabs, MockNote } from "@/components/screen";
+import { AppShell, Logo, Avatar, MainTabs, MockNote, TripRow } from "@/components/screen";
+import { EarnedStamp } from "@/components/stamp-cards";
 import { getViewer, isIn, initialOf, avatarOf } from "@/lib/viewer";
-import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, periodText, md, type Trip, type Item } from "@/lib/mock";
+import { upcomingOf, pastOf, statusOf, daysBetween, todayOf, todayKST, periodText, md, type Trip, type Item } from "@/lib/mock";
 import { loadTrips, loadTrip, loadStamps, loadUnreadCount, loadPrep, loadExpenses, loadTripBook, type StampCard } from "@/lib/trips";
 import { StampClaim } from "@/components/stamp-claim";
 import { BookingOpen } from "@/components/booking-preview";
@@ -53,13 +54,15 @@ function Head({ title, href, more }: { title: string; href?: string; more?: stri
   );
 }
 
-/* 봉인 도장 (도장 탭과 같은 모양을 작게) */
+/* 받을 카드 : 아직 안 뒤집은 카드 뒷면 (2026-11-25 마루님 "사실 카드를 받는 거라"). 테마는 받을 때 정해지므로 뒷면은 한 가지 */
 function Sealed({ name, country }: { name: string; country: string }) {
   const flag = flagOf(country);
   return (
     <li className="flex w-[72px] flex-none flex-col items-center gap-1.5 text-center">
-      <span className="relative flex size-14 items-center justify-center rounded-full border-2 border-dashed border-point bg-bg">
-        <span className="text-title font-extrabold text-point">?</span>
+      <span aria-hidden className="relative flex h-[84px] w-[60px] items-center justify-center overflow-hidden rounded-[10px] bg-deep">
+        <span className="absolute inset-1 rounded-[7px] border border-dashed border-on-deep/25" />
+        <span className="flex size-8 items-center justify-center rounded-full bg-point/15 text-point"><Icon name="stamp" size={20} /></span>
+        <span className="absolute bottom-1.5 text-[8px] font-extrabold tracking-[0.12em] text-on-deep-sub">KKuK</span>
       </span>
       <span className="flex items-center gap-1 text-tiny font-bold text-ink">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -84,106 +87,151 @@ async function Before({ v, trip, today, missing }: { v: Viewer; trip: Trip; toda
   const todo = items.filter((i) => !i.done).sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "reservation" ? -1 : 1));
   const resLeft = todo.filter((i) => i.kind === "reservation").length;
   const sealed = missing.filter((m) => m.next?.tripId === trip.id);
-  return (
-    <>
-      <h1 className="text-title-xl font-extrabold text-ink">
-        {left === 1 ? <>{trip.cities[0]},<br /><span className="text-point-text">내일</span> 떠나요</>
-          : <>{trip.cities[0]}까지<br /><span className="text-point-text">{left}일</span> 남았어요</>}
-      </h1>
+  // 출발 3일 전부터 남은 준비가 있으면 준비를 티켓 위로, 문구도 급하게 (2026-11-25 마루님)
+  const urgent = left <= 3 && todo.length > 0;
 
-      {/* 티켓 모양 (여행 탭 다음 여행 카드와 같음) : 왼쪽 정보 | 점선 절취선과 위아래 반원 홈 | 오른쪽 D-day */}
-      <Link href={`/trips/${trip.id}`} className="press relative flex items-stretch rounded-card bg-deep text-on-deep">
-        <span className="min-w-0 flex-1 py-4 pl-5 pr-4">
-          <span className="flex items-center gap-1.5 text-tiny font-semibold text-on-deep-sub"><Icon name="plane" size={14} />다음 여행</span>
-          <span className="mt-1 block truncate text-title font-extrabold">{trip.title}</span>
-          <span className="mt-1 block truncate text-tiny font-semibold text-on-deep-sub">{periodText(trip)}</span>
-          {trip.members.length > 1 && (
-            <span className="mt-2 flex -space-x-1.5">
-              {trip.members.slice(0, 4).map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} src={m.avatar} size={24} ring />)}
-            </span>
-          )}
-        </span>
-        <span aria-hidden className="relative w-0 border-l-2 border-dashed border-on-deep-sub/40">
-          <span className="absolute -left-[11px] -top-[10px] size-5 rounded-full bg-bg" />
-          <span className="absolute -bottom-[10px] -left-[11px] size-5 rounded-full bg-bg" />
-        </span>
-        <span className="flex w-[92px] flex-none flex-col items-center justify-center gap-0.5 px-2 py-4 text-center">
-          <span className="text-tiny font-semibold text-on-deep-sub">출발까지</span>
-          <span className="text-[26px] font-extrabold leading-tight text-point tabular-nums" /* 키 컬러 (2026-11-18 마루님) */>D-{left}</span>
-        </span>
-      </Link>
-
-      {prep && (
-        <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="남은 준비">
-          <Head title="남은 준비" href={`/trips/${trip.id}/prep`} more="준비 탭" />
-          <div className="flex items-center gap-3">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-point" style={{ width: `${Math.max(pct, 3)}%` }} /></div>
-            <span className="text-tiny font-bold text-ink">{pct}%</span>
-          </div>
-          {items.length === 0 ? (
-            <Link href={`/trips/${trip.id}/prep`} className="press flex min-h-11 items-center justify-between rounded-field bg-bg px-3 text-sub text-ink">
-              예약과 체크리스트를 적어 두세요<Icon name="right" size={16} />
-            </Link>
-          ) : todo.length === 0 ? (
-            <p className="text-sub font-semibold text-ink">준비를 모두 끝냈어요. 떠나기만 하면 돼요</p>
-          ) : (
-            <>
-              <p className="text-tiny text-ink-sub">{resLeft ? `예약 ${resLeft}건, ` : ""}체크리스트 {todo.length - resLeft}개가 남았어요</p>
-              <ul className="flex flex-col gap-1.5">
-                {todo.slice(0, 3).map((i) => (
-                  <li key={i.id}>
-                    {/* 예약은 누르면 준비 탭과 같은 가운데 미리보기 창 (0.91.5) */}
-                    {i.kind === "reservation" ? (
-                      <BookingOpen tripId={trip.id} id={i.id} title={i.title} due={i.due ?? null}
-                        className="press flex min-h-11 w-full items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
-                      <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-bold ${i.kind === "reservation" ? "bg-point-soft text-point-text" : "bg-surface text-ink-sub"}`}>{i.kind === "reservation" ? "예약" : "체크리스트"}</span>
-                      <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
-                      {i.due && <span className="flex-none text-tiny text-ink-sub">{md(i.due)}</span>}
-                      </BookingOpen>
-                    ) : (
-                      <Link href={`/trips/${trip.id}/prep`} className="press flex min-h-11 items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
-                      <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-bold bg-surface text-ink-sub`}>체크리스트</span>
-                      <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
-                      {i.due && <span className="flex-none text-tiny text-ink-sub">{md(i.due)}</span>}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </section>
-      )}
-
-      {sealed.length > 0 && (
-        <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="이번 여행에서 열릴 도장">
-          <Head title="이번 여행에서 열릴 도장" href="/stamps" more="도장" />
-          <ul className="-mx-1 flex gap-2 overflow-x-auto px-1 [scrollbar-width:none]">
-            {sealed.map((m) => <Sealed key={m.name} name={m.name} country={m.country} />)}
-          </ul>
-          <p className="text-tiny text-ink-sub">여행 기간에 그 도시에 가서 [도장 받기] 를 누르면 열려요</p>
-        </section>
-      )}
-    </>
+  const title = (
+    <h1 className="text-title-xl font-extrabold text-ink">
+      {left === 1 ? <>{trip.cities[0]},<br /><span className="text-point-text">내일</span> 떠나요</>
+        : <>{trip.cities[0]}까지<br /><span className="text-point-text">{left}일</span> 남았어요</>}
+    </h1>
   );
+
+  /* 티켓 모양 (여행 탭 다음 여행 카드와 같음) : 왼쪽 정보 | 점선 절취선과 위아래 반원 홈 | 오른쪽 D-day */
+  const ticket = (
+    <Link href={`/trips/${trip.id}`} className="press relative flex items-stretch rounded-card bg-deep text-on-deep">
+      <span className="min-w-0 flex-1 py-4 pl-5 pr-4">
+        <span className="flex items-center gap-1.5 text-tiny font-semibold text-on-deep-sub"><Icon name="plane" size={14} />다음 여행</span>
+        <span className="mt-1 block truncate text-title font-extrabold">{trip.title}</span>
+        <span className="mt-1 block truncate text-tiny font-semibold text-on-deep-sub">{periodText(trip)}</span>
+        {trip.members.length > 1 && (
+          <span className="mt-2 flex -space-x-1.5">
+            {trip.members.slice(0, 4).map((m, i) => <Avatar key={i} initial={m.initial} tone={m.tone} src={m.avatar} size={24} ring />)}
+          </span>
+        )}
+      </span>
+      <span aria-hidden className="relative w-0 border-l-2 border-dashed border-on-deep-sub/40">
+        <span className="absolute -left-[11px] -top-[10px] size-5 rounded-full bg-bg" />
+        <span className="absolute -bottom-[10px] -left-[11px] size-5 rounded-full bg-bg" />
+      </span>
+      <span className="flex w-[92px] flex-none flex-col items-center justify-center gap-0.5 px-2 py-4 text-center">
+        <span className="text-tiny font-semibold text-on-deep-sub">출발까지</span>
+        <span className="text-[26px] font-extrabold leading-tight text-point tabular-nums" /* 키 컬러 (2026-11-18 마루님) */>D-{left}</span>
+      </span>
+    </Link>
+  );
+
+  const prepBox = prep && (
+    <section className={`flex flex-col gap-3 rounded-card bg-surface p-4 ${urgent ? "ring-2 ring-point" : ""}`} aria-label={urgent ? "떠나기 전 확인" : "남은 준비"}>
+      <Head title={urgent ? "떠나기 전 확인" : "남은 준비"} href={`/trips/${trip.id}/prep`} more="준비 탭" />
+      <div className="flex items-center gap-3">
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-point" style={{ width: `${Math.max(pct, 3)}%` }} /></div>
+        <span className="text-tiny font-bold text-ink">{pct}%</span>
+      </div>
+      {items.length === 0 ? (
+        <Link href={`/trips/${trip.id}/prep`} className="press flex min-h-11 items-center justify-between rounded-field bg-bg px-3 text-sub text-ink">
+          예약과 체크리스트를 적어 두세요<Icon name="right" size={16} />
+        </Link>
+      ) : todo.length === 0 ? (
+        <p className="text-sub font-semibold text-ink">준비를 모두 끝냈어요. 떠나기만 하면 돼요</p>
+      ) : (
+        <>
+          <p className={`text-tiny ${urgent ? "font-bold text-point-text" : "text-ink-sub"}`}>
+            {urgent ? `출발까지 ${left}일, ` : ""}{resLeft ? `예약 ${resLeft}건, ` : ""}체크리스트 {todo.length - resLeft}개가 남았어요
+          </p>
+          <ul className="flex flex-col gap-1.5">
+            {todo.slice(0, urgent ? 5 : 3).map((i) => (
+              <li key={i.id}>
+                {/* 예약은 누르면 준비 탭과 같은 가운데 미리보기 창 (0.91.5) */}
+                {i.kind === "reservation" ? (
+                  <BookingOpen tripId={trip.id} id={i.id} title={i.title} due={i.due ?? null}
+                    className="press flex min-h-11 w-full items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
+                    <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-[11px] font-bold text-point-text">예약</span>
+                    <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
+                    {i.due && <span className="flex-none text-tiny text-ink-sub">{md(i.due)}</span>}
+                  </BookingOpen>
+                ) : (
+                  <Link href={`/trips/${trip.id}/prep`} className="press flex min-h-11 items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
+                    <span className="flex-none rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-ink-sub">체크리스트</span>
+                    <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
+                    {i.due && <span className="flex-none text-tiny text-ink-sub">{md(i.due)}</span>}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+
+  const cards = sealed.length > 0 && (
+    <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="이번 여행에서 받을 카드">
+      <Head title={`이번 여행에서 받을 카드 ${sealed.length}장`} href="/stamps" more="도장" />
+      <ul className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 pt-0.5 [scrollbar-width:none]">
+        {sealed.map((m) => <Sealed key={m.name} name={m.name} country={m.country} />)}
+      </ul>
+      <p className="text-tiny text-ink-sub">여행 기간에 그 도시에서 도장을 받으면 카드가 나와요</p>
+    </section>
+  );
+
+  return urgent ? <>{title}{prepBox}{ticket}{cards}</> : <>{title}{ticket}{prepBox}{cards}</>;
 }
+
 
 /* ───── 여행 중 ───── */
 async function During({ v, trip, today }: { v: Viewer; trip: Trip; today: string }) {
   const dayNo = daysBetween(trip.start, today) + 1;
-  const full = await loadTrip(v, trip.id);
-  const items: Item[] = "trip" in full ? full.trip.days[dayNo - 1]?.items ?? [] : [];
+  const [full, prep] = await Promise.all([loadTrip(v, trip.id), v.kind === "user" ? loadPrep(v, trip.id) : null]);
+  const days = "trip" in full ? full.trip.days : [];
+  const items: Item[] = days[dayNo - 1]?.items ?? [];
   const canEdit = "role" in full && full.role !== "viewer" && v.kind === "user";
   const now = nowIn(trip.timeZone);
   const next = items.find((i) => i.time && i.time >= now) ?? (items.some((i) => i.time) ? undefined : items[0]);
   const where = next ? { title: next.title, addr: next.addr, lat: next.lat, lng: next.lng, gpid: next.gpid } : null;
+  // 오늘 장소를 모두 지났을 때 : 내일 첫 장소 (2026-11-25)
+  const tomorrow = !next && items.length > 0 ? days[dayNo]?.items[0] : undefined;
+  // 여러 도시 여행은 그날 일정 제목에 든 도시, 없으면 여행 이름 (2026-11-25)
+  const place = trip.cities.length === 1 ? `${trip.cities[0]} 여행` : (() => { const c = trip.cities.find((x) => days[dayNo - 1]?.title?.includes(x)); return c ? `${c} 여행` : trip.title; })();
+  // 준비 탭 예약 중 오늘 날짜인 것 (체크인, 항공, 투어)
+  const todayRes = (prep?.items ?? []).filter((i) => i.kind === "reservation" && i.due === today);
   return (
     <>
       <h1 className="text-title-xl font-extrabold text-ink">
-        {trip.cities[0]} 여행<br /><span className="text-point-text">{dayNo}일째</span>예요
+        <span className="line-clamp-2 break-keep">{place}</span><span className="text-point-text">{dayNo}일째</span>예요
       </h1>
 
       {v.kind === "user" && <StampClaim tripId={trip.id} city={trip.cities.length === 1 ? trip.cities[0] : undefined} inset={false} />}
+
+      {todayRes.length > 0 && (
+        <section className="flex flex-col gap-2 rounded-card bg-surface p-4" aria-label="오늘 예약">
+          <Head title={`오늘 예약 ${todayRes.length}건`} href={`/trips/${trip.id}/prep`} more="준비 탭" />
+          <ul className="flex flex-col gap-1.5">
+            {todayRes.map((i) => (
+              <li key={i.id}>
+                <BookingOpen tripId={trip.id} id={i.id} title={i.title} due={i.due}
+                  className="press flex min-h-11 w-full items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
+                  <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-[11px] font-bold text-point-text">예약</span>
+                  <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
+                  {i.code && <span className="flex-none text-tiny text-ink-sub">{i.code}</span>}
+                </BookingOpen>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {!next && items.length > 0 && (
+        <section className="flex items-center gap-3 rounded-deep bg-deep px-5 py-4 text-on-deep" aria-label="오늘 일정 끝">
+          <span className="min-w-0 flex-1">
+            <span className="block text-title font-bold">오늘 일정을 모두 마쳤어요</span>
+            <span className="mt-0.5 block truncate text-tiny font-semibold text-on-deep-sub">
+              {tomorrow ? `내일 첫 장소${tomorrow.time ? `, ${tomorrow.time}` : ""} : ${tomorrow.title}` : "푹 쉬고 내일도 즐겁게 다녀요"}
+            </span>
+          </span>
+          {tomorrow && <Link href={`/trips/${trip.id}?day=${dayNo + 1}`} className="press inline-flex h-11 flex-none items-center rounded-full bg-on-deep/15 px-4 text-sub font-bold">내일 일정</Link>}
+        </section>
+      )}
 
       {next && where && (
         <section className="flex items-center gap-3 rounded-deep bg-deep px-5 py-4 text-on-deep" aria-label="다음 장소">
@@ -281,9 +329,20 @@ async function After({ v, trip }: { v: Viewer; trip: Trip }) {
 }
 
 /* ───── 여행 없음 ───── */
-function Empty({ first }: { first: boolean }) {
+function Empty({ first, guest, cards, ago }: { first: boolean; guest: boolean; cards: StampCard[]; ago?: Trip }) {
   return (
     <>
+      {/* 1년 전 오늘 다녀온 여행 (2026-11-25) */}
+      {ago && (
+        <Link href={`/trips/${ago.id}`} className="press flex min-h-14 items-center gap-3 rounded-card bg-surface px-4 py-3">
+          <span className="flex size-9 flex-none items-center justify-center rounded-full bg-point-soft text-point-text"><Icon name="clock" size={18} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-tiny text-ink-sub">1년 전 오늘</span>
+            <span className="block truncate text-sub font-bold text-ink">{ago.title}</span>
+          </span>
+          <Icon name="right" size={18} className="text-ink-sub" />
+        </Link>
+      )}
       <h1 className="text-title-xl font-extrabold text-ink">어디로<br /><span className="text-point-text">떠나 볼까요?</span></h1>
       <Link href="/trips/new" className="press flex flex-col gap-4 rounded-deep bg-deep px-5 py-5 text-on-deep">
         <span className="flex size-12 items-center justify-center rounded-full bg-point text-white"><Icon name="plane" size={24} /></span>
@@ -296,14 +355,68 @@ function Empty({ first }: { first: boolean }) {
       <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="도장 받는 법">
         <h2 className="text-body font-bold text-ink">여행하면 도장이 모여요</h2>
         <ol className="flex flex-col gap-2.5">
-          {["여행을 만들고 도시를 넣어요", "여행 기간에 그 도시에 가요", "[도장 받기] 를 누르면 그 도시 도장이 열려요"].map((t, i) => (
+          {["여행을 만들고 도시를 넣어요", "여행 기간에 그 도시에 가요", "[도장 받기] 를 누르면 도장을 찍고 카드를 받아요"].map((t, i) => (
             <li key={t} className="flex items-center gap-2.5 text-sub text-ink">
               <span className="flex size-6 flex-none items-center justify-center rounded-full bg-point text-tiny font-extrabold text-white">{i + 1}</span>{t}
             </li>
           ))}
         </ol>
       </section>
+
+      {/* 여행이 없을 때도 지금까지 모은 카드를 보여 준다 (2026-11-25) */}
+      {cards.length > 0 && (
+        <section className="flex flex-col gap-3" aria-label="최근 모은 카드">
+          <Head title="최근 모은 카드" href="/stamps" more="도장" />
+          <div className="grid grid-cols-3 gap-2.5">
+            {cards.map((x) => <EarnedStamp key={`${x.country}:${x.name}`} x={x} isNew={false} />)}
+          </div>
+        </section>
+      )}
+
+      {guest && <GuestSample />}
     </>
+  );
+}
+
+/* 로그인 전 : 여행 중 홈이 어떻게 바뀌는지 예시 (가짜 데이터, 누르지 않음) (2026-11-25) */
+function GuestSample() {
+  return (
+    <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="예시 화면">
+      <div className="flex items-center gap-2">
+        <h2 className="text-body font-bold text-ink">여행 중엔 홈이 이렇게 바뀌어요</h2>
+        <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[11px] font-bold text-ink-sub">예시</span>
+      </div>
+      <div aria-hidden className="flex flex-col gap-2">
+        <p className="text-title font-extrabold text-ink">삿포로 여행 <span className="text-point-text">2일째</span>예요</p>
+        <div className="flex items-center gap-3 rounded-deep bg-deep px-4 py-3 text-on-deep">
+          <span className="min-w-0 flex-1">
+            <span className="block text-tiny font-semibold text-on-deep-sub">다음 장소, 14:00</span>
+            <span className="block truncate text-sub font-bold">오타루 운하</span>
+          </span>
+          <span className="inline-flex h-9 flex-none items-center gap-1 rounded-full bg-point px-3 text-tiny font-bold text-white"><Icon name="pin" size={14} />길찾기</span>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-field bg-bg px-3 py-2.5 text-sub">
+          <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-[11px] font-bold text-point-text">예약</span>
+          <span className="min-w-0 flex-1 truncate font-semibold text-ink">호텔 체크인 15:00</span>
+        </div>
+      </div>
+      <p className="text-tiny text-ink-sub">오늘 갈 곳, 오늘 예약, 받을 수 있는 도장이 한눈에 보여요</p>
+      <Link href="/login" className="press inline-flex h-11 items-center justify-center rounded-full bg-btn px-5 text-sub font-bold text-on-btn">로그인하고 시작하기</Link>
+    </section>
+  );
+}
+
+/* 지금 홈에 크게 안 나온 다가오는 여행 (2026-11-25 : 막 다녀온 여행에 가려지던 것, 두 번째 여행) */
+function MoreTrips({ list }: { list: Trip[] }) {
+  if (!list.length) return null;
+  return (
+    <section className="mt-3 flex flex-col gap-2" aria-label="다가오는 여행">
+      <Head title={`다가오는 여행 ${list.length}개`} href="/trips" more="여행 탭" />
+      {list.slice(0, 2).map((t) => {
+        const d = daysBetween(todayOf(t), t.start);
+        return <TripRow key={t.id} href={`/trips/${t.id}`} title={t.title} sub={periodText(t)} meta={t.cities.join(", ")} badge={d <= 0 ? "여행 중" : `D-${d}`} badgeTone={d <= 7 ? "hot" : d <= 30 ? "near" : "far"} country={t.country} icon={t.countryIcon} />;
+      })}
+    </section>
   );
 }
 
@@ -321,6 +434,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
   // 다음 여행이 7일 안이면 막 다녀온 여행보다 먼저 (2026-11-17 마루님 "곧 떠날 여행이 가려져요")
   const soon = coming && daysBetween(todayOf(coming), coming.start) <= 7 ? coming : undefined;
 
+  // 지금 크게 보여 주는 여행 하나 (여행 중 > 7일 안 > 막 다녀온 > 다가오는 > 없음)
+  const main = ongoing ?? (soon || (coming && !recent) ? coming : undefined);
+  const more = next.filter((t) => t !== main);
+  // 여행이 없을 때 : 1년 전 오늘 다녀온 여행, 최근 모은 카드 3장
+  const today = todayKST();
+  const yearAgo = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`;
+  const ago = past.find((t) => t.start <= yearAgo && yearAgo <= t.end);
+  const lastAt = (x: StampCard) => x.dates?.at(-1) ?? x.firstAt ?? x.firstDate ?? "";
+  const latest = [...(stamps?.earned ?? [])].sort((a, b) => lastAt(b).localeCompare(lastAt(a))).slice(0, 3);
+
   const count = stamps?.earned.length ?? 0;
   const countries = stamps?.countryCount ?? 0;
   const goal = nextGoal(count, countries);
@@ -334,7 +457,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
         {ongoing ? <During v={viewer} trip={ongoing} today={todayOf(ongoing)} />
           : soon || (coming && !recent) ? <Before v={viewer} trip={coming!} today={todayOf(coming!)} missing={stamps?.missing ?? []} />
           : recent ? <After v={viewer} trip={recent} />
-          : <Empty first={trips.length === 0} />}
+          : <Empty first={trips.length === 0} guest={!loggedIn} cards={latest} ago={ago} />}
         {/* 곧 떠날 여행에 자리를 내준 막 다녀온 여행은 작은 줄로 (2026-11-17) */}
         {!ongoing && soon && recent && (
           <Link href={`/trips/${recent.id}`} className="press flex min-h-14 items-center gap-3 rounded-card bg-surface px-4 py-3">
@@ -347,12 +470,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
           </Link>
         )}
 
+        <MoreTrips list={more} />
+
         {/* 수집 현황 한 줄 → 도장 탭 */}
         {loggedIn && (
           <Link href="/stamps" className="press mt-3 flex min-h-14 items-center gap-3 rounded-card bg-surface px-4 py-3">
             <span className="flex size-9 flex-none items-center justify-center rounded-full bg-point-soft text-point-text"><Icon name="stamp" size={20} /></span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sub font-bold text-ink">도장 카드 {count}장{countries ? `, 나라 ${countries}곳` : ""}</span>
+              <span className="block text-sub font-bold text-ink">도장 카드 {count}개{countries ? `, 나라 ${countries}곳` : ""}</span>
               <span className="block text-tiny text-ink-sub">{goal ? `${goal.label}까지 ${goal.need - goalValue(goal, count, countries)}${goal.of === "stamp" ? "개" : "곳"} 남았어요` : "모든 목표를 이뤘어요"}</span>
             </span>
             <Icon name="right" size={18} className="text-ink-sub" />
