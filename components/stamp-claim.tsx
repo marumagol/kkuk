@@ -5,11 +5,15 @@
    0.86.1 : 버튼을 0.8초 꾹 누르면 게이지가 차고 도장이 찍힌다. 짧게 떼면 안내만. 키보드(Enter, Space)는 바로 받는다 */
 import { useRef, useState, useTransition } from "react";
 import { HoldButton } from "@/components/hold-button";
-import { StampReveal } from "@/components/stamp-reveal";
+import dynamic from "next/dynamic";
 import { Icon } from "@/components/kit";
-import { StampFace } from "@/components/stamp-face";
 import { claimStampCity, loadStampTargets, type ClaimResult, type StampTarget } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
+
+/* 도장 그림과 받는 연출(여권, 카드)은 무거워서 꾹 누르기 시작할 때 미리 불러온다 (2026-11-25 전수 점검, 일정 화면 첫 로드 줄이기) */
+const loadReveal = () => import("@/components/stamp-reveal");
+const StampReveal = dynamic(() => loadReveal().then((m) => m.StampReveal), { ssr: false });
+const StampFace = dynamic(() => import("@/components/stamp-face").then((m) => m.StampFace), { ssr: false });
 
 type State = { kind: "idle" } | { kind: "denied" } | { kind: "error"; text: string } | { kind: "done"; r: Extract<ClaimResult, { ok: true }> };
 
@@ -108,7 +112,7 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
             <p className="mt-1 text-title font-extrabold text-ink">{city ? `${city} 카드가 기다리고 있어요` : "여행 카드가 기다리고 있어요"}</p>
           </div>
           <div className="flex justify-center py-1">
-            <HoldButton ring={132} onStart={locate} onComplete={finish} onShort={() => setHint(true)} disabled={busy}
+            <HoldButton ring={132} onStart={() => { void loadReveal(); return locate(); }} onComplete={finish} onShort={() => setHint(true)} disabled={busy}
               holdingLabel={<span className="text-[26px] font-extrabold">꾹</span>}
               label={<><Icon name="stamp" size={30} /><span className="mt-1 text-tiny font-bold">꾹 누르기</span></>} />
           </div>
