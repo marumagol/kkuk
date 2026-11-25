@@ -4,6 +4,7 @@
   배경 흐림 → 도장이 위에서 쿵 찍힘(스프링) → 충격파 링 + 잉크 조각이 퍼짐 + 화면 살짝 흔들림 → 빛이 한 번 훑고 → 글자가 올라옴
   누르거나 확인을 누르면 닫힌다. 동작 줄이기 설정이면 흔들림과 조각 없이 나타나기만 한다
 */
+import "@/components/cards.css";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/stamp-face";

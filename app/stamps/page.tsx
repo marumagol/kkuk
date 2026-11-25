@@ -41,7 +41,7 @@ function SealedCard({ x, today }: { x: StampCard; today: string }) {
   const body = (
     <div className={`relative flex h-full flex-col items-center gap-2 overflow-hidden rounded-card px-2 pb-3 pt-4 text-center ${s.tone === "past" ? "bg-surface" : "bg-deep text-on-deep"}`}>
       {s.badge && (
-        <span className={`absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[11px] font-extrabold leading-none ${s.tone === "now" ? "bg-point text-white" : "bg-on-deep/15 text-on-deep"}`}>{s.badge}</span>
+        <span className={`absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-micro font-extrabold leading-none ${s.tone === "now" ? "bg-point text-white" : "bg-on-deep/15 text-on-deep"}`}>{s.badge}</span>
       )}
       <span className={`relative flex size-16 items-center justify-center rounded-full border-2 border-dashed ${s.tone === "past" ? "border-line-strong" : "border-point"}`}>
         <span className={`text-[28px] font-extrabold ${s.tone === "past" ? "text-ink-sub" : "text-point"}`}>?</span>
@@ -54,7 +54,7 @@ function SealedCard({ x, today }: { x: StampCard; today: string }) {
         {flagOf(x.country) && <img src={flagOf(x.country)!} alt="" width={14} height={14} className="rounded-sm" />}
         {x.name}
       </span>
-      <span className={`text-[11px] leading-tight ${s.tone === "past" ? "text-ink-sub" : s.tone === "now" ? "font-bold text-point" : "text-on-deep-sub"}`}>{s.line}</span>
+      <span className={`text-micro leading-tight ${s.tone === "past" ? "text-ink-sub" : s.tone === "now" ? "font-bold text-point" : "text-on-deep-sub"}`}>{s.line}</span>
     </div>
   );
   // 누르면 여행으로 넘어가지 않고 받는 방법 안내 (2026-11-17 마루님)

@@ -6,6 +6,7 @@
   - 누르면 큰 배지 창. 받은 배지는 쾅 내려앉고 불꽃, 못 받은 배지는 남은 수와 진행 막대
   - 모양은 app/globals.css 의 gb-*
 */
+import "@/components/cards.css";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/kit";
@@ -51,7 +52,7 @@ export function GoalBadges({ stamps, countries }: { stamps: number; countries: n
                 className={`press flex w-[100px] flex-col items-center gap-1.5 rounded-card bg-surface px-2 pb-2.5 pt-3 text-center gb-${g.tier}`}>
                 <Badge g={g} value={value(g)} />
                 <span className="mt-1 text-tiny font-bold text-ink">{g.label}</span>
-                <span className={`text-[11px] font-semibold ${done ? "gb-tc font-extrabold tracking-wider" : "text-ink-sub"}`}>{done ? TIER_NAME[g.tier] : `${value(g)}/${g.need}`}</span>
+                <span className={`text-micro font-semibold ${done ? "gb-tc font-extrabold tracking-wider" : "text-ink-sub"}`}>{done ? TIER_NAME[g.tier] : `${value(g)}/${g.need}`}</span>
               </button>
             </li>
           );

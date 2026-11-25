@@ -6,6 +6,7 @@
   - 누르면 뒤집히고, 가운데 카드는 끌어서 돌릴 수 있다 (0.95.2). 쉬는 동안 살짝 흔들린다. 동작 줄이기 설정이면 움직이지 않는다
   - 모양은 app/globals.css 의 hc-*
 */
+import "@/components/cards.css";
 import { useEffect, useRef } from "react";
 import { StampFace } from "@/components/stamp-face";
 import { countryOf } from "@/lib/countries";
@@ -113,8 +114,8 @@ export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, tri
             <span aria-hidden className="hc-ring" />
             <span className="hc-bk text-[10px] font-bold tracking-[0.3em] opacity-80">TRIPTUAL</span>
             <span className="max-w-[150px] truncate text-[22px] font-extrabold">{name}</span>
-            {date && <span className="hc-bd text-[11px] font-semibold tabular-nums opacity-90">{date}</span>}
-            <span className="mt-1 text-[11px] font-bold">{visitLabel(visit)}</span>
+            {date && <span className="hc-bd text-micro font-semibold tabular-nums opacity-90">{date}</span>}
+            <span className="mt-1 text-micro font-bold">{visitLabel(visit)}</span>
             <span className="hc-bpill">{tierName(tier)}</span>
             {trip && <span className="hc-btrip mt-1.5 max-w-[150px] truncate text-[10.5px] font-semibold opacity-85">✈ {trip}</span>}{/* 0.95.4 받은 여행은 뒷면에 (마루님) */}
           </div>

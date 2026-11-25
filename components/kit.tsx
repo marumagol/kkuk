@@ -192,7 +192,7 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
   /* 누가 고쳤는지 (2026-11-16 마루님 "더 간략하게") : 카드 오른쪽 아래 작은 얼굴만. 머리 줄 오른쪽(길찾기 왼쪽). 누르면 "○○님 · 2시간 전 수정" (다른 사람이 24시간 안에 고친 것만) */
   const editor = editedBy ? (
     <details className={"absolute top-3.5 " + (corner ? "right-12" : "right-3")}>
-      <summary aria-label={`${editedBy}님이 ${editedAgo ?? ""} 수정`} className="press flex size-7 cursor-pointer list-none items-center justify-center overflow-hidden rounded-full bg-point-soft text-[11px] font-extrabold text-point-text ring-2 ring-surface [&::-webkit-details-marker]:hidden">
+      <summary aria-label={`${editedBy}님이 ${editedAgo ?? ""} 수정`} className="press flex size-7 cursor-pointer list-none items-center justify-center overflow-hidden rounded-full bg-point-soft text-micro font-extrabold text-point-text ring-2 ring-surface [&::-webkit-details-marker]:hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {editedFace ? <img src={editedFace} alt="" className="size-full object-cover" /> : [...editedBy][0]}
       </summary>
@@ -240,7 +240,7 @@ export function PinCard({ index, mark, time, timeEnd, badge, category, title, de
               onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onPhoto(); } } } : {})}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={photo} alt="" width={56} height={56} loading="lazy" className="size-14 rounded-field object-cover" />
-              {(photoCount ?? 0) > 1 && <span className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 text-[11px] font-bold leading-4 text-white">{photoCount}</span>}
+              {(photoCount ?? 0) > 1 && <span className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 text-micro font-bold leading-4 text-white">{photoCount}</span>}
             </span>
           )}
         </div>
@@ -448,7 +448,7 @@ export function TabBar({ active = "홈" }: { active?: "홈" | "여행" | "카드
                 <g stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">{TAB_ICON[t.name].line}</g>
               </svg>
             </span>
-            <span className={cx("text-[11px] leading-none", on ? "font-bold" : "font-medium")}>{t.name}</span>
+            <span className={cx("text-micro leading-none", on ? "font-bold" : "font-medium")}>{t.name}</span>
           </Link>
         );
       })}

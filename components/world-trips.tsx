@@ -113,7 +113,7 @@ export function WorldTrips({ trips, hubs }: { trips: WorldTrip[]; hubs: Record<s
               <g key={d.name + x} transform={`translate(${x},${y})`} className="cursor-pointer" role="link" tabIndex={0} aria-label={`${d.name}, 다녀온 여행 ${d.trips.length}개`}
                 onClick={go} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } }}>
                 <circle r={4.5} className="fill-point-text stroke-surface" strokeWidth={1.8} />
-                {named.has(d.name) && <text x={named.get(d.name) === "l" ? -7 : 7} y={4} textAnchor={named.get(d.name) === "l" ? "end" : "start"} className="fill-point-text text-[11px] font-extrabold" style={{ paintOrder: "stroke", stroke: "var(--surface)", strokeWidth: 3 }}>{d.name}</text>}
+                {named.has(d.name) && <text x={named.get(d.name) === "l" ? -7 : 7} y={4} textAnchor={named.get(d.name) === "l" ? "end" : "start"} className="fill-point-text text-micro font-extrabold" style={{ paintOrder: "stroke", stroke: "var(--surface)", strokeWidth: 3 }}>{d.name}</text>}
               </g>
             );
           })}
@@ -140,7 +140,7 @@ export function WorldTrips({ trips, hubs }: { trips: WorldTrip[]; hubs: Record<s
                 <span key={k} className="flex items-baseline gap-0.5"><b className={"text-title font-extrabold tabular-nums " + (k === 0 ? "text-point-text" : "")}>{k === 2 ? `총 ${n}` : n}</b><span className="text-tiny font-semibold text-ink-sub">{u}</span></span>
               ))}
             </p>
-            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-ink-sub">
+            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-micro text-ink-sub">
               <span className="flex items-center gap-1"><span className="size-2.5 rounded-[3px] border border-point/70 bg-point/40" />다녀온 나라</span>
               <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-point-text" />다녀온 도시</span>
               <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-point" />다가오는 여행</span>
@@ -202,7 +202,7 @@ function PastRow({ t }: { t: WorldTrip }) {
       </span>
       <span className="flex flex-none flex-col items-end leading-tight">
         <b className="text-body font-extrabold tabular-nums text-ink">{t.places}</b>
-        <span className="text-[11px] text-ink-sub">장소</span>
+        <span className="text-micro text-ink-sub">장소</span>
       </span>
     </Link>
   );
@@ -210,11 +210,11 @@ function PastRow({ t }: { t: WorldTrip }) {
 
 /* 다가오는 여행 : 할 일 허브 카드 */
 function Hub({ t, hub }: { t: WorldTrip; hub?: TripHub }) {
-  const tone = t.dday?.tone === "hot" ? "bg-[#C23A18] text-white" : "bg-point-soft text-point-text";
+  const tone = t.dday?.tone === "hot" ? "bg-hot text-white" : "bg-point-soft text-point-text";
   /* 칸을 누르면 바로 그 화면으로 : 챙길 것, 예약 남음 → 준비 / 날짜 미정 → 일정 (2026-11-17 마루님) */
   const stat = (href: string, icon: "check" | "book" | "pin", label: string, value: string, warn?: boolean) => (
     <Link href={href} className="press flex flex-col gap-1 rounded-field bg-surface px-2.5 py-2.5">
-      <span className="flex items-center gap-1 text-[11px] font-semibold text-ink-sub"><Icon name={icon} size={13} />{label}</span>
+      <span className="flex items-center gap-1 text-micro font-semibold text-ink-sub"><Icon name={icon} size={13} />{label}</span>
       <b className={"text-body font-extrabold tabular-nums " + (warn ? "text-point-text" : "text-ink")}>{value}</b>
     </Link>
   );

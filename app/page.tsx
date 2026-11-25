@@ -148,13 +148,13 @@ async function Before({ v, trip, today, missing }: { v: Viewer; trip: Trip; toda
                 {i.kind === "reservation" ? (
                   <BookingOpen tripId={trip.id} id={i.id} title={i.title} due={i.due ?? null}
                     className="press flex min-h-11 w-full items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
-                    <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-[11px] font-bold text-point-text">예약</span>
+                    <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-micro font-bold text-point-text">예약</span>
                     <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
                     {i.due && <span className="flex-none text-tiny text-ink-sub">{md(i.due)}</span>}
                   </BookingOpen>
                 ) : (
                   <Link href={`/trips/${trip.id}/prep`} className="press flex min-h-11 items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
-                    <span className="flex-none rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-ink-sub">체크리스트</span>
+                    <span className="flex-none rounded-full bg-surface px-2 py-0.5 text-micro font-bold text-ink-sub">체크리스트</span>
                     <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
                     {i.due && <span className="flex-none text-tiny text-ink-sub">{md(i.due)}</span>}
                   </Link>
@@ -213,7 +213,7 @@ async function During({ v, trip, today }: { v: Viewer; trip: Trip; today: string
               <li key={i.id}>
                 <BookingOpen tripId={trip.id} id={i.id} title={i.title} due={i.due}
                   className="press flex min-h-11 w-full items-center gap-2.5 rounded-field bg-bg px-3 text-sub">
-                  <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-[11px] font-bold text-point-text">예약</span>
+                  <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-micro font-bold text-point-text">예약</span>
                   <span className="min-w-0 flex-1 truncate text-left font-semibold text-ink">{i.title}</span>
                   {i.code && <span className="flex-none text-tiny text-ink-sub">{i.code}</span>}
                 </BookingOpen>

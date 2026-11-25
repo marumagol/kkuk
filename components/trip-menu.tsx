@@ -7,7 +7,7 @@ import { AlertDialog } from "@/components/gate";
 import { removeTrip } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 
-export function TripMenu({ tripId, book, owner }: { tripId: string; book?: boolean; owner?: boolean }) {
+export function TripMenu({ tripId, owner }: { tripId: string; owner?: boolean }) {
   const [open, setOpen] = useState(false);
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +24,6 @@ export function TripMenu({ tripId, book, owner }: { tripId: string; book?: boole
             className="absolute right-0 top-12 z-40 min-w-[168px] overflow-hidden rounded-field bg-surface py-1 shadow-float ring-1 ring-line">
             <Link href={`/trips/${tripId}/edit`} role="menuitem" autoFocus className={item} onClick={close}><Icon name="pencil" size={18} className="text-ink-sub" />수정</Link>
             {owner && <button type="button" role="menuitem" className={item + " text-point-text"} onClick={() => { close(); setError(""); setAsking(true); }}><Icon name="trash" size={18} />삭제</button>}
-            {book && <Link href={`/trips/${tripId}/book`} role="menuitem" className={item} onClick={close}><Icon name="book" size={18} className="text-ink-sub" />여행 한 권</Link>}
           </div>
         </>
       )}

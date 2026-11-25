@@ -4,6 +4,7 @@
   - 아직 열지 않은 도장 : 누르면 여행으로 넘어가지 않고 받는 방법을 알려 주는 창
   - 모은 도장 : 가장 높은 등급 카드 한 장. 누르면 등급별 카드를 넘겨 보는 창 (0.95.0). 주소 ?c=도시번호 로 바로 열 수도 있다
 */
+import "@/components/cards.css";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/stamp-face";

@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Icon } from "@/components/kit";
 import { Avatar } from "@/components/screen";
 import type { Trip } from "@/lib/mock";
-import { FEATURES } from "@/lib/features";
 import { TripMenu } from "@/components/trip-menu";
 import { TripBack } from "@/components/trip-back";
 
@@ -64,8 +63,7 @@ export function TripHeader({ trip, meId, user, owner, editable, back = "/trips",
           {/* 인원 숫자는 빼고 얼굴만 (2026-11-16 마루님) */}
           {owner && user && <Icon name="plus" size={16} className="text-ink-sub" />}
         </Link>
-        {editable ? <TripMenu tripId={trip.id} book={user && FEATURES.book} owner={owner && user} />
-          : user && FEATURES.book && <Link href={`/trips/${trip.id}/book`} aria-label="여행 한 권 (인쇄, PDF)" className={round}><Icon name="book" size={20} /></Link>}
+        {editable && <TripMenu tripId={trip.id} owner={owner && user} />}
       </div>
       <div className="px-5 pt-4">
         <h1 className="text-title-xl font-extrabold text-ink">{trip.title}</h1>

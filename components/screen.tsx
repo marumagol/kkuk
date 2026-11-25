@@ -144,7 +144,7 @@ export function MockNote() {
 /* 디데이 배지 색 : 가까울수록 진하게 (2026-11-14 마루님). hot = 여행 중, D-7 이내 / near = D-30 이내 / far = 그보다 멀리 */
 export type BadgeTone = "hot" | "near" | "far";
 const BADGE: Record<BadgeTone, string> = {
-  hot: "bg-[#C23A18] text-white",
+  hot: "bg-hot text-white",
   near: "bg-point-soft text-point-text",
   far: "bg-ink/10 text-ink", // 2026-11-17 마루님 "너무 흐려" : 카드 바탕과 구분되게 글자색을 10% 깔아 진하게 (다크에서도 같이 맞음)
 };

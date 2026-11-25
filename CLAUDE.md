@@ -35,15 +35,14 @@
 | 로그인, 처음 이름 | `/login`, `/auth/callback`, `/welcome` | `app/login/`, `name-form.tsx`, `lib/random-name.ts`, `lib/viewer.ts` |
 | 알림 | `/notifications` | `read-all.tsx`, `clear-read.tsx` |
 | 약관, 개인정보 | `/terms`, `/privacy` | `legal-page.tsx`, `lib/legal.ts` |
-| 숨김 : 여행 한 권 | `/trips/[id]/book` | `lib/features.ts` (FEATURES.book=false) |
 
 (파일 이름만 적은 것은 `components/` 안)
 
 ## 공통
 
-- 디자인 토큰 `app/globals.css`, 공통 조각 `components/kit.tsx` (도장 그림은 `stamp-face.tsx` 로 따로. kit 에서 `lib/stamp-art` 를 부르면 모든 화면이 100KB 무거워짐), 화면 틀/브랜드 `components/screen.tsx`, 아래 탭 `components/global-tabs.tsx`, 토스트 `components/toast.tsx`
+- 디자인 토큰 `app/globals.css` (카드, 여권 연출 스타일은 `components/cards.css`, 카드 조각 4개만 import), 공통 조각 `components/kit.tsx` (도장 그림은 `stamp-face.tsx` 로 따로. kit 에서 `lib/stamp-art` 를 부르면 모든 화면이 100KB 무거워짐), 화면 틀/브랜드 `components/screen.tsx`, 아래 탭 `components/global-tabs.tsx`, 토스트 `components/toast.tsx`
 - 로그인 확인과 둘러보기 얼럿 `components/gate.tsx`, 작성 중 나가기 경고 `leave-guard.tsx`, 오프라인 `network-banner.tsx`, `offline-saver.tsx`, `sw-register.tsx`, `public/sw.js`
-- 주소 보호와 숨긴 주소 돌려보내기 `middleware.ts` + `lib/features.ts`
+- 로그인 세션 갱신 `middleware.ts`, 없앤 옛 주소 넘기기 `next.config.ts` redirects
 - Supabase 클라이언트 `lib/supabase/`, 저장 실패 처리 `lib/safe-call.ts`, 그림 줄이기 `lib/image.ts`
 - 미리보기(가짜 데이터) `lib/mock.ts`, 조각 모음 `/dev/kit` (SHOW_DEV_KIT=1 일 때만)
 - DB : `supabase/migrations/` (번호 순), 검사 `supabase/tests/`, Edge Function `supabase/functions/`

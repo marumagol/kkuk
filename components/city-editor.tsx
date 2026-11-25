@@ -179,7 +179,7 @@ export function CityEditor({ cities, onChange, draft, onError, disabled, searcha
               <CountryMark country={c.country} icon={c.icon && iconUrl(c.icon)} size={24} />
               <span className="text-ink-sub">{i + 1}</span> {c.name}
               <span className="text-tiny text-ink-sub">{c.countryName ?? countryOf(c.country)?.name.replace(/ \(.*\)/, "")}</span>
-              {noStamp(c) && <span className="rounded-full bg-warn-soft px-1.5 py-0.5 text-[11px] font-bold text-warn-text">카드 없음</span>}
+              {noStamp(c) && <span className="rounded-full bg-warn-soft px-1.5 py-0.5 text-micro font-bold text-warn-text">카드 없음</span>}
               <button type="button" disabled={disabled} onClick={() => onChange(cities.filter((x) => x !== c))} aria-label={`${c.name} 빼기`}
                 className="press flex size-9 items-center justify-center rounded-full text-ink-sub">
                 <Icon name="x" size={16} />
