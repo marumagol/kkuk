@@ -2,7 +2,7 @@
 /*
   홀로그램 도장 카드 (0.94.0, 2026-11-18 마루님) : 도장 탭에서 모은 도장을 누르면 뜨는 카드
   - 앞면 : 금속 테두리 + 도장 그림 창(둥근 빛, 숨 쉬는 링) + 도시 별명 + 한 줄 소개. 빛 층(무지개, 반짝이, 별, 반사)이 각도를 따라 움직인다
-  - 뒷면 : TRIPUAL 워터마크 + 도장 실루엣 + 도시, 처음 받은 날, 방문 횟수
+  - 뒷면 : TRIPTUAL 워터마크 + 도장 실루엣 + 도시, 처음 받은 날, 방문 횟수
   - 누르면 뒤집히고, 가운데 카드는 끌어서 돌릴 수 있다 (0.95.2). 쉬는 동안 살짝 흔들린다. 동작 줄이기 설정이면 움직이지 않는다
   - 모양은 app/globals.css 의 hc-*
 */
@@ -111,7 +111,7 @@ export function HoloCard({ name, country, tier = 2, date, visit = 1, visits, tri
             {twinkles(tier) && <Twinkles />}
             <svg aria-hidden className="hc-emb" viewBox="0 0 86 86"><path d={EMB_OUT} fill="none" stroke="currentColor" strokeWidth="2" /><path d={EMB_IN} fill="currentColor" /></svg>
             <span aria-hidden className="hc-ring" />
-            <span className="hc-bk text-[10px] font-bold tracking-[0.3em] opacity-80">TRIPUAL</span>
+            <span className="hc-bk text-[10px] font-bold tracking-[0.3em] opacity-80">TRIPTUAL</span>
             <span className="max-w-[150px] truncate text-[22px] font-extrabold">{name}</span>
             {date && <span className="hc-bd text-[11px] font-semibold tabular-nums opacity-90">{date}</span>}
             <span className="mt-1 text-[11px] font-bold">{visitLabel(visit)}</span>

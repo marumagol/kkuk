@@ -93,8 +93,8 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
           </svg>
           <div className="sp-book">
             <div className="sp-page">
-              <div className="sp-hd"><span>VISAS · 사증</span><span>TRIPUAL</span></div>
-              <span className="sp-no">TRIPUAL PASSPORT</span>
+              <div className="sp-hd"><span>VISAS · 사증</span><span>TRIPTUAL</span></div>
+              <span className="sp-no">TRIPTUAL PASSPORT</span>
               <div className="sp-city" onClick={card && phase === "glow" ? lift : undefined}><StampFace name={city} country={country} size={150} /></div>
               <div className="sp-entry">
                 <div className="sp-a">ARRIVED</div>
@@ -102,14 +102,14 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
                 <div className="sp-c">{entryDate}</div>
               </div>
               {glowing && <span aria-hidden className="se-bloom" />}
-              <div className="sp-lines">{`P<KOR<<TRIPUAL<<${cc}<<<<<<<<<<<`}<br />{`${cc}${String(visits ?? 1).padStart(4, "0")}<<${ymd}<<<<<<<<<<`}</div>
+              <div className="sp-lines">{`P<KOR<<TRIPTUAL<<${cc}<<<<<<<<<<`}<br />{`${cc}${String(visits ?? 1).padStart(4, "0")}<<${ymd}<<<<<<<<<<`}</div>
             </div>
             <span className="sp-cast" aria-hidden />
             {glowing && <span aria-hidden className="se-edge" />}
             {/* 표지 (0.94.3) : 바깥면과 안쪽면이 있는 한 장. 왼쪽 경첩을 따라 넘어가 펼쳐진 채로 남는다 */}
             <div className="sp-cover" aria-hidden>
               <div className="sp-face sp-out"><span className="sp-em">트</span><span className="sp-ttl">PASSPORT</span></div>
-              <div className="sp-face sp-in"><span className="sp-in-hd">TRIPUAL PASSPORT</span><span className="sp-photo" /></div>
+              <div className="sp-face sp-in"><span className="sp-in-hd">TRIPTUAL PASSPORT</span><span className="sp-photo" /></div>
             </div>
           </div>
         </div>
@@ -118,8 +118,8 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
           <div className="se-card">
             {/* 도는 동안은 어떤 카드인지 모르게 양면 모두 공통 뒷면 */}
             <div aria-hidden className="se-spinner">
-              <div className="se-face"><span className="se-em">트</span><span className="se-ttl">TRIPUAL</span></div>
-              <div className="se-face se-face-b"><span className="se-em">트</span><span className="se-ttl">TRIPUAL</span></div>
+              <div className="se-face"><span className="se-em">트</span><span className="se-ttl">TRIPTUAL</span></div>
+              <div className="se-face se-face-b"><span className="se-em">트</span><span className="se-ttl">TRIPTUAL</span></div>
             </div>
             <div className="se-real">
             <HoloCard name={city} country={country ?? ""} tier={card.tier} visit={card.visit} visits={card.visit} active={phase === "shown"}

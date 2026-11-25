@@ -10,9 +10,9 @@ import { flagOf } from "@/lib/countries";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-/* 서비스 이름은 여기 한 곳에서만 바꾼다. 2026-11-25 KKuK → 트립추얼 (영문 Tripual, Trip + Ritual). 영문 대문자 표기는 BRAND_EN */
+/* 서비스 이름은 여기 한 곳에서만 바꾼다. 2026-11-25 KKuK → 트립추얼 (영문 Triptual, Trip + Ritual). 영문 대문자 표기는 BRAND_EN */
 export const BRAND = "트립추얼";
-export const BRAND_EN = "TRIPUAL";
+export const BRAND_EN = "TRIPTUAL";
 export const SLOGAN = "나의 여행이 쌓이는 곳";
 
 export type ScreenState = "ok" | "empty" | "loading" | "error";
