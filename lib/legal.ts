@@ -84,7 +84,7 @@ export const PRIVACY: LegalDoc = {
     ] },
     { h: "7. 문의", items: [
       "개인정보 보호 책임자 : 안진한",
-      "문의 메일 : kkuk23.dev@gmail.com",
+      "문의 메일 : triptual.dev@gmail.com",
       "개인정보 침해 신고나 상담은 개인정보침해신고센터(privacy.kisa.or.kr, 국번 없이 118)에서도 도와줘요.",
     ] },
   ],
