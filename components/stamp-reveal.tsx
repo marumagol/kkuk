@@ -7,7 +7,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StampFace } from "@/components/kit";
-import { GLOW } from "@/components/card-draw";
 import { HoloCard } from "@/components/holo-card";
 import { tierName, visitLabel, type Tier } from "@/lib/card-tier";
 
@@ -54,8 +53,11 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
     navigator.vibrate?.([0, 15, 40, 60]);
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) { setPhase("shown"); return; }
     setPhase("lift");
-    setTimeout(() => navigator.vibrate?.([0, 20, 30, 70]), 2900); // 0.103.1 돌던 카드가 멈추며 앞면이 보이는 순간
-    setTimeout(() => setPhase("shown"), 3300);
+    /* 0.103.2 : 공통 뒷면으로 돌다(0.3~3.2초) 멈춰 떨리고(3.2~4.2초), 4.5초에 뒤집히며 앞면 공개 */
+    [700, 1100, 1500, 1900, 2400, 3000].forEach((ms) => setTimeout(() => navigator.vibrate?.(6), ms)); // 도는 동안 바퀴마다 약하게
+    setTimeout(() => navigator.vibrate?.([0, 10, 60, 10, 60, 10]), 3300); // 멈춰서 떨릴 때
+    setTimeout(() => navigator.vibrate?.([0, 20, 30, 80]), 4550); // 앞면이 보이는 순간
+    setTimeout(() => setPhase("shown"), 5300);
   };
   const glowing = phase === "glow" || phase === "lift";
 
@@ -67,7 +69,7 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
 
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={city ? `${city} 도장` : "도장"}
-      className="sr-backdrop fixed inset-0 z-50 flex flex-col items-center justify-center px-6" style={card ? { ["--g" as string]: GLOW[card.tier] ?? "255 255 255" } : undefined}>
+      className="sr-backdrop fixed inset-0 z-50 flex flex-col items-center justify-center px-6">
       {!city ? (
         <div className="relative flex size-[260px] items-center justify-center">
           {/* 긴장 고조 : 빛이 모이고, 점선 링이 점점 빨리 돌고, 빈 도장이 떨리며 내려올 준비를 한다 */}
@@ -114,8 +116,15 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
         {card && (phase === "lift" || phase === "shown") && <>
           <div aria-hidden className="se-motes">{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => <i key={i} style={{ left: 20 + ((i * 53) % 230), animationDelay: `${(i * 90) % 700}ms` }} />)}</div>
           <div className="se-card">
+            {/* 도는 동안은 어떤 카드인지 모르게 양면 모두 공통 뒷면 */}
+            <div aria-hidden className="se-spinner">
+              <div className="se-face"><span className="se-em">꾹</span><span className="se-ttl">KKUK</span></div>
+              <div className="se-face se-face-b"><span className="se-em">꾹</span><span className="se-ttl">KKUK</span></div>
+            </div>
+            <div className="se-real">
             <HoloCard name={city} country={country ?? ""} tier={card.tier} visit={card.visit} visits={card.visit} active={phase === "shown"}
               date={`${ymd.slice(0, 2)}.${ymd.slice(2, 4)}.${ymd.slice(4)}`} />
+            </div>
             <span aria-hidden className="se-veil" />
           </div>
         </>}
