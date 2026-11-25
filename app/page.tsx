@@ -330,7 +330,7 @@ async function After({ v, trip }: { v: Viewer; trip: Trip }) {
 }
 
 /* ───── 여행 없음 ───── */
-function Empty({ first, guest, cards, ago }: { first: boolean; guest: boolean; cards: StampCard[]; ago?: Trip }) {
+function Empty({ first, cards, ago }: { first: boolean; cards: StampCard[]; ago?: Trip }) {
   return (
     <>
       {/* 1년 전 오늘 다녀온 여행 (2026-11-25) */}
@@ -373,37 +373,7 @@ function Empty({ first, guest, cards, ago }: { first: boolean; guest: boolean; c
           </div>
         </section>
       )}
-
-      {guest && <GuestSample />}
     </>
-  );
-}
-
-/* 로그인 전 : 여행 중 홈이 어떻게 바뀌는지 예시 (가짜 데이터, 누르지 않음) (2026-11-25) */
-function GuestSample() {
-  return (
-    <section className="flex flex-col gap-3 rounded-card bg-surface p-4" aria-label="예시 화면">
-      <div className="flex items-center gap-2">
-        <h2 className="text-body font-bold text-ink">여행 중엔 홈이 이렇게 바뀌어요</h2>
-        <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[11px] font-bold text-ink-sub">예시</span>
-      </div>
-      <div aria-hidden className="flex flex-col gap-2">
-        <p className="text-title font-extrabold text-ink">삿포로 여행 <span className="text-point-text">2일째</span>예요</p>
-        <div className="flex items-center gap-3 rounded-deep bg-deep px-4 py-3 text-on-deep">
-          <span className="min-w-0 flex-1">
-            <span className="block text-tiny font-semibold text-on-deep-sub">다음 장소, 14:00</span>
-            <span className="block truncate text-sub font-bold">오타루 운하</span>
-          </span>
-          <span className="inline-flex h-9 flex-none items-center gap-1 rounded-full bg-point px-3 text-tiny font-bold text-white"><Icon name="pin" size={14} />길찾기</span>
-        </div>
-        <div className="flex items-center gap-2.5 rounded-field bg-bg px-3 py-2.5 text-sub">
-          <span className="flex-none rounded-full bg-point-soft px-2 py-0.5 text-[11px] font-bold text-point-text">예약</span>
-          <span className="min-w-0 flex-1 truncate font-semibold text-ink">호텔 체크인 15:00</span>
-        </div>
-      </div>
-      <p className="text-tiny text-ink-sub">오늘 갈 곳, 오늘 예약, 받을 수 있는 도장이 한눈에 보여요</p>
-      <Link href="/login" className="press inline-flex h-11 items-center justify-center rounded-full bg-btn px-5 text-sub font-bold text-on-btn">로그인하고 시작하기</Link>
-    </section>
   );
 }
 
@@ -459,7 +429,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ b
         {ongoing ? <During v={viewer} trip={ongoing} today={todayOf(ongoing)} />
           : soon || (coming && !recent) ? <Before v={viewer} trip={coming!} today={todayOf(coming!)} missing={stamps?.missing ?? []} />
           : recent ? <After v={viewer} trip={recent} />
-          : <Empty first={trips.length === 0} guest={!loggedIn} cards={latest} ago={ago} />}
+          : <Empty first={trips.length === 0} cards={latest} ago={ago} />}
         {/* 곧 떠날 여행에 자리를 내준 막 다녀온 여행은 작은 줄로 (2026-11-17) */}
         {!ongoing && soon && recent && (
           <Link href={`/trips/${recent.id}`} className="press flex min-h-14 items-center gap-3 rounded-card bg-surface px-4 py-3">
