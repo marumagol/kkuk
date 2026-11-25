@@ -54,7 +54,8 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
     navigator.vibrate?.([0, 15, 40, 60]);
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) { setPhase("shown"); return; }
     setPhase("lift");
-    setTimeout(() => setPhase("shown"), 1800);
+    setTimeout(() => navigator.vibrate?.([0, 20, 30, 70]), 2900); // 0.103.1 돌던 카드가 멈추며 앞면이 보이는 순간
+    setTimeout(() => setPhase("shown"), 3300);
   };
   const glowing = phase === "glow" || phase === "lift";
 

@@ -448,15 +448,20 @@ input::placeholder, textarea::placeholder { opacity: 0.55; }
 .se-lift .sp-book, .se-shown .sp-book { animation: se-sink 900ms cubic-bezier(.5, 0, .2, 1) forwards; }
 @keyframes se-sink { to { transform: translateY(150px) scale(.82); opacity: 0; } }
 .se-card { position: absolute; left: 42px; top: 50px; z-index: 8; width: 186px; height: 260px; animation: se-emerge 1100ms cubic-bezier(.2, .8, .2, 1) both; }
-.se-card .hc-enter { animation: none; }
-@keyframes se-emerge { 0% { opacity: 0; transform: translate(-32px, -61px) scale(.55); } 12% { opacity: 1; } 55% { transform: translate(0, -34px) scale(1.04) rotateX(14deg); } 100% { opacity: 1; transform: none; } }
+/* 0.103.1 (마루님 "빙그르르 돌면서 극적으로") : 뒷면으로 떠올라 네 바퀴 빠르게 돌다 점점 느려지고, 살짝 넘쳤다 돌아오며 앞면에서 멈춘다. 멈추는 순간 뒤의 빛이 한 번 크게 번진다 */
+.se-card .hc-enter { animation: se-spin 2500ms 400ms cubic-bezier(.15, .65, .2, 1) both; }
+@keyframes se-spin { 0% { transform: rotateY(180deg) scale(.92); } 82% { transform: rotateY(-1452deg) scale(1.08); } 91% { transform: rotateY(-1434deg) scale(1.02); } 100% { transform: rotateY(-1440deg) scale(1); } }
+.se-card::before { content: ""; position: absolute; inset: -50px -40px; z-index: -1; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(closest-side, rgb(255 255 255 / .9), rgb(var(--g) / .7) 45%, rgb(var(--g) / 0)); filter: blur(6px); animation: se-aura 3300ms ease-out forwards; }
+@keyframes se-aura { 0% { opacity: 0; transform: scale(.6); } 20% { opacity: .75; transform: scale(1); } 80% { opacity: .55; transform: scale(.95); } 88% { opacity: 1; transform: scale(1.4); } 100% { opacity: .35; transform: scale(1.1); } }
+@keyframes se-emerge { 0% { opacity: 0; transform: translate(-32px, -61px) scale(.55); } 12% { opacity: 1; } 60% { transform: translate(0, -30px) scale(1.04); } 100% { opacity: 1; transform: none; } }
 .se-veil { position: absolute; inset: 0; border-radius: 16px; pointer-events: none; background: radial-gradient(circle at 50% 45%, #fff, rgb(var(--g)) 85%); box-shadow: 0 0 40px 12px rgb(var(--g) / .7);
-  animation: se-veil 700ms 1100ms ease-out forwards; }
+  animation: se-veil 500ms 600ms ease-out forwards; }
 @keyframes se-veil { to { opacity: 0; box-shadow: 0 0 0 0 rgb(var(--g) / 0); } }
 .se-motes { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
 .se-motes i { position: absolute; bottom: 110px; width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--g)); box-shadow: 0 0 8px 2px rgb(var(--g) / .8); opacity: 0; animation: se-mote 1500ms ease-out forwards; }
 @keyframes se-mote { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-260px); } }
-@media (prefers-reduced-motion: reduce) { .se-bloom, .se-glow .sp-city svg, .se-edge, .se-card, .se-veil, .se-motes i, .se-lift .sp-book, .se-shown .sp-book { animation-duration: 1ms; animation-delay: 0ms; animation-iteration-count: 1; } }
+@media (prefers-reduced-motion: reduce) { .se-bloom, .se-glow .sp-city svg, .se-edge, .se-card, .se-card::before, .se-card .hc-enter, .se-veil, .se-motes i, .se-lift .sp-book, .se-shown .sp-book { animation-duration: 1ms; animation-delay: 0ms; animation-iteration-count: 1; } }
 
 /* 홀로그램 도장 카드 (0.94.0) : 도장 탭에서 모은 도장을 눌렀을 때. 빛 층 위치는 --px --py --lx --ly --fa --so 를 components/holo-card.tsx 가 돌리는 각도에 맞춰 넣는다 */
 .hc-persp { position: relative; perspective: 900px; touch-action: pan-x pan-y; cursor: pointer; user-select: none; -webkit-user-select: none; }
