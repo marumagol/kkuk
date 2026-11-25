@@ -66,7 +66,7 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
   const ymd = `${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
   const entryDate = `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
   const cc = (country ?? "").slice(0, 2).toUpperCase() || "XX";
-  const heading = title === "도장 꾹!" && city ? `${city} 도장 꾹!` : title;
+  const heading = title === "입국!" && city ? `${city} 입국!` : title; // 2026-11-25 마루님 : 여권 아래 "도장 꾹!" 대신 입국
 
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={city ? `${city} 도장` : "도장"}
@@ -77,7 +77,7 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
           <span aria-hidden className="sr-charge absolute size-[220px] rounded-full" />
           <span aria-hidden className="sr-orbit absolute size-[236px] rounded-full" />
           <span aria-hidden className="sr-orbit sr-orbit-2 absolute size-[200px] rounded-full" />
-          <span aria-hidden className="sr-blank relative flex size-[180px] items-center justify-center rounded-full text-[40px] font-extrabold text-white/90">꾹</span>
+          <span aria-hidden className="sr-blank relative flex size-[180px] items-center justify-center rounded-full "><LogoMark size={96} /></span>
         </div>
       ) : (
         /* 0.93.0 여권 연출 (마루님 B안) : 여권이 펼쳐지고 → 도시 도장 쿵 → 입국 날짜 도장 쾅 */
@@ -139,7 +139,7 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
       <p className="sr-text mt-7 text-center text-[24px] font-extrabold text-white" style={{ animationDelay: "2450ms" }}>{heading}</p>
       <p className="sr-text mt-1 text-center text-sub text-white/80" style={{ animationDelay: "2600ms" }}>{sub}</p>
       {card ? (
-        <button type="button" onClick={lift} className="se-hint sr-text press mt-7 h-12 rounded-full px-6 text-sub font-bold text-white" style={{ animationDelay: "2800ms" }}>빛나는 도장을 눌러 카드 꺼내기</button>
+        <button type="button" onClick={lift} className="se-hint sr-text press mt-7 h-12 rounded-full px-6 text-sub font-bold text-white" style={{ animationDelay: "2800ms" }}>카드 꺼내기</button>
       ) : (
         <button type="button" onClick={onClose} className="sr-text press mt-7 h-12 rounded-btn bg-white px-10 text-sub font-bold text-[#111]" style={{ animationDelay: "2800ms" }}>확인</button>
       )}

@@ -5,6 +5,7 @@
 */
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/kit";
+import { LogoMark } from "@/components/screen";
 import { testStamp, clearTestStamps, type ClaimResult } from "@/app/actions";
 import { POPULAR_CITIES, countryNameOf } from "@/lib/countries";
 import { safeCall } from "@/lib/safe-call";
@@ -45,7 +46,7 @@ export function StampTester() {
   /* 0.89.1 : 실제 도장 받기 카드(stamp-claim)와 같은 모양. 빈 도장을 꾹 누르면 링이 차오른다 */
   return (
     <section aria-label="도장 테스트" className="flex flex-col gap-3 rounded-card border-2 border-dashed border-point/50 bg-surface px-5 py-5">
-      {reveal && <StampReveal city={reveal.name} country={reveal.code} title="도장 꾹!" sub={reveal.sub} visits={reveal.visits} card={reveal.card} onClose={() => setReveal(null)} />}
+      {reveal && <StampReveal city={reveal.name} country={reveal.code} title="입국!" sub={reveal.sub} visits={reveal.visits} card={reveal.card} onClose={() => setReveal(null)} />}
       <div className="text-center">
         <p className="text-tiny font-bold tracking-wide text-point-text">도장 테스트 <span className="ml-1 rounded-full bg-point-soft px-2 py-0.5 text-[11px]">내 계정만</span></p>
         <p className="mt-1 text-title font-extrabold text-ink">{city} 카드가 기다리고 있어요</p>
@@ -60,7 +61,7 @@ export function StampTester() {
       </select>
       <div className="flex justify-center py-1">
         <HoldButton ring={132} onComplete={take} onShort={() => setMsg("조금 더 꾹 눌러 주세요. 링이 다 차면 도장이 찍혀요")} disabled={pending}
-          holdingLabel={<span className="text-[26px] font-extrabold">꾹</span>}
+          holdingLabel={<LogoMark size={48} />}
           label={<><Icon name="stamp" size={30} /><span className="mt-1 text-tiny font-bold">꾹 누르기</span></>} />
       </div>
       <p role="status" className={"text-center text-sub " + (msg ? "text-ink" : "text-ink-sub")}>{msg || "위치 확인 없이 실제처럼 꾹 눌러 받아 봐요"}</p>

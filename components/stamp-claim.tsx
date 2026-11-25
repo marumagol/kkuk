@@ -7,6 +7,7 @@ import { useRef, useState, useTransition } from "react";
 import { HoldButton } from "@/components/hold-button";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/kit";
+import { LogoMark } from "@/components/screen";
 import { claimStampCity, loadStampTargets, type ClaimResult, type StampTarget } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
 
@@ -95,7 +96,7 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
     <section className={(inset ? "mx-5 mt-4 " : "") + "flex flex-col gap-3 rounded-card bg-surface px-5 pb-5 pt-5"} aria-label="도장 받기">
       {reveal && (
         <StampReveal city={state.kind === "done" ? state.r.city : null} country={state.kind === "done" ? state.r.country : null} visits={state.kind === "done" ? state.r.visits : undefined} card={state.kind === "done" ? state.r.card : null}
-          title={state.kind === "done" && state.r.status === "already" ? "이미 받은 카드" : "도장 꾹!"} sub={msg ?? ""} onClose={() => setReveal(false)} />
+          title={state.kind === "done" && state.r.status === "already" ? "이미 받은 카드" : "입국!"} sub={msg ?? ""} onClose={() => setReveal(false)} />
       )}
       {state.kind === "done" && (
         <div className="flex justify-center">
@@ -113,7 +114,7 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
           </div>
           <div className="flex justify-center py-1">
             <HoldButton ring={132} onStart={() => { void loadReveal(); return locate(); }} onComplete={finish} onShort={() => setHint(true)} disabled={busy}
-              holdingLabel={<span className="text-[26px] font-extrabold">꾹</span>}
+              holdingLabel={<LogoMark size={48} />}
               label={<><Icon name="stamp" size={30} /><span className="mt-1 text-tiny font-bold">꾹 누르기</span></>} />
           </div>
         </>
