@@ -38,11 +38,29 @@ export function BottomDock({ children, align = "center" }: { children: ReactNode
   );
 }
 
-/* 로고 : 주황 물결 도장("트") + 트립추얼 글자, 2배 PNG (0.104.0). 만든 스크립트는 기획/20 참고 */
+/* 로고 : 쌓이는 카드 심볼 + 트립추얼 글자 (2026-11-25 A안, 피그마 "트립추얼 로고 (11.25)").
+   글자는 테마 글자색을 따라가도록 그림이 아니라 글자로 그린다. 앱 밖에서 쓸 그림은 public/logo.png */
+export function LogoMark({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="6 8 88 88" aria-hidden className="block shrink-0">
+      <rect x="17" y="20" width="50" height="64" rx="10" fill="#FFD3C7" transform="rotate(-16 42 52)" />
+      <rect x="22" y="20" width="50" height="64" rx="10" fill="#FF9A80" transform="rotate(-6 47 52)" />
+      <g transform="rotate(6 54 52)">
+        <rect x="29" y="20" width="50" height="64" rx="10" fill="#FF5A36" />
+        <path d="M54 64C51 60 45 54 45 46A9 9 0 1 1 63 46C63 54 57 60 54 64Z" fill="#FFFFFF" />
+        <circle cx="54" cy="46" r="3.6" fill="#FF5A36" />
+      </g>
+    </svg>
+  );
+}
+
 export function Logo({ height = 32 }: { height?: number }) {
-  // 원본 비율 183 : 58
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/logo.png" alt={BRAND} width={Math.round((height * 183) / 58)} height={height} className="block" />;
+  return (
+    <span role="img" aria-label={BRAND} className="flex items-center gap-1.5">
+      <LogoMark size={height} />
+      <span aria-hidden className="font-extrabold leading-none tracking-[-0.02em] text-ink" style={{ fontSize: Math.round(height * 0.66) }}>{BRAND}</span>
+    </span>
+  );
 }
 
 export function Avatar({ initial, tone = "point", size = 40, ring, src }: { initial: string; tone?: "point" | "accent"; size?: number; ring?: boolean; src?: string | null }) {
