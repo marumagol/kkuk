@@ -84,15 +84,6 @@ export function StampReveal({ city: cityIn, country, title, sub, visits, card, o
         /* 0.93.0 여권 연출 (마루님 B안) : 여권이 펼쳐지고 → 도시 도장 쿵 → 입국 날짜 도장 쾅 */
         <div className={`se-stage se-${phase}`}>
         <div className="sp-shake">
-          <svg width="0" height="0" className="absolute" aria-hidden>
-            <filter id="sp-ink" x="-10%" y="-10%" width="120%" height="120%">
-              <feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="4" result="n" />
-              <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -9 6.3" result="holes" />
-              <feComposite in="SourceGraphic" in2="holes" operator="in" result="grain" />
-              <feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="9" result="w" />
-              <feDisplacementMap in="grain" in2="w" scale="3.5" />
-            </filter>
-          </svg>
           <div className="sp-book">
             <div className="sp-page">
               <div className="sp-hd"><span>VISAS · 사증</span><span>TRIPTUAL</span></div>
