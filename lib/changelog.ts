@@ -6,6 +6,7 @@
 export type Update = { at: string; version: string; items: string[] };
 
 export const CHANGELOG: Update[] = [
+  { at: "2026-11-26 17:20", version: "0.106.4", items: ["아이폰에서 모은 카드 아래쪽이 잘려 보이던 문제를 고쳤어요"] },
   { at: "2026-11-26 17:00", version: "0.106.3", items: ["로그인 화면의 둘러보기 버튼을 뺐어요"] },
   { at: "2026-11-26 14:05", version: "0.106.2", items: ["테스터 계정은 설정에서 도장 테스트를 직접 켜고 끌 수 있어요"] },
   { at: "2026-11-26 13:50", version: "0.106.1", items: ["카드 탭의 도장 테스트 카드를 숨겼어요"] },
