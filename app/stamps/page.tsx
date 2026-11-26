@@ -17,6 +17,9 @@ import { addDays, daysBetween, md, todayKST } from "@/lib/mock";
 import { GOALS, type Goal } from "@/lib/stamp-goals";
 import { cardCountOf } from "@/lib/card-tier";
 import { StampTester } from "@/components/stamp-tester";
+/* 도장 테스트 카드 (0045, 테스터 계정만) : 0.106.1 마루님 요청으로 숨김. 다시 쓰려면 true 로 바꾸고 배포.
+   DB(private.stamp_testers, test_stamp, test_stamp_clear)와 components/stamp-tester.tsx 는 그대로 남아 있다 */
+const SHOW_STAMP_TESTER = false;
 import { GoalBadges } from "@/components/goal-badges";
 import { createClient } from "@/lib/supabase/server";
 
@@ -77,7 +80,7 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
   const newSince = addDays(today, -7);
   // 도장 테스트 칸 : DB 테스터 목록에 있는 계정만 (2026-11-18 마루님)
   let tester = false;
-  if (viewer.kind === "user") { const sb = await createClient(); const { data } = sb ? await sb.rpc("am_stamp_tester") : { data: false }; tester = data === true; }
+  if (SHOW_STAMP_TESTER && viewer.kind === "user") { const sb = await createClient(); const { data } = sb ? await sb.rpc("am_stamp_tester") : { data: false }; tester = data === true; }
 
   /* 도장 카드 : 나라 묶음 없이 최근에 받은 순 (0.94.6 마루님) */
   /* 0.95.0 : 마지막으로 받은 시각 기준 (등급이 오른 카드도 앞으로, 7일 안이면 NEW) */
