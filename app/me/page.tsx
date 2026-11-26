@@ -10,6 +10,8 @@ import { AvatarEditor } from "@/components/avatar-editor";
 import { ThemePicker, type Theme } from "@/components/theme-picker";
 import { PushToggle } from "@/components/push-toggle";
 import { NewUpdateDot } from "@/components/update-seen";
+import { TesterToggle } from "@/components/tester-toggle";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "설정" };
 
@@ -38,6 +40,10 @@ export default async function Me() {
   const v = await getViewer();
   const saved = (await cookies()).get("kkuk-theme")?.value;
   const theme: Theme = saved === "light" || saved === "dark" ? saved : "system";
+  /* 테스터 전용 (0.106.2) : private.stamp_testers 계정만 */
+  let tester = false;
+  if (v.kind === "user") { const sb = await createClient(); const { data } = sb ? await sb.rpc("am_stamp_tester") : { data: false }; tester = data === true; }
+  const testerOn = (await cookies()).get("stamp-tester")?.value === "1";
   return (
     <AppShell>
       <header className="px-5 pt-6"><h1 className="text-title-xl font-extrabold text-ink">설정</h1></header>
@@ -75,6 +81,12 @@ export default async function Me() {
             {v.kind === "user" && <div className="border-t border-line py-4"><PushToggle /></div>}
           </section>
         </Group>
+
+        {tester && (
+          <Group title="테스터 전용">
+            <section className="rounded-card bg-surface px-4 py-4" aria-label="테스터 전용"><TesterToggle initial={testerOn} /></section>
+          </Group>
+        )}
 
         {v.kind === "user" && (
           <Group title="여행 관리">
