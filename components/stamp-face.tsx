@@ -26,7 +26,7 @@ export function StampFace({ name, country, earned = true, size = 86, finish }: {
   const art = stampArt(country, name);
   const uid = useId().replace(/:/g, "");
   const f = earned && finish ? FINISH[finish] : null;
-  const color = f ? `url(#sf${uid})` : stampColor(country); // 나라별 도장 색 (마루님 피그마 "도장 (11.15)")
+  const color = f ? `url(#sf${uid})` : stampColor(country); // 0.106.0 도장 색은 하나 (마루님 피그마 "도시 그림 정형화")
   return (
     <svg viewBox="0 0 86 86" width={size} height={size} aria-hidden="true" className="block"
       style={{ ["--stamp-hole" as string]: earned ? (f ? f.stops[1] : color) : "var(--color-bg)" }}>
