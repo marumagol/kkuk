@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { PREVIEW_COOKIE, safeNext } from "@/lib/viewer";
+import { randomName } from "@/lib/random-name";
 import { cardsOf, type Tier } from "@/lib/card-tier";
 import { countryOf, isoOf, decimalsOf, ICON_PATH, MAX_COUNTRY_NAME } from "@/lib/countries";
 import { AVATAR_PATH } from "@/lib/storage";
@@ -45,6 +46,15 @@ export async function saveName(_prev: NameState, formData: FormData): Promise<Na
   if (error) return { error: "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요" };
   revalidatePath("/", "layout");
   redirect(next);
+}
+
+/* 손님 계정 첫 준비 (0.107.0) : 익명 로그인 직후 브라우저가 부른다. 이름 정하기 화면을 건너뛰게 임의 이름을 넣는다 (이미 있으면 그대로) */
+export async function setupGuest(): Promise<void> {
+  const sb = await createClient();
+  if (!sb) return;
+  const { data } = await sb.auth.getUser();
+  if (!data.user?.is_anonymous) return;
+  await sb.from("profiles").upsert({ user_id: data.user.id, display_name: randomName() }, { onConflict: "user_id", ignoreDuplicates: true });
 }
 
 /* 여행 만들기 (S06). 여행 + 호스트 + 도시를 DB 함수 create_trip 으로 한 번에 저장 */

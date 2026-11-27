@@ -11,6 +11,7 @@ import { SealedButton, EarnedStamp } from "@/components/stamp-cards";
 import { AppShell, MainTabs, MockNote } from "@/components/screen";
 import { GateCta } from "@/components/gate";
 import { getViewer } from "@/lib/viewer";
+import { GuestKeep } from "@/components/guest-lock";
 import { loadStamps, type StampCard } from "@/lib/trips";
 import { flagOf } from "@/lib/countries";
 import { addDays, daysBetween, md, todayKST } from "@/lib/mock";
@@ -94,6 +95,8 @@ export default async function Stamps({ searchParams }: { searchParams: Promise<{
       {viewer.kind === "preview" && <MockNote />}
       <div className="flex flex-col gap-7 px-5 pb-6 pt-4">
         {tester && <StampTester />}
+        {/* 손님 계정이 카드를 모았으면 로그인 권유 (0.107.0) */}
+        {viewer.kind === "user" && viewer.anon && cardTotal > 0 && <GuestKeep next="/stamps" />}
         {/* 수집 현황 */}
         <section aria-label="수집 현황" className="relative overflow-hidden rounded-deep bg-deep px-5 pb-5 pt-5 text-on-deep">
           <p className="text-tiny font-semibold text-on-deep-sub">모은 카드</p>

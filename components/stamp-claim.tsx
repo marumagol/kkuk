@@ -10,6 +10,8 @@ import { Icon } from "@/components/kit";
 import { LogoMark } from "@/components/screen";
 import { claimStampCity, loadStampTargets, type ClaimResult, type StampTarget } from "@/app/actions";
 import { safeCall } from "@/lib/safe-call";
+import { useGate } from "@/components/gate";
+import { GuestKeep } from "@/components/guest-lock";
 
 /* 도장 그림과 받는 연출(여권, 카드)은 무거워서 꾹 누르기 시작할 때 미리 불러온다 (2026-11-25 전수 점검, 일정 화면 첫 로드 줄이기) */
 const loadReveal = () => import("@/components/stamp-reveal");
@@ -20,6 +22,7 @@ type State = { kind: "idle" } | { kind: "denied" } | { kind: "error"; text: stri
 
 export function StampClaim({ tripId, city, inset = true }: { tripId: string; city?: string; inset?: boolean }) {
   const [state, setState] = useState<State>({ kind: "idle" });
+  const { anon } = useGate(); // 손님 계정이면 카드를 받은 뒤 로그인 권유 (0.107.0)
   const [locating, setLocating] = useState(false);
   const [pending, start] = useTransition();
   const busy = locating || pending;
@@ -122,6 +125,7 @@ export function StampClaim({ tripId, city, inset = true }: { tripId: string; cit
       <p role="status" className={"text-center text-sub " + (msg && state.kind !== "done" ? "text-ink" : "text-ink-sub")}>
         {msg ?? "여행 도시에 도착했다면 도장을 꾹 눌러 주세요"}
       </p>
+      {anon && state.kind === "done" && !reveal && <GuestKeep next="/stamps" />}
       {state.kind !== "done" && <p className="-mt-1 text-center text-tiny text-ink-sub">위치는 휴대폰 안에서만 확인하고 서버로 보내거나 저장하지 않아요</p>}
     </section>
   );

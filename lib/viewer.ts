@@ -14,7 +14,7 @@ import { avatarUrl } from "@/lib/storage";
 export const PREVIEW_COOKIE = "kkuk_preview";
 export type Viewer =
   | { kind: "guest"; configured: boolean }
-  | { kind: "user"; id: string; email: string; name: string | null; avatar: string | null } // name 이 null 이면 아직 이름을 안 정한 첫 로그인
+  | { kind: "user"; id: string; email: string; name: string | null; avatar: string | null; anon: boolean } // name 이 null 이면 아직 이름을 안 정한 첫 로그인. anon : 로그인 없이 쓰는 손님 계정 (Supabase 익명 로그인, 0.107.0)
   | { kind: "preview" };
 
 /* 한 요청 안에서는 한 번만 묻는다 (cache) */
@@ -30,7 +30,7 @@ export const getViewer = cache(async (): Promise<Viewer> => {
   if (!uid) return { kind: "guest", configured: true };
   // RLS 가 내 행만 보여 주지만 조건은 항상 적는다
   const { data: profile } = await sb!.from("profiles").select("display_name, avatar_url").eq("user_id", uid).is("deleted_at", null).maybeSingle();
-  return { kind: "user", id: uid, email: typeof data?.claims?.email === "string" ? data.claims.email : "", name: profile?.display_name ?? null, avatar: avatarUrl(profile?.avatar_url) };
+  return { kind: "user", id: uid, email: typeof data?.claims?.email === "string" ? data.claims.email : "", name: profile?.display_name ?? null, avatar: avatarUrl(profile?.avatar_url), anon: data?.claims?.is_anonymous === true };
 });
 
 /* 아바타에 넣을 한 글자 */
@@ -41,6 +41,8 @@ export const initialOf = (v: Viewer) => (v.kind === "user" && v.name ? [...v.nam
 export const PATH_HEADER = "x-kkuk-path";
 
 export const isIn = (v: Viewer) => v.kind !== "guest";
+/* 손님 계정 (로그인 없이 쓰는 중) : 초대, 공유는 못 쓴다 */
+export const isAnon = (v: Viewer) => v.kind === "user" && v.anon;
 
 /* 로그인 뒤 돌아갈 주소. 다른 사이트로 튀지 않게 "/" 로 시작하는 것만 */
 /* "/\\evil.com" 은 브라우저가 "//evil.com" 처럼 읽어서 막는다. 줄바꿈 같은 제어 문자도 막는다 */

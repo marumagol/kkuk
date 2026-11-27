@@ -8,7 +8,7 @@ import { NetworkBanner } from "@/components/network-banner";
 import { SwRegister } from "@/components/sw-register";
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getViewer, isIn, PATH_HEADER } from "@/lib/viewer";
+import { getViewer, isAnon, isIn, PATH_HEADER } from "@/lib/viewer";
 import { BRAND, SITE_URL, SLOGAN } from "@/components/screen";
 
 // 페이퍼로지 : 쓰는 굵기 4개만 (가이드 4장). 늦게 와도 글자가 먼저 보이게 swap
@@ -56,7 +56,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const theme = (await cookies()).get("kkuk-theme")?.value;
   return (
     <html lang="ko" className={paperlogy.variable} data-theme={theme === "light" || theme === "dark" ? theme : undefined}>
-      <body><GateProvider loggedIn={isIn(v)}><NetworkBanner /><SwRegister />{children}<GlobalTabs /><TripEntryMemo /></GateProvider></body>
+      <body><GateProvider loggedIn={isIn(v)} anon={isAnon(v)}><NetworkBanner /><SwRegister />{children}<GlobalTabs /><TripEntryMemo /></GateProvider></body>
     </html>
   );
 }

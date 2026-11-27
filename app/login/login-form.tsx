@@ -3,10 +3,14 @@
   카카오, 구글 두 가지로만 로그인한다 (2026-11-18 마루님 결정. 이메일 코드 로그인은 뺐다)
   signInWithOAuth → 카카오/구글 화면 → /auth/callback 에서 세션으로 바꾼다
   같은 이메일로 들어오면 Supabase 가 한 계정으로 이어 준다
+  손님 계정(0.107.0) : linkIdentity 로 지금 계정에 카카오/구글을 이어 붙인다 (기록 그대로).
+    이미 다른 계정에 쓰인 카카오/구글이면(taken) 손님 기록을 버리고 그 계정으로 로그인할지 묻는다
+  [로그인 없이 시작] : 손님 계정을 만든다 (components/gate.tsx startGuest)
 */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/kit";
 import { createClient } from "@/lib/supabase/client";
+import { AlertDialog, startGuest } from "@/components/gate";
 
 type Provider = "kakao" | "google";
 const NAME: Record<Provider, string> = { kakao: "카카오", google: "구글" };
@@ -31,16 +35,28 @@ function KakaoMark() {
   );
 }
 
-export function LoginForm({ next, configured, failed }: { next: string; configured: boolean; failed?: Provider | "any" }) {
-  const [busy, setBusy] = useState<Provider | null>(null);
-  const [error, setError] = useState(failed ? `${failed === "any" ? "" : `${NAME[failed]} `}로그인을 마치지 못했어요. 다시 시도해 주세요` : "");
+export function LoginForm({ next, configured, failed, anon = false, taken }: { next: string; configured: boolean; failed?: Provider | "any" | "guest"; anon?: boolean; taken?: Provider }) {
+  const [busy, setBusy] = useState<Provider | "guest" | null>(null);
+  const [error, setError] = useState(failed === "guest" ? "로그인 없이 시작하지 못했어요. 카카오나 구글로 시작해 주세요"
+    : failed ? `${failed === "any" ? "" : `${NAME[failed]} `}로그인을 마치지 못했어요. 다시 시도해 주세요` : "");
+  const [ask, setAsk] = useState<Provider | null>(taken ?? null);
+  // 오류가 주소 # 뒤로 오는 경우 (서버는 못 본다) : 이미 다른 계정에 쓰인 카카오/구글
+  useEffect(() => {
+    if (anon && (failed === "kakao" || failed === "google") && /identity_already_exists|already.linked/i.test(decodeURIComponent(location.hash))) { setAsk(failed); setError(""); }
+  }, [anon, failed]);
 
-  const go = async (provider: Provider) => {
+  // fresh : 손님 계정이어도 이어 붙이지 않고 새로 로그인 (이미 가입한 계정으로 들어갈 때. 손님 기록은 버려짐)
+  const go = async (provider: Provider, fresh = false) => {
     const sb = createClient();
     if (!sb) return;
     setBusy(provider); setError("");
-    const back = `${location.origin}/auth/callback?provider=${provider}&next=${encodeURIComponent(next)}`;
-    const { error: e } = await sb.auth.signInWithOAuth({ provider, options: { redirectTo: back } }).catch(() => ({ error: { status: 0 } }));
+    const link = anon && !fresh;
+    const back = `${location.origin}/auth/callback?provider=${provider}${link ? "&link=1" : ""}&next=${encodeURIComponent(next)}`;
+    if (fresh) await sb.auth.signOut({ scope: "local" }).catch(() => {});
+    const { error: e } = await (link
+      ? sb.auth.linkIdentity({ provider, options: { redirectTo: back } })
+      : sb.auth.signInWithOAuth({ provider, options: { redirectTo: back } })
+    ).catch(() => ({ error: { status: 0 } }));
     // 성공하면 카카오/구글 화면으로 넘어가므로 여기는 실패할 때만 온다
     if (e) {
       setBusy(null);
@@ -60,6 +76,16 @@ export function LoginForm({ next, configured, failed }: { next: string; configur
         <GoogleMark />{busy === "google" ? "구글로 가는 중" : "구글로 계속하기"}
       </Button>
       {error && <p role="alert" className="text-tiny font-semibold text-point-text">{error}</p>}
+      {!anon && configured && (
+        <button type="button" disabled={!!busy} onClick={() => { setBusy("guest"); void startGuest(next); }}
+          className="press mt-1 h-11 self-center px-2 text-sub font-semibold text-ink-sub underline underline-offset-4 disabled:opacity-60">
+          {busy === "guest" ? "준비하는 중" : "로그인 없이 시작하기"}
+        </button>
+      )}
+      {ask && (
+        <AlertDialog title={`이미 가입한 ${NAME[ask]} 계정이에요`} desc="그 계정으로 들어가면 지금 손님으로 만든 여행과 카드는 사라져요. 그래도 들어갈까요?"
+          confirmLabel="들어가기" confirm={() => void go(ask, true)} onClose={() => setAsk(null)} />
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Icon } from "@/components/kit";
 import { AppShell, Avatar, MainTabs } from "@/components/screen";
 import { getViewer, initialOf } from "@/lib/viewer";
 import { signOut } from "@/app/actions";
+import { GUEST_NOTE } from "@/lib/guest";
 import pkg from "@/package.json";
 import { cookies } from "next/headers";
 import { AvatarEditor } from "@/components/avatar-editor";
@@ -44,6 +45,7 @@ export default async function Me() {
   let tester = false;
   if (v.kind === "user") { const sb = await createClient(); const { data } = sb ? await sb.rpc("am_stamp_tester") : { data: false }; tester = data === true; }
   const testerOn = (await cookies()).get("stamp-tester")?.value === "1";
+  const anon = v.kind === "user" && v.anon; // 손님 계정 (0.107.0)
   return (
     <AppShell>
       <header className="px-5 pt-6"><h1 className="text-title-xl font-extrabold text-ink">설정</h1></header>
@@ -62,12 +64,21 @@ export default async function Me() {
               {v.kind === "user" ? <AvatarEditor initial={initialOf(v)} src={v.avatar} userId={v.id} /> : <Avatar initial={initialOf(v)} size={48} />}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-body font-bold text-ink">{v.kind === "user" ? v.name : "미리보기 계정"}</p>
-                <p className="break-all text-tiny text-ink-sub">{v.kind === "user" ? v.email : "Supabase 연결 전 화면 확인용"}</p>
+                <p className="break-all text-tiny text-ink-sub">{anon ? "로그인 없이 쓰는 중" : v.kind === "user" ? v.email : "Supabase 연결 전 화면 확인용"}</p>
               </div>
               {v.kind === "user" && (
                 <Link href="/me/name" className="press inline-flex h-9 flex-none items-center rounded-full bg-bg px-3 text-tiny font-bold text-ink">이름 수정</Link>
               )}
             </section>
+            {anon && (
+              <section className="flex flex-col gap-3 rounded-card bg-surface p-5">
+                <h2 className="text-body font-bold text-ink">로그인하고 기록 지키기</h2>
+                <p className="text-sub text-ink-sub">{GUEST_NOTE}. 로그인하면 지금 기록이 그대로 이어져요</p>
+                <Link href="/login?next=/me" className="press inline-flex h-12 items-center justify-center gap-2 rounded-btn bg-btn text-body font-bold text-on-btn">
+                  로그인 <Icon name="arrow" size={20} />
+                </Link>
+              </section>
+            )}
           </Group>
         )}
 
@@ -109,13 +120,14 @@ export default async function Me() {
           </ul>
         </Group>
 
-        {v.kind !== "guest" && (
+        {/* 손님 계정은 로그아웃하면 다시 들어올 수 없어서 로그아웃 버튼을 숨긴다 */}
+        {v.kind !== "guest" && !anon && (
           <form action={signOut} className="pt-2">
             <button className="press h-12 w-full rounded-btn border border-line-strong bg-surface text-body font-bold text-ink">로그아웃</button>
           </form>
         )}
         {v.kind === "user" && (
-          <Link href="/me/withdraw" className="press mx-auto inline-flex h-11 items-center px-2 text-sub font-semibold text-ink-sub underline underline-offset-4">탈퇴하기</Link>
+          <Link href="/me/withdraw" className="press mx-auto inline-flex h-11 items-center px-2 text-sub font-semibold text-ink-sub underline underline-offset-4">{anon ? "기록 모두 삭제하기" : "탈퇴하기"}</Link>
         )}
       </div>
       <MainTabs active="설정" />

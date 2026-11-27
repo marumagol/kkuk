@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Icon } from "@/components/kit";
 import { AppShell } from "@/components/screen";
 import { DayShareForm } from "@/components/day-share";
+import { GuestLock } from "@/components/guest-lock";
 import { getViewer } from "@/lib/viewer";
 import { loadDayShares, loadTrip } from "@/lib/trips";
 import { addDays, md, weekday } from "@/lib/mock";
@@ -18,7 +19,8 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
   const trip = r.trip;
   const canEdit = "role" in r && (r.role === "owner" || r.role === "editor");
   const days = trip.days.map((d, i) => ({ index: i, label: `${i + 1}일차`, sub: `${md(addDays(trip.start, i))} ${weekday(addDays(trip.start, i))}`, count: d.items.length }));
-  const shares = canEdit ? await loadDayShares(viewer, trip.id) : [];
+  const anon = viewer.kind === "user" && viewer.anon;
+  const shares = canEdit && !anon ? await loadDayShares(viewer, trip.id) : [];
 
   return (
     <AppShell bottomGap={false}>
@@ -26,7 +28,9 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
         <Link href={`/trips/${trip.id}`} aria-label="일정으로" className="press flex size-11 items-center justify-center rounded-full bg-surface text-ink"><Icon name="back" size={20} /></Link>
         <h1 className="min-w-0 flex-1 truncate text-title font-extrabold text-ink">일정 공유</h1>
       </div>
-      {canEdit ? (
+      {anon ? (
+        <GuestLock title="일정 공유는 로그인하면 쓸 수 있어요" next={`/trips/${trip.id}/share`} />
+      ) : canEdit ? (
         <DayShareForm tripId={trip.id} days={days} shares={shares} />
       ) : (
         <p className="mx-5 mt-5 rounded-card bg-surface px-4 py-8 text-center text-sub text-ink-sub">편집 가능 권한이 있는 사람만 일정을 공유할 수 있어요</p>

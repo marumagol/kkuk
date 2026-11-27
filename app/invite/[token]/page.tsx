@@ -50,12 +50,12 @@ export default async function Invite({ params }: { params: Promise<{ token: stri
             <p className="text-sub text-ink-sub">{p.start_date && p.end_date ? `${md(p.start_date)} ~ ${md(p.end_date)}` : ""} · {p.role === "viewer" ? "보기만" : "편집 가능"}으로 함께해요</p>
             {p.status === "joined" && p.trip_id ? (
               <Link href={`/trips/${p.trip_id}`} className="press inline-flex h-14 items-center justify-center rounded-btn bg-btn text-[16px] font-bold text-on-btn">이미 함께하는 여행이에요. 여행 보기</Link>
-            ) : viewer.kind === "user" ? (
+            ) : viewer.kind === "user" && !viewer.anon ? (
               <JoinButton token={token} />
             ) : (
               <>
                 <Link href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`} className="press inline-flex h-14 items-center justify-center rounded-btn bg-btn text-[16px] font-bold text-on-btn">로그인하고 참여하기</Link>
-                <p className="text-tiny text-ink-sub">카카오나 구글 계정으로 로그인해요</p>
+                <p className="text-tiny text-ink-sub">{viewer.kind === "user" ? "초대받은 여행은 로그인하면 들어갈 수 있어요. 지금까지 만든 기록은 그대로 남아요" : "카카오나 구글 계정으로 로그인해요"}</p>
               </>
             )}
           </section>
